@@ -3,7 +3,7 @@ name: plan-executor
 description: Orchestrated multi-agent plan execution with TDD and code review. Decomposes a plan file into tasks, dispatches SubAgents, enforces test-driven development and code review gates.
 argument-hint: [plan-file]
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash, Task
+allowed-tools: Read, Glob, Grep, Bash, Task, Edit, Write
 ---
 
 # Plan Executor
