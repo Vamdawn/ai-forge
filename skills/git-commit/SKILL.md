@@ -2,7 +2,6 @@
 name: git-commit
 description: "Create well-formatted atomic git commits with conventional commit messages and emoji. Use when making git commits, splitting large changesets into logical units, or crafting commit messages."
 argument-hint: "[message-hint]"
-disable-model-invocation: true
 allowed-tools: Bash(git *), Read
 ---
 
