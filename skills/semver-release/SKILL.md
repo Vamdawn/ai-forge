@@ -1,8 +1,9 @@
 ---
 name: semver-release
 description: 'Automated version release workflow. Analyzes git commit history to infer semantic version, auto-detects version files across ecosystems, updates multilingual CHANGELOGs, creates git commit and tag. Use when: (1) user says "release", "publish version", "bump version", (2) user invokes /release command, (3) preparing to release a new version.'
+argument-hint: "[version]"
 disable-model-invocation: true
-allowed-tools: Bash(git *) Glob Read Edit Write AskUserQuestion
+allowed-tools: Bash(git *), Glob, Read, Edit, Write, AskUserQuestion
 ---
 
 # Versioning Workflow
@@ -87,8 +88,10 @@ Compare the version from the latest git tag with versions found in version files
 
 ### Step 3: Analyze Commit History
 
+Use the latest tag obtained in Step 2a as the range start:
+
 ```bash
-git log <last-tag>..HEAD --pretty=format:"---commit---%n%s%n%b"
+git log v1.2.3..HEAD --pretty=format:"---commit---%n%s%n%b"
 ```
 
 Parse **both subject and body** of each commit to identify type:
@@ -108,7 +111,7 @@ Parse **both subject and body** of each commit to identify type:
 
 ### Step 4: Calculate New Version
 
-**User override**: If the user specifies an explicit version (e.g. "release 1.0.0", "bump to 2.0.0-rc.1"), use that version directly. Skip automatic calculation.
+**User override**: If `$ARGUMENTS` is a valid semver version (e.g. `1.0.0`, `2.0.0-rc.1`), use that version directly. Skip automatic calculation.
 
 Based on current version `MAJOR.MINOR.PATCH`:
 
@@ -229,25 +232,26 @@ If `CHANGELOG.md` does not exist, create it now with the new version section.
 
 #### 7c: Git Operations
 
+Stage all version files and CHANGELOG files modified in Steps 7a–7b by name, then commit and tag:
+
 ```bash
-git add <all-modified-files>
+git add package.json pyproject.toml CHANGELOG.md CHANGELOG.zh-CN.md
 git commit -m "🔖 release: vX.Y.Z"
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 ```
 
-Use **annotated tag** (`-a`) — includes author, date, and message. Required by `git push --follow-tags` and better supported by GitHub/GitLab Releases.
-
-The `git add` must include all version files and all CHANGELOG files that were modified.
+Replace the file list and version with actual values. Use **annotated tag** (`-a`) — includes author, date, and message. Required by `git push --follow-tags` and better supported by GitHub/GitLab Releases.
 
 #### Failure Recovery
 
 **If `git commit` fails** (e.g. pre-commit hook):
 1. Check what went wrong: `git status`
 2. All file modifications are still staged — fix the issue and create a **new** commit (do NOT use `--amend`)
-3. If the user wants to abort entirely:
+3. If the user wants to abort entirely, restore all modified files:
    ```bash
-   git checkout -- <all-modified-files>
+   git checkout -- package.json pyproject.toml CHANGELOG.md
    ```
+   Replace the file list with the actual files modified in Steps 7a–7b.
 
 **If `git tag` fails** (e.g. tag already exists):
 1. The commit has already been created — do NOT undo it
@@ -256,7 +260,7 @@ The `git add` must include all version files and all CHANGELOG files that were m
 
 ### Step 8: Completion Message
 
-Use the branch name detected in Step 0.
+Use the branch name detected in Step 0 and the publish command matching the detected ecosystem. Example:
 
 ```
 Version vX.Y.Z released successfully!
@@ -268,13 +272,13 @@ Updated files:
 - CHANGELOG.zh-CN.md
 
 Next steps:
-- git push origin <current-branch> --follow-tags
-- <ecosystem-specific publish command>
+- git push origin main --follow-tags
+- npm publish
 ```
 
-Use `--follow-tags` to push commit and annotated tag in a single command.
+Replace branch name, version, file list, and publish command with actual values. Use `--follow-tags` to push commit and annotated tag in a single command.
 
-Suggest the appropriate publish command based on detected ecosystem:
+Ecosystem-specific publish commands:
 
 | Ecosystem | Publish Command |
 |-----------|----------------|
