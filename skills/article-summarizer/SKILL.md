@@ -1,7 +1,7 @@
 ---
 name: article-summarizer
 description: "Fetch, analyze, and summarize web articles into structured Obsidian Markdown notes. Creates a new note and may back-link into 1-3 existing related notes. Use when the user provides a URL and asks to summarize, record, or take notes on an article/blog post/README. Triggers on phrases like: '总结这篇文章', 'summarize this article', '记录下这篇文章', 'take notes on this', or when a URL is given with intent to capture its content as an Obsidian note."
-argument-hint: "<url>"
+argument-hint: "[url]"
 allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(mkdir *), Bash(cp *), Bash(curl *), Skill(playwright-cli *)
 ---
 
