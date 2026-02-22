@@ -1,9 +1,9 @@
 ---
 name: review-skill
 description: >-
-  审查 Claude Code Skill 是否符合官方规范并输出结构化报告。
-  Use when asked to review, check, validate, or audit a skill.
-  触发词：review skill、检查 skill、审查技能、validate skill。
+  审查 Claude Code Skill 的 YAML frontmatter、指令质量、工具声明、文件引用和变量语法是否符合官方规范，输出含严重程度分级的结构化报告。
+  Use when asked to review, check, validate, audit, or lint a skill.
+  触发词：review skill、检查 skill、审查技能、validate skill、lint skill、skill 审查、skill 合规检查。
 argument-hint: [skill-path]
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep
@@ -18,64 +18,31 @@ allowed-tools: Read, Glob, Grep
    - 若为文件路径 → 直接读取该文件
    - 若路径不存在或无 SKILL.md → 输出错误信息并终止
 2. 用 Glob 列出该 Skill 目录下所有文件（含子目录）
-3. 读取官方规范：项目根目录下 `docs/Extend Claude with skills.md`
-   - 若该文件不存在 → 基于内置知识完成审查，并在报告开头注明「未加载官方规范，结果基于内置知识」
+3. 读取官方规范（按优先级尝试）：
+   - 项目根目录下 `docs/Extend Claude with skills.md`（Claude Code 官方文档）
+   - 项目根目录下 `docs/The-Complete-Guide-to-Building-Skill-for-Claude.md`（完整构建指南）
+   - 若两份均不存在 → 基于内置知识完成审查，并在报告开头注明「未加载官方规范，结果基于内置知识」
+4. 读取完整检查表：本 Skill 目录下的 `references/checklist.md`
 
 ## 步骤 2 — 逐项检查
 
-对照以下检查表逐项判定。每项标记 ✅ 通过、❌ 不通过、⚠️ 建议优化。
+对照 `references/checklist.md` 中的检查表逐项判定。每项标记 ✅ 通过、❌ 不通过、⚠️ 建议优化。
+使用 Grep 在目标 SKILL.md 中检索关键模式（如 `$ARGUMENTS`、工具名称、`{{`、`<PLACEHOLDER>` 等）以辅助 C1、E1-E5 等项的判定。
 
-### A. Frontmatter 合规性
+检查覆盖 5 个类别共 30 项：
 
-| # | 检查项 | 判定规则 |
-|---|--------|---------|
-| A1 | `name` | 仅小写字母、数字、连字符；≤64 字符；省略时目录名须符合同等约束 |
-| A2 | `description` | 存在且描述用途和适用时机；包含用户自然语言触发词 |
-| A3 | `allowed-tools` | 仅列出 Skill 内容中实际使用的工具；Bash 建议带模式限定（如 `Bash(git *)`） |
-| A4 | `disable-model-invocation` | 有副作用操作（部署、提交、发布、发送消息等）建议设为 `true` |
-| A5 | `user-invocable` | 不应与 `disable-model-invocation: true` 同时设为 `false` |
-| A6 | `context` | 若为 `fork`，Skill 内容须包含可执行任务而非纯指南 |
-| A7 | `agent` | 仅在 `context: fork` 时有效；须为 `Explore`、`Plan`、`general-purpose` 或自定义 agent |
-| A8 | `argument-hint` | 若内容使用 `$ARGUMENTS` / `$N`，应提供此字段 |
-| A9 | `model` | 若存在，须为合法模型标识 |
-| A10 | `hooks` | 若存在，格式须符合 Hooks 规范 |
-| A11 | 未知字段 | 不应出现规范定义之外的 frontmatter 字段 |
+| 类别 | 编号范围 | 检查要点 |
+|------|----------|----------|
+| A. Frontmatter 合规性 | A1-A13 | name/description 格式与内容、字段合法性、安全限制、目录卫生 |
+| B. 指令内容质量 | B1-B6 | 步骤完整性、分支覆盖、退出条件、输出格式、行数控制 |
+| C. 工具使用合规性 | C1-C3 | 声明一致性、参数约束、Task 子代理 |
+| D. 文件引用有效性 | D1-D3 | 正向/反向引用检查、路径格式 |
+| E. 变量与动态内容 | E1-E5 | 标准语法、索引合理性、动态注入安全性、argument-hint 一致性 |
 
-### B. 指令内容质量
-
-| # | 检查项 | 判定规则 |
-|---|--------|---------|
-| B1 | 步骤链路 | 从输入到输出有完整路径，无断裂步骤 |
-| B2 | 分支覆盖 | 条件分支均有处理（成功/失败/空输入/异常数据） |
-| B3 | 退出条件 | 明确定义何时结束，无无限循环风险 |
-| B4 | 输出格式 | 最终输出的结构和格式有明确定义 |
-| B5 | 行为影响 | 每段内容须影响模型执行行为；标记纯解释性或美化性文本 |
-| B6 | 行数控制 | SKILL.md ≤500 行；超出建议拆分到支持文件 |
-
-### C. 工具使用合规性
-
-| # | 检查项 | 判定规则 |
-|---|--------|---------|
-| C1 | 声明一致 | Skill 中使用的工具均已在 `allowed-tools` 中声明（若设置了该字段） |
-| C2 | 参数约束 | Bash 命令匹配 `allowed-tools` 中的模式；Read 使用绝对路径 |
-| C3 | Task 子代理 | 若使用 Task 工具，`subagent_type` 合法，prompt 自包含（不依赖主会话上下文） |
-
-### D. 文件引用有效性
-
-| # | 检查项 | 判定规则 |
-|---|--------|---------|
-| D1 | 正向检查 | SKILL.md 引用的所有文件均存在于 Skill 目录中 |
-| D2 | 反向检查 | 目录中的支持文件均在 SKILL.md 中被引用（无孤立文件） |
-| D3 | 路径格式 | 使用相对路径引用同目录文件 |
-
-### E. 变量与动态内容
-
-| # | 检查项 | 判定规则 |
-|---|--------|---------|
-| E1 | 标准语法 | 仅使用 `$ARGUMENTS`、`$ARGUMENTS[N]`、`$N`、`${CLAUDE_SESSION_ID}`；不出现 `{{...}}`、`<PLACEHOLDER>` 等非标准占位符 |
-| E2 | 索引合理 | `$ARGUMENTS[N]` 的 N 不超过 `argument-hint` 暗示的参数数量 |
-| E3 | 参数覆盖 | 若 Skill 需要参数，内容中使用了 `$ARGUMENTS` 或 `$N` |
-| E4 | 动态注入 | 若使用动态注入语法（感叹号+反引号包裹的命令），命令须安全且输出可预期 |
+**判定原则**：
+- 规范文档中有明确规则的项 → 严格判定（❌ 或 ✅）
+- 属于最佳实践建议的项 → 标记为 ⚠️ 而非 ❌
+- 不确定是否违规时 → 标记为 ⚠️ 并说明疑点
 
 ## 步骤 3 — 输出报告
 
@@ -91,6 +58,34 @@ allowed-tools: Read, Glob, Grep
 - **中**：不阻断执行但降低可靠性或可维护性
 - **低**：最佳实践建议
 
+**建议修复要求**：
+- 高/中严重程度项：须提供可直接采用的修改内容（如修正后的 YAML 片段、修改后的文本）
+- 低严重程度项：说明改进方向即可
+
 ### 无问题时
 
-输出：`✅ 未发现问题。已检查 A1-A11、B1-B6、C1-C3、D1-D3、E1-E4 共 27 项。`
+输出：`✅ 未发现问题。已检查 A1-A13、B1-B6、C1-C3、D1-D3、E1-E5 共 30 项。`
+
+## 示例
+
+### 示例 1：典型问题报告
+
+输入：`/review-skill .claude/skills/my-deploy/`
+
+输出片段：
+
+| # | 检查项 | 严重程度 | 位置 | 问题 | 建议修复 |
+|---|--------|---------|------|------|---------|
+| A2 | `description` | 中 | frontmatter | 仅 15 字符"部署应用"，缺少触发词和使用时机 | 扩展为：`description: 部署应用到生产环境。Use when asked to deploy, release, or push to production.` |
+| A4 | `disable-model-invocation` | 中 | frontmatter | 含部署操作但未设为 true | 添加 `disable-model-invocation: true` |
+| C1 | 声明一致 | 高 | 步骤 3 | 使用了 Bash 但 allowed-tools 未声明 | 在 allowed-tools 中添加 `Bash(deploy *)` |
+
+### 示例 2：全部通过
+
+输入：`/review-skill .claude/skills/explain-code/`
+
+输出：`✅ 未发现问题。已检查 A1-A13、B1-B6、C1-C3、D1-D3、E1-E5 共 30 项。`
+
+## 判定模糊时的处理
+
+某些检查项（如 B1 步骤链路、B5 行为影响）需要主观判断。此时标记为 ⚠️ 并在「问题」列详细说明疑点，供用户自行判断。
