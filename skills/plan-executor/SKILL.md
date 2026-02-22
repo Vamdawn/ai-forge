@@ -1,7 +1,7 @@
 ---
 name: plan-executor
-description: Orchestrated multi-agent plan execution with TDD and code review. Decomposes a plan file into tasks, dispatches SubAgents, enforces test-driven development and code review gates.
-argument-hint: [plan-file]
+description: Orchestrated multi-agent plan execution with TDD and code review. Use when you have a structured plan file to execute via SubAgents. Decomposes tasks, dispatches agents, enforces TDD and code review gates.
+argument-hint: "[plan-file]"
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, Task, Edit, Write
 ---
@@ -32,7 +32,11 @@ task list to the user for confirmation before proceeding.
 
 ## Workflow
 
-1. **Load plan** — Read `$ARGUMENTS`. Parse tasks and dependencies.
+1. **Load plan** — If `$ARGUMENTS` is non-empty, use it as the plan file path.
+   If empty but the conversation context makes the intended plan file unambiguous,
+   confirm that file with the user before proceeding. Otherwise ask the user to
+   provide the plan file path. If the file does not exist or is unreadable, report
+   the error and stop. Parse tasks and dependencies.
 2. **Gather project context** — Read CLAUDE.md for test command, tech stack,
    and coding conventions. If not defined, ask the user before proceeding.
 3. **Build dependency graph** — Identify which tasks are independent (parallelizable)
@@ -54,7 +58,7 @@ DISPATCH → REVIEW → DONE (or RETRY)
 
 Define the task's scope and acceptance criteria, then read
 [templates/subagent-prompt.md](templates/subagent-prompt.md) and replace all
-`<PLACEHOLDER>` fields with actual values from the plan and project context.
+`{{PLACEHOLDER}}` fields with actual values from the plan and project context.
 The template content IS the SubAgent prompt — pass it directly to the Task tool
 (subagent_type: "general-purpose") without adding or removing anything.
 Cache the template after the first read; reuse for subsequent tasks.
@@ -72,7 +76,7 @@ After the SubAgent returns:
 
 - If approved: mark task complete, proceed to next task.
 - If rejected: read [templates/retry-prompt.md](templates/retry-prompt.md),
-  replace all `<PLACEHOLDER>` fields (including review feedback and file states),
+  replace all `{{PLACEHOLDER}}` fields (including review feedback and file states),
   and pass the result directly as the prompt for a **new** SubAgent.
   Maximum 3 attempts per task. After 3 failures, escalate to the user with a diagnosis.
 
@@ -114,5 +118,6 @@ After each task, output:
 - You NEVER write implementation code or modify source files — only review and orchestrate.
 - SubAgents cannot invoke Skills or access your conversation history.
   All instructions and project context must be inlined into their prompts via the templates.
+- Only run Bash commands for the project's defined test command. Do not execute arbitrary shell commands.
 - Check CLAUDE.md for project-specific test commands, coding standards, and
   quality gates. If not defined, ask the user before first dispatch.
