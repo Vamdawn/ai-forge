@@ -7,13 +7,8 @@ Standard structure for article summary notes. All section headers and text label
 tags:
   - <primary-topic>
   - <secondary-topic>
-aliases:
-  - <short-name>
-type: <tutorial | opinion | research | news | comparison | other>
-source: <original-url>          # single source
-# source:                       # or multiple sources
-#   - <url-1>
-#   - <url-2>
+type: article                   # article | repo | thread
+source: <original-url>
 authors:
   - <author-name>
 publish: <YYYY-MM-DD>
