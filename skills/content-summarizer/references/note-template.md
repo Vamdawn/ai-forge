@@ -17,12 +17,11 @@ word_count: <number>              # approximate word count
 reading_time: "<N> min"           # estimated reading time
 difficulty: <入门 | 中级 | 高级>
 status: captured                # captured → read → reviewed
-scores:
-  novelty: <1-5>                # originality of ideas relative to common knowledge
-  quality: <1-5>                # argument depth, source credibility, logical rigor
-  actionability: <1-5>          # can this be turned into concrete action?
-  overall: <1-5>                # rounded average of the three above
-recommended_action: <精读 | 速览 | 备查 | 归档>
+新颖度: <1-5>                     # 相对于常见知识的原创性
+质量: <1-5>                       # 论证深度、来源可信度、逻辑严密性
+可行性: <1-5>                     # 能否转化为具体行动？
+综合评分: <1-5>                   # 以上三项的四舍五入均值
+建议操作: <精读 | 速览 | 备查 | 归档>
 description: <one-line summary for search and Dataview queries>
 ---
 

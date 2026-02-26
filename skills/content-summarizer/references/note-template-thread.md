@@ -17,12 +17,11 @@ word_count: <number>
 reading_time: "<N> min"
 difficulty: <入门 | 中级 | 高级>
 status: captured
-scores:
-  novelty: <1-5>
-  quality: <1-5>
-  actionability: <1-5>
-  overall: <1-5>
-recommended_action: <精读 | 速览 | 备查 | 归档>
+新颖度: <1-5>
+质量: <1-5>
+可行性: <1-5>
+综合评分: <1-5>
+建议操作: <精读 | 速览 | 备查 | 归档>
 description: <one-line summary>
 ---
 

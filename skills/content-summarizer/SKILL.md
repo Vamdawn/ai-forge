@@ -49,17 +49,17 @@ allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python *), Bash(mkd
 
 | 维度 | 1（低） | 3（中） | 5（高） |
 |:-----|:--------|:--------|:--------|
-| **novelty** | 广为人知的常见知识 | 有部分新角度或新组合 | 全新观点或鲜为人知的信息 |
-| **quality** | 缺乏论据、逻辑松散 | 论证基本完整但不算深入 | 论证严密、证据充分、来源权威 |
-| **actionability** | 纯理论/纯新闻，无可执行要点 | 有一些可参考的建议 | 提供具体步骤/代码/工具可直接应用 |
+| **新颖度** | 广为人知的常见知识 | 有部分新角度或新组合 | 全新观点或鲜为人知的信息 |
+| **质量** | 缺乏论据、逻辑松散 | 论证基本完整但不算深入 | 论证严密、证据充分、来源权威 |
+| **可行性** | 纯理论/纯新闻，无可执行要点 | 有一些可参考的建议 | 提供具体步骤/代码/工具可直接应用 |
 
 各维度在不同内容类型下的具体解读见 [references/content-types.md](references/content-types.md) 的"评分解读"。
 
-计算 `overall` 为三项评分的四舍五入均值。根据 overall 确定 `recommended_action`：
-- `精读`: overall ≥ 4
-- `速览`: overall = 3
-- `备查`: overall = 2
-- `归档`: overall ≤ 1
+计算 `综合评分` 为三项评分的四舍五入均值。根据 `综合评分` 确定 `建议操作`：
+- `精读`: 综合评分 ≥ 4
+- `速览`: 综合评分 = 3
+- `备查`: 综合评分 = 2
+- `归档`: 综合评分 ≤ 1
 
 以用户语言输出摘要（用户使用中文时默认中文）。
 
@@ -109,9 +109,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python *), Bash(mkd
 
 ## 质量清单
 
-- [ ] Frontmatter 完整：tags, type, source, authors, publish, creation, word_count, reading_time, difficulty, status, scores, recommended_action, description
+- [ ] Frontmatter 完整：tags, type, source, authors, publish, creation, word_count, reading_time, difficulty, status, 新颖度, 质量, 可行性, 综合评分, 建议操作, description
 - [ ] 阅读元数据存在：word_count, reading_time, difficulty
-- [ ] AI 评分存在：scores (novelty, quality, actionability, overall), recommended_action
+- [ ] AI 评分存在：新颖度, 质量, 可行性, 综合评分, 建议操作
 - [ ] 内容类型正确识别（article / repo / thread）
 - [ ] 笔记正文结构匹配内容类型的模板
 - [ ] Tags 与 vault 已有标签对齐（创建新标签前先搜索）
