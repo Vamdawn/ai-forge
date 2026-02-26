@@ -1,8 +1,8 @@
 ---
 name: content-summarizer
-description: "抓取、分析、摘要各类网络内容并生成结构化 Obsidian 笔记。支持网页文章、GitHub 仓库、Reddit/HN/Twitter 讨论帖等多种内容类型。自动识别 URL 类型并选择对应的处理流程和笔记模板。触发词：'总结这篇文章'、'summarize this'、'记录下这个'、'take notes on this'、或任何附带 URL 且意图是将其内容保存为 Obsidian 笔记的请求。"
+description: "抓取、分析、摘要各类网络内容并生成结构化 Obsidian 笔记。支持网页文章、GitHub 仓库、Reddit/HN/Twitter 讨论帖等多种内容类型。自动识别 URL 类型并选择对应的处理流程和笔记模板。触发词：'总结这篇文章'、'summarize this'、'记录下这个'、'take notes on this'、'记录这个仓库'、'save this repo'、'总结这个讨论'、'summarize this thread'、或任何附带 URL 且意图是将其内容保存为 Obsidian 笔记的请求。"
 argument-hint: "[url]"
-allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python *), Bash(mkdir *), Bash(cp *), Bash(curl *), Bash(gh *), Skill(playwright-cli *)
+allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python *), Bash(mkdir *), Bash(curl *), Bash(gh *), Skill(playwright-cli *)
 ---
 
 始终按以下六步工作流执行。每一步必须完成后才能进入下一步。
@@ -11,13 +11,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python *), Bash(mkd
 
 ### Step 0: 识别内容类型
 
-运行路由脚本识别 URL 对应的内容类型：
+若 `$ARGUMENTS` 为空（用户未提供 URL），询问用户提供 URL 后再继续。
 
-```bash
-python <skill-dir>/scripts/detect_content_type.py "$ARGUMENTS"
-```
-
-脚本返回 JSON，包含 `type`、`platform`、`template`、`metadata` 字段。
+使用 Glob 定位本 skill 目录下的 `scripts/detect_content_type.py`，然后运行该脚本并传入 `$ARGUMENTS` 作为参数。脚本返回 JSON，包含 `type`、`platform`、`template`、`metadata` 字段。
 
 - **脚本返回有效类型**（`type` 不为 null）→ 记录 `type`、`platform`、`template`、`metadata`，进入 Step 1
 - **脚本返回 null** → 先用 Step 1 通用方式抓取页面内容，然后根据内容特征判断类型：
