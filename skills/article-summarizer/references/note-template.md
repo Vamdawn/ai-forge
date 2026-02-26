@@ -18,8 +18,16 @@ authors:
   - <author-name>
 publish: <YYYY-MM-DD>
 creation: <YYYY-MM-DD HH:MM>
+word_count: <number>              # approximate word count
+reading_time: "<N> min"           # estimated reading time
+difficulty: <beginner | intermediate | advanced>
 status: captured                # captured → read → reviewed
-rating:                         # 1-5, fill in after reading
+scores:
+  novelty: <1-5>                # originality of ideas relative to common knowledge
+  quality: <1-5>                # argument depth, source credibility, logical rigor
+  actionability: <1-5>          # can this be turned into concrete action?
+  overall: <1-5>                # rounded average of the three above
+recommended_action: <deep-read | skim | reference | archive>
 description: <one-line summary for search and Dataview queries>
 ---
 
