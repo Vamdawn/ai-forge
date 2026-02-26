@@ -101,6 +101,12 @@ allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python *), Bash(mkd
 
 4. **反向链接** — 在 1-3 个最相关的已有笔记中添加指向新笔记的 wikilink。
 
+5. **更新 MOC** — 在输出根目录的父级查找 `*MOC*` 文件（如 `0_Resources_资源库_MOC.md`）：
+   - 在"最近收录"列表顶部插入新条目，格式：`` - `YYYY-MM-DD` [[Title]] ``，保持列表不超过 10 条（移除最旧的）
+   - 更新分类统计表格中对应分类的篇数（重新计算该分类 INDEX 文件中的条目数）
+   - 如果是新分类（表格中不存在），在表格末尾追加一行
+   - 如果未找到 MOC 文件，跳过此步骤
+
 ## 质量清单
 
 - [ ] Frontmatter 完整：tags, type, source, authors, publish, creation, word_count, reading_time, difficulty, status, scores, recommended_action, description
@@ -119,3 +125,4 @@ allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python *), Bash(mkd
 - [ ] 索引条目已添加
 - [ ] 正向 wikilinks 指向 vault 中已有笔记
 - [ ] 反向链接已添加到 1-3 个最相关的已有笔记
+- [ ] MOC 已更新：最近收录列表和分类篇数（若 MOC 存在）
