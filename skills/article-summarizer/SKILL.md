@@ -53,6 +53,20 @@ Retrieve the full article content and publish date from `$ARGUMENTS`:
 
 Summarize in the user's language (default Chinese if user communicates in Chinese).
 
+**2e. Score the article** — Evaluate the article on three dimensions (1-5 scale):
+
+| Dimension | 1 (Low) | 3 (Medium) | 5 (High) |
+|:----------|:--------|:-----------|:---------|
+| **novelty** | 广为人知的常见知识 | 有部分新角度或新组合 | 全新观点或鲜为人知的信息 |
+| **quality** | 缺乏论据、逻辑松散 | 论证基本完整但不算深入 | 论证严密、证据充分、来源权威 |
+| **actionability** | 纯理论/纯新闻，无可执行要点 | 有一些可参考的建议 | 提供具体步骤/代码/工具可直接应用 |
+
+Calculate `overall` as the rounded average of the three scores. Determine `recommended_action`:
+- `deep-read`: overall ≥ 4 — worth careful reading and note-taking
+- `skim`: overall = 3 — scan key points, keep for reference
+- `reference`: overall = 2 — low priority, keep as reference only
+- `archive`: overall ≤ 1 — minimal value, archive
+
 ### Step 3: Determine Output Path
 
 **Discover output root** — scan the vault's directory tree to locate the directory used for article notes (look for directories that contain article-style Markdown files with `source:` in frontmatter, or directories whose name suggests an articles collection). If multiple candidates exist or none is found, ask the user to specify.
