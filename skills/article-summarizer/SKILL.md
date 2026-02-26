@@ -102,7 +102,9 @@ Integrate the new note into the vault's index system:
 
 ## Quality Checklist
 
-- [ ] Frontmatter complete: tags, type, source, authors, publish, creation, status, description
+- [ ] Frontmatter complete: tags, type, source, authors, publish, creation, word_count, reading_time, difficulty, status, scores, recommended_action, description
+- [ ] Reading metadata present: word_count, reading_time, difficulty
+- [ ] AI scores present: scores (novelty, quality, actionability, overall), recommended_action
 - [ ] Tags aligned with existing vault tags (search before creating new ones)
 - [ ] Article type correctly classified and type-specific extraction applied
 - [ ] TL;DR present immediately below title, matches `description` in frontmatter
