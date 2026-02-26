@@ -19,7 +19,7 @@ Retrieve the full article content and publish date from `$ARGUMENTS`:
 4. **Estimate reading metadata** from the fetched content:
    - `word_count` — approximate word count (中文按字数，英文按 word count)
    - `reading_time` — estimated reading time (中文 300 字/分钟，英文 200 words/min, round up to whole minutes, format: `"N min"`)
-   - `difficulty` — content difficulty based on vocabulary complexity, assumed background knowledge, and concept abstraction level: `beginner` (no prior knowledge needed), `intermediate` (some domain familiarity), `advanced` (deep domain expertise required)
+   - `difficulty` — content difficulty based on vocabulary complexity, assumed background knowledge, and concept abstraction level: `入门` (no prior knowledge needed), `中级` (some domain familiarity), `高级` (deep domain expertise required)
 
 **If fetch fails** (URL unreachable, 404, paywall, empty content):
 - Inform the user of the failure reason.
@@ -62,10 +62,10 @@ Summarize in the user's language (default Chinese if user communicates in Chines
 | **actionability** | 纯理论/纯新闻，无可执行要点 | 有一些可参考的建议 | 提供具体步骤/代码/工具可直接应用 |
 
 Calculate `overall` as the rounded average of the three scores. Determine `recommended_action`:
-- `deep-read`: overall ≥ 4 — worth careful reading and note-taking
-- `skim`: overall = 3 — scan key points, keep for reference
-- `reference`: overall = 2 — low priority, keep as reference only
-- `archive`: overall ≤ 1 — minimal value, archive
+- `精读`: overall ≥ 4 — worth careful reading and note-taking
+- `速览`: overall = 3 — scan key points, keep for reference
+- `备查`: overall = 2 — low priority, keep as reference only
+- `归档`: overall ≤ 1 — minimal value, archive
 
 ### Step 3: Determine Output Path
 

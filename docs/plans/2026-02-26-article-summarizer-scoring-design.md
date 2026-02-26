@@ -29,7 +29,7 @@
 # === 阅读分析元数据（Step 1 中估算） ===
 word_count: 2340                # Number: 文章大致字数
 reading_time: "8 min"           # Text: 预估阅读时长
-difficulty: intermediate        # Text: beginner | intermediate | advanced
+difficulty: 中级                 # Text: 入门 | 中级 | 高级
 
 # === AI 评分（Step 2 中评估，1-5 分） ===
 scores:
@@ -37,7 +37,7 @@ scores:
   quality: 4                    # Number: 内容质量 — 论证深度、来源可信度、逻辑严密性
   actionability: 3              # Number: 可操作性 — 能否转化为具体行动或实践
   overall: 4                    # Number: 综合评价 — 三维加权均值（四舍五入取整）
-recommended_action: deep-read   # Text: deep-read | skim | reference | archive
+recommended_action: 精读         # Text: 精读 | 速览 | 备查 | 归档
 ```
 
 **移除的字段：**
@@ -52,7 +52,7 @@ recommended_action: deep-read   # Text: deep-read | skim | reference | archive
 > 3. **Estimate reading metadata**: From the fetched content, estimate:
 >    - `word_count` — approximate word count (中文按字数，英文按 word 数)
 >    - `reading_time` — estimated reading time (中文 300 字/分钟，英文 200 words/min，向上取整到整分钟，格式如 "8 min")
->    - `difficulty` — content difficulty level based on vocabulary complexity, assumed background knowledge, and concept abstraction level: `beginner` (no prior knowledge needed), `intermediate` (some domain familiarity), `advanced` (deep domain expertise required)
+>    - `difficulty` — content difficulty level based on vocabulary complexity, assumed background knowledge, and concept abstraction level: `入门` (no prior knowledge needed), `中级` (some domain familiarity), `高级` (deep domain expertise required)
 
 #### Step 2 变更：增加 AI 评分（新增 2e）
 
@@ -69,10 +69,10 @@ recommended_action: deep-read   # Text: deep-read | skim | reference | archive
 > Calculate `overall` as the rounded average of the three scores.
 >
 > Based on the scores, determine `recommended_action`:
-> - `deep-read`: overall ≥ 4 — worth careful reading
-> - `skim`: overall = 3 — scan key points
-> - `reference`: overall = 2 — keep as reference only
-> - `archive`: overall ≤ 1 — low value, archive
+> - `精读`: overall ≥ 4 — worth careful reading
+> - `速览`: overall = 3 — scan key points
+> - `备查`: overall = 2 — keep as reference only
+> - `归档`: overall ≤ 1 — low value, archive
 
 #### Step 3-5：不变
 
