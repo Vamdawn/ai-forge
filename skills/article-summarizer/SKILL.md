@@ -16,6 +16,10 @@ Retrieve the full article content and publish date from `$ARGUMENTS`:
 1. Use any available web fetching method — prefer `playwright-cli` skill if available; otherwise fall back to `WebFetch` tool or other means.
 2. Extract the article body text and publish date from the page.
 3. If the output is large (>30KB), read the persisted output file for full content.
+4. **Estimate reading metadata** from the fetched content:
+   - `word_count` — approximate word count (中文按字数，英文按 word count)
+   - `reading_time` — estimated reading time (中文 300 字/分钟，英文 200 words/min, round up to whole minutes, format: `"N min"`)
+   - `difficulty` — content difficulty based on vocabulary complexity, assumed background knowledge, and concept abstraction level: `beginner` (no prior knowledge needed), `intermediate` (some domain familiarity), `advanced` (deep domain expertise required)
 
 **If fetch fails** (URL unreachable, 404, paywall, empty content):
 - Inform the user of the failure reason.
