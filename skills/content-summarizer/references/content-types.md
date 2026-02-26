@@ -83,21 +83,20 @@
 
 ### 抓取策略
 
-根据 `platform` 分发：
+根据 `platform` 分发。每个平台的方案按优先级排列，首选方案失败后再尝试下一个。
 
 **Reddit：**
-1. 使用 `playwright-cli` 抓取帖子页面（包含评论）
-2. 或使用 Reddit JSON API：在 URL 末尾添加 `.json`，用 `curl` 获取
+1. **首选 — JSON API**：将 URL 域名替换为 `old.reddit.com`，在路径末尾添加 `.json`，用 `curl -s -L -H "User-Agent: Mozilla/5.0"` 获取，再用 `python3` 解析 JSON 提取原帖和评论（`playwright-cli` 访问 Reddit 大概率遇到 CAPTCHA 拦截，不推荐作为首选）
+2. **降级 — `playwright-cli`**：仅在 JSON API 失败时使用
 3. 重点抓取：原帖内容 + 前 20 条高赞评论
 
 **Hacker News：**
-1. 使用 HN API：`https://hacker-news.firebaseio.com/v0/item/{id}.json` 获取帖子
-2. 递归获取 `kids` 字段中的评论（限前 15 条）
-3. 或使用 `playwright-cli` 抓取网页
+1. **首选 — HN API**：`https://hacker-news.firebaseio.com/v0/item/{id}.json` 获取帖子，递归获取 `kids` 字段中的评论（限前 15 条）
+2. **降级 — `playwright-cli`** 抓取网页
 
 **Twitter/X：**
-1. 使用 `playwright-cli` 抓取推文/线程页面
-2. 或尝试 Thread Reader App 中间层：抓取 `threadreaderapp.com/thread/{tweet_id}`
+1. **首选 — `playwright-cli`** 抓取推文/线程页面
+2. **降级 — Thread Reader App**：抓取 `threadreaderapp.com/thread/{tweet_id}`
 3. Twitter 线程通常只有一个作者的连续推文，按顺序拼接为完整文本
 
 **其他平台（降级）：**
