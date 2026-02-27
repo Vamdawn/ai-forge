@@ -123,7 +123,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python3 *), Bash(mk
 
 逐项检查以下清单。发现遗漏时立即修复，全部通过后才算完成。
 
-- [ ] Frontmatter 完整：tags, type, source, authors, publish, creation, word_count, reading_time, difficulty, status, 新颖度, 质量, 可行性, 综合评分, 建议操作, description
+- [ ] Frontmatter 完整：tags, type, source, authors, publish, creation, date_saved, word_count, reading_time, difficulty, status, 新颖度, 质量, 可行性, 综合评分, 建议操作, description
 - [ ] 阅读元数据存在：word_count, reading_time, difficulty
 - [ ] AI 评分存在：新颖度, 质量, 可行性, 综合评分, 建议操作
 - [ ] 内容类型正确识别（article / repo / thread）

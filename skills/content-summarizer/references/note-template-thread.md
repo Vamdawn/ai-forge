@@ -13,6 +13,7 @@ authors:
   - <original-poster>
 publish: <YYYY-MM-DD>             # 发帖日期
 creation: <YYYY-MM-DD HH:MM>
+date_saved: <YYYY-MM-DD>            # 收录日期：内容被保存到 vault 的日期
 word_count: <number>
 reading_time: "<N> min"
 difficulty: <入门 | 中级 | 高级>
