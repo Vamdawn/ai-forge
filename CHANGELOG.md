@@ -4,6 +4,10 @@ All notable changes to **ai-forge** are documented in this file.
 
 ---
 
+## 2026-02-28
+
+- **Content Summarizer**：网页抓取工具从 playwright-cli 迁移至 agent-browser，移除 WebFetch 回退逻辑
+
 ## 2026-02-27
 
 - **Content Summarizer**：笔记模板新增 `date_saved` 属性，便于追踪内容归档时间
