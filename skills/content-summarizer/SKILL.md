@@ -2,7 +2,7 @@
 name: content-summarizer
 description: "抓取、分析、摘要各类网络内容并生成结构化 Obsidian 笔记。支持网页文章、GitHub 仓库、Reddit/HN/Twitter 讨论帖等多种内容类型。自动识别 URL 类型并选择对应的处理流程和笔记模板。触发词：'总结这篇文章'、'summarize this'、'记录下这个'、'take notes on this'、'记录这个仓库'、'save this repo'、'总结这个讨论'、'summarize this thread'、或任何附带 URL 且意图是将其内容保存为 Obsidian 笔记的请求。"
 argument-hint: "[url]"
-allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(python3 *), Bash(mkdir *), Bash(curl *), Bash(gh *), Skill(playwright-cli *)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Bash(curl *), Bash(gh *), Skill(agent-browser *)
 ---
 
 始终按以下七步工作流执行。每一步必须完成后才能进入下一步。

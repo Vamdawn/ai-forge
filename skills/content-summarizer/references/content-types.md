@@ -8,7 +8,7 @@
 
 ### 抓取策略
 
-1. 使用 `playwright-cli` skill 抓取网页（首选）；否则回退到 `WebFetch` 工具
+1. 使用 `agent-browser` skill 抓取网页
 2. 提取正文文本和发布日期
 3. 如果输出超过 30KB，读取持久化的输出文件获取完整内容
 
@@ -51,7 +51,7 @@
 1. 如果 Step 0 的 `metadata` 中已有仓库元数据（stars, language 等），直接使用
 2. 使用 `gh api repos/{owner}/{repo}/readme --header "Accept: application/vnd.github.raw"` 获取 README 原文（Markdown 格式）
 3. 如果 README 过长（>10000 字），只保留前 5000 字 + 目录结构
-4. 如果 `gh` 不可用，回退到 `playwright-cli` 抓取 GitHub 网页
+4. 如果 `gh` 不可用，回退到 `agent-browser` 抓取 GitHub 网页
 
 ### 分析策略
 
@@ -86,21 +86,21 @@
 根据 `platform` 分发。每个平台的方案按优先级排列，首选方案失败后再尝试下一个。
 
 **Reddit：**
-1. **首选 — JSON API**：将 URL 域名替换为 `old.reddit.com`，在路径末尾添加 `.json`，用 `curl -s -L -H "User-Agent: Mozilla/5.0"` 获取，再用 `python3` 解析 JSON 提取原帖和评论（`playwright-cli` 访问 Reddit 大概率遇到 CAPTCHA 拦截，不推荐作为首选）
-2. **降级 — `playwright-cli`**：仅在 JSON API 失败时使用
+1. **首选 — JSON API**：将 URL 域名替换为 `old.reddit.com`，在路径末尾添加 `.json`，用 `curl -s -L -H "User-Agent: Mozilla/5.0"` 获取，再用 `python3` 解析 JSON 提取原帖和评论（`agent-browser` 访问 Reddit 大概率遇到 CAPTCHA 拦截，不推荐作为首选）
+2. **降级 — `agent-browser`**：仅在 JSON API 失败时使用
 3. 重点抓取：原帖内容 + 前 20 条高赞评论
 
 **Hacker News：**
 1. **首选 — HN API**：`https://hacker-news.firebaseio.com/v0/item/{id}.json` 获取帖子，递归获取 `kids` 字段中的评论（限前 15 条）
-2. **降级 — `playwright-cli`** 抓取网页
+2. **降级 — `agent-browser`** 抓取网页
 
 **Twitter/X：**
-1. **首选 — `playwright-cli`** 抓取推文/线程页面
+1. **首选 — `agent-browser`** 抓取推文/线程页面
 2. **降级 — Thread Reader App**：抓取 `threadreaderapp.com/thread/{tweet_id}`
 3. Twitter 线程通常只有一个作者的连续推文，按顺序拼接为完整文本
 
 **其他平台（降级）：**
-1. 使用 `playwright-cli` 通用抓取
+1. 使用 `agent-browser` 通用抓取
 2. LLM 从页面内容中识别帖子正文和评论区
 
 ### 分析策略
