@@ -1,6 +1,6 @@
 # Thread 笔记模板
 
-帖子/讨论内容摘要笔记的标准结构。适用于 Reddit、Hacker News、Twitter/X 等平台的讨论帖。所有 section 标题在最终笔记中翻译为用户语言。
+帖子/讨论内容摘要笔记的标准结构。适用于 Reddit、Hacker News、Twitter/X 等平台的讨论帖。
 
 ```markdown
 ---
@@ -23,7 +23,7 @@ status: captured
 可行性: <1-5>
 综合评分: <1-5>
 建议操作: <精读 | 速览 | 备查 | 归档>
-description: <one-line summary>
+description: <一行摘要>
 ---
 
 # <讨论标题 — 用户语言的描述性标题>
@@ -93,7 +93,6 @@ description: <one-line summary>
 
 ## 适配规则
 
-- 所有 section 标题翻译为用户语言
 - 如果讨论很短（<10 条评论），合并"核心讨论观点"和"高价值评论精选"
 - Twitter thread 通常没有评论互动，省略"帖子信息"中的评论数，合并为线性叙述
 - 标注观点态度时使用 callout：`[!tip]` 表示共识，`[!warning]` 表示争议，`[!note]` 表示少数派观点

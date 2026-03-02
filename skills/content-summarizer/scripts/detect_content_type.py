@@ -2,7 +2,7 @@
 """URL 内容类型检测脚本。
 
 根据 URL 模式匹配确定内容类型，返回 JSON 结果。
-匹配失败时返回 type: null，由 LLM 降级判断。
+匹配失败时默认返回 article 类型（通用抓取策略）。
 
 用法: python detect_content_type.py <url>
 """
@@ -19,7 +19,7 @@ def detect(url: str) -> dict:
     parsed = urlparse(url)
     host = parsed.hostname or ""
     path = parsed.path.rstrip("/")
-    result = {"type": None, "platform": None, "template": None, "metadata": {}}
+    result = {"type": None, "platform": None, "fetcher": None, "template": None, "metadata": {}}
 
     # GitHub Repo
     if host in ("github.com", "www.github.com"):
@@ -33,7 +33,8 @@ def detect(url: str) -> dict:
             result.update(
                 type="repo",
                 platform="github",
-                template="references/note-template-repo.md",
+                fetcher="references/fetchers/github-repo.md",
+                template="references/templates/repo.md",
                 metadata={"owner": owner, "repo": repo},
             )
             # 尝试用 gh CLI 获取仓库元数据
@@ -58,7 +59,8 @@ def detect(url: str) -> dict:
             result.update(
                 type="thread",
                 platform="reddit",
-                template="references/note-template-thread.md",
+                fetcher="references/fetchers/reddit.md",
+                template="references/templates/thread.md",
                 metadata={"subreddit": m.group(1), "post_id": m.group(2)},
             )
             return result
@@ -71,7 +73,8 @@ def detect(url: str) -> dict:
             result.update(
                 type="thread",
                 platform="hn",
-                template="references/note-template-thread.md",
+                fetcher="references/fetchers/hn.md",
+                template="references/templates/thread.md",
                 metadata={"item_id": item_id},
             )
             return result
@@ -84,12 +87,19 @@ def detect(url: str) -> dict:
             result.update(
                 type="thread",
                 platform="twitter",
-                template="references/note-template-thread.md",
+                fetcher="references/fetchers/twitter.md",
+                template="references/templates/thread.md",
                 metadata={"author_handle": m.group(1), "tweet_id": m.group(2)},
             )
             return result
 
-    # 未匹配 — 返回 null，降级给 LLM
+    # 未匹配 — 默认为通用文章类型
+    result.update(
+        type="article",
+        platform=None,
+        fetcher="references/fetchers/common.md",
+        template="references/templates/article.md",
+    )
     return result
 
 

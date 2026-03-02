@@ -1,6 +1,6 @@
 # Repo 笔记模板
 
-GitHub 仓库摘要笔记的标准结构。所有 section 标题在最终笔记中翻译为用户语言。
+GitHub 仓库摘要笔记的标准结构。
 
 ```markdown
 ---
@@ -23,7 +23,7 @@ status: captured
 可行性: <1-5>
 综合评分: <1-5>
 建议操作: <精读 | 速览 | 备查 | 归档>
-description: <one-line summary>
+description: <一行摘要>
 ---
 
 # <项目名称 — 用户语言的描述性标题>
@@ -93,7 +93,6 @@ description: <one-line summary>
 
 ## 适配规则
 
-- 所有 section 标题翻译为用户语言
 - 如果 README 很短，合并"核心功能"和"项目简介"
 - 如果项目没有 release 或 README 极简，精简输出
 - 使用 `==highlight==` 标记最关键的 1-2 个亮点

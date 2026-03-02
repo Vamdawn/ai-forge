@@ -19,17 +19,13 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 3. 在 Step 1 中分别抓取每个 URL 的内容
 4. 在 Step 2 中整合分析，生成一篇合并笔记，在笔记中为每个来源标注原始链接
 
-**必须运行检测脚本** — 使用 Glob 定位本 skill 目录下的 `scripts/detect_content_type.py`，然后用 `python3` 运行该脚本并传入 URL 作为参数（多 URL 时对每个 URL 分别调用）。不得跳过此步骤手动判断类型。脚本返回 JSON，包含 `type`、`platform`、`template`、`metadata` 字段。
+**必须运行检测脚本** — 使用 Glob 定位本 skill 目录下的 `scripts/detect_content_type.py`，然后用 `python3` 运行该脚本并传入 URL 作为参数（多 URL 时对每个 URL 分别调用）。不得跳过此步骤手动判断类型。脚本返回 JSON，包含 `type`、`platform`、`fetcher`、`template`、`metadata` 字段。脚本根据 URL 模式匹配返回 `references/fetchers/` 下对应的策略文件路径和 `references/templates/` 下对应的模板路径；未匹配已知平台时默认返回通用策略。
 
-- **脚本返回有效类型**（`type` 不为 null）→ 记录 `type`、`platform`、`template`、`metadata`，进入 Step 1
-- **脚本返回 null** → 先用 Step 1 通用方式抓取页面内容，然后根据内容特征判断类型：
-  - 有评论/回复结构 → `thread`，使用 `references/note-template-thread.md`
-  - 是代码仓库页面 → `repo`，使用 `references/note-template-repo.md`
-  - 其他 → `article`（默认），使用 `references/note-template.md`
+记录脚本返回的所有字段，进入 Step 1。若脚本执行失败或返回无法解析的结果，回退到默认值：`type=article`、`fetcher=references/fetchers/common.md`、`template=references/templates/article.md`。
 
 ### Step 1: 抓取内容
 
-按检测到的 `type` 和 `platform`，遵循 [references/content-types.md](references/content-types.md) 中对应类型的**抓取策略**获取内容。严格按策略中的优先级顺序尝试，首选方案失败后再尝试下一个。
+用 Read 工具读取脚本返回的 `fetcher` 路径对应的文件，遵循其中的**抓取策略**获取内容。严格按策略中的优先级顺序尝试，首选方案失败后再尝试下一个。
 
 所有类型均需估算阅读元数据：
 - `word_count` — 大致字数（中文按字数，英文按 word count）
@@ -45,7 +41,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 ### Step 2: 分析与摘要
 
-按检测到的 `type`，遵循 [references/content-types.md](references/content-types.md) 中对应类型的**分析策略**处理内容。
+遵循 Step 1 已读取的 fetcher 文件中的**分析策略**和**评分解读**处理内容。
 
 所有类型均需完成：
 
@@ -61,7 +57,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 | **质量** | 缺乏论据、逻辑松散 | 论证基本完整但不算深入 | 论证严密、证据充分、来源权威 |
 | **可行性** | 纯理论/纯新闻，无可执行要点 | 有一些可参考的建议 | 提供具体步骤/代码/工具可直接应用 |
 
-各维度在不同内容类型下的具体解读见 [references/content-types.md](references/content-types.md) 的"评分解读"。
+各维度在不同内容类型下的具体解读见对应 fetcher 文件的"评分解读"section。
 
 计算 `综合评分` 为三项评分的四舍五入均值。根据 `综合评分` 确定 `建议操作`：
 - `精读`: 综合评分 ≥ 4
@@ -84,10 +80,10 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 ### Step 4: 写入 Obsidian 笔记
 
-**4a. 读取模板** — 用 Read 工具读取对应的模板文件，确保笔记结构严格匹配模板。不得凭记忆构建笔记结构。
-- `article` → [references/note-template.md](references/note-template.md)
-- `repo` → [references/note-template-repo.md](references/note-template-repo.md)
-- `thread` → [references/note-template-thread.md](references/note-template-thread.md)
+**4a. 读取模板** — 用 Read 工具读取脚本返回的 `template` 路径对应的模板文件，确保笔记结构严格匹配模板。不得凭记忆构建笔记结构。若 `template` 为 null，根据判断的类型选择：
+- `article` → `references/templates/article.md`
+- `repo` → `references/templates/repo.md`
+- `thread` → `references/templates/thread.md`
 
 **4b. 标签对齐** — 写入笔记前，用 Grep 搜索 vault 中所有 frontmatter tags（搜索模式 `^  - ` 在 `*.md` 文件中），收集已有标签集合。为新笔记选择标签时：
 - 优先复用已有标签（如 vault 中已有 `架构` 则不创建 `软件架构`）
@@ -97,7 +93,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 **个人反思 section**：用对话上下文（用户为什么分享此内容、正在做什么）草拟初始条目。上下文不足时留占位提示。
 
-**多媒体处理**：遵循 note-template.md 中的"Multimedia Handling"指南。
+**多媒体处理**：遵循 `references/templates/article.md` 中的"多媒体处理"指南。
 
 保存笔记到 Step 3 确定的分类子目录。
 
@@ -105,7 +101,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 将新笔记整合到 vault 的索引系统：
 
-1. **确保索引文件存在** — 在分类子目录中查找已有的 `*INDEX*` 或 `*index*` 文件确定命名模式。如不存在，按 [references/index-template.md](references/index-template.md) 创建。
+1. **确保索引文件存在** — 在分类子目录中查找已有的 `*INDEX*` 或 `*index*` 文件确定命名模式。如不存在，按 [references/templates/index.md](references/templates/index.md) 创建。
 
 2. **添加索引条目** — 格式：`` - `YYYY-MM-DD` [[Title]] - description ``。按发布日期排序（最新在前）。`publish` 不可用时回退到 `creation` 日期。
 
