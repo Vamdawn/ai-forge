@@ -39,12 +39,17 @@ BAR=""
 # 格式化费用
 COST_FMT=$(printf '$%.2f' "$COST")
 
-# 格式化耗时
-MINS=$((DURATION_MS / 60000))
-SECS=$(((DURATION_MS % 60000) / 1000))
+# 格式化耗时（天/时/分，省略为零的高位单位）
+TOTAL_MIN=$((DURATION_MS / 60000))
+DAYS=$((TOTAL_MIN / 1440))
+HOURS=$(((TOTAL_MIN % 1440) / 60))
+MINS=$((TOTAL_MIN % 60))
+DURATION_FMT="${MINS}m"
+[ "$HOURS" -gt 0 ] && DURATION_FMT="${HOURS}h ${DURATION_FMT}"
+[ "$DAYS" -gt 0 ] && DURATION_FMT="${DAYS}d ${DURATION_FMT}"
 
 # 第一行：模型 + 进度条 + 费用 + 耗时
-echo -e "🤖 ${MODEL} ${BAR_COLOR}${BAR}${RESET} ${PCT}% | 💰 ${COST_FMT} | ⏱️ ${MINS}m ${SECS}s"
+echo -e "🤖 ${MODEL} ${BAR_COLOR}${BAR}${RESET} ${PCT}% | 💰 ${COST_FMT} | ⏱️ ${DURATION_FMT}"
 
 # 第二行：目录 + git 分支
 if git -C "$DIR" rev-parse --git-dir > /dev/null 2>&1; then
