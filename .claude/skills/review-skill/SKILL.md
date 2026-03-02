@@ -1,7 +1,7 @@
 ---
 name: review-skill
 description: "审查 Claude Code Skill 的 YAML frontmatter、指令质量、工具声明、文件引用和变量语法是否符合官方规范，输出含严重程度分级的结构化报告。Use when asked to review, check, validate, audit, or lint a skill. 触发词：review skill、检查 skill、审查技能、validate skill、lint skill、skill 审查、skill 合规检查。"
-argument-hint: "[skill-path]"
+argument-hint: "[skill]"
 allowed-tools: Read, Glob, Grep
 ---
 
@@ -15,8 +15,8 @@ allowed-tools: Read, Glob, Grep
    - 若路径不存在或无 SKILL.md → 输出错误信息并终止
 2. 用 Glob 列出该 Skill 目录下所有文件（含子目录）
 3. 读取官方规范（按优先级尝试）：
-   - 项目根目录下 `docs/Extend Claude with skills.md`（Claude Code 官方文档）
-   - 项目根目录下 `docs/The-Complete-Guide-to-Building-Skill-for-Claude.md`（完整构建指南）
+   - 项目根目录下 `docs/references/Extend Claude with skills.md`（Claude Code 官方文档）
+   - 项目根目录下 `docs/references/The-Complete-Guide-to-Building-Skill-for-Claude.md`（完整构建指南）
    - 若两份均不存在 → 基于内置知识完成审查，并在报告开头注明「未加载官方规范，结果基于内置知识」
 4. 读取完整检查表：本 Skill 目录下的 `references/checklist.md`
 
