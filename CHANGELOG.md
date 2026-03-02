@@ -4,6 +4,21 @@ All notable changes to **ai-forge** are documented in this file.
 
 ---
 
+## 2026-03-03
+
+### ✨ New Features
+
+- **Review Context**：新增 `/review-context` 命令，从 context engineering 角度审查代码、架构文档、Prompt 和设计文档。自动识别内容类型，选择 3-5 个最相关的 CE 维度，生成含严重等级和改进建议的结构化审查报告。蒸馏了 context-engineering-marketplace 全部 13 个 skill 的知识为可操作检查清单
+- **Content Summarizer 多 URL 支持**：支持一次性输入多个 URL 并合并处理；文章抓取新增 agent-browser → WebFetch 回退链；Twitter/X 支持 headed 模式绕过 TLS 检测
+
+### ♻️ Refactoring
+
+- **Content Summarizer 架构重组**：将 content-types.md 拆分为独立的 fetcher 文件（common/github-repo/reddit/hn/twitter），模板迁移至 `references/templates/` 并本地化为中文
+
+### 🔧 Chores
+
+- review-skill 修正文档引用路径，简化参数提示
+
 ## 2026-03-02
 
 ### ✨ New Features
