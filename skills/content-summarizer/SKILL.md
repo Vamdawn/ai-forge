@@ -2,7 +2,7 @@
 name: content-summarizer
 description: "抓取、分析、摘要各类网络内容并生成结构化 Obsidian 笔记。支持网页文章、GitHub 仓库、Reddit/HN/Twitter 讨论帖等多种内容类型。自动识别 URL 类型并选择对应的处理流程和笔记模板。触发词：'总结这篇文章'、'summarize this'、'记录下这个'、'take notes on this'、'记录这个仓库'、'save this repo'、'总结这个讨论'、'summarize this thread'、或任何附带 URL 且意图是将其内容保存为 Obsidian 笔记的请求。"
 argument-hint: "[url]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Bash(curl *), Bash(gh *), Skill(agent-browser *)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Bash(curl *), Bash(gh *), Bash(agent-browser *), Skill(agent-browser *), WebFetch
 ---
 
 始终按以下七步工作流执行。每一步必须完成后才能进入下一步。
@@ -13,7 +13,13 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 若 `$ARGUMENTS` 为空（用户未提供 URL），询问用户提供 URL 后再继续。
 
-**必须运行检测脚本** — 使用 Glob 定位本 skill 目录下的 `scripts/detect_content_type.py`，然后用 `python3` 运行该脚本并传入 `$ARGUMENTS` 作为参数。不得跳过此步骤手动判断类型。脚本返回 JSON，包含 `type`、`platform`、`template`、`metadata` 字段。
+**多 URL 处理** — 若 `$ARGUMENTS` 包含多个 URL（用户希望合并总结）：
+1. 从中提取所有 URL，对每个 URL 分别运行检测脚本
+2. 确定一个主类型（以主要内容的类型为准，如一篇博客 + 一条推特讨论 → 主类型为 `article`）
+3. 在 Step 1 中分别抓取每个 URL 的内容
+4. 在 Step 2 中整合分析，生成一篇合并笔记，在笔记中为每个来源标注原始链接
+
+**必须运行检测脚本** — 使用 Glob 定位本 skill 目录下的 `scripts/detect_content_type.py`，然后用 `python3` 运行该脚本并传入 URL 作为参数（多 URL 时对每个 URL 分别调用）。不得跳过此步骤手动判断类型。脚本返回 JSON，包含 `type`、`platform`、`template`、`metadata` 字段。
 
 - **脚本返回有效类型**（`type` 不为 null）→ 记录 `type`、`platform`、`template`、`metadata`，进入 Step 1
 - **脚本返回 null** → 先用 Step 1 通用方式抓取页面内容，然后根据内容特征判断类型：
@@ -67,7 +73,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 ### Step 3: 确定输出路径
 
-**发现输出根目录** — 扫描 vault 目录树，定位存放笔记的目录（查找 frontmatter 中含 `source:` 的 Markdown 文件所在目录，或名称暗示内容集合的目录）。如有多个候选或找不到，询问用户。
+**发现输出根目录** — 扫描目录树，定位存放笔记的目录（查找 frontmatter 中含 `source:` 的 Markdown 文件所在目录，或名称暗示内容集合的目录）。如有多个候选或找不到，询问用户。
 
 **分类目录发现（动态推断）：**
 

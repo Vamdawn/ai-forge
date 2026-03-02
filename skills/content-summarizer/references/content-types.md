@@ -8,9 +8,12 @@
 
 ### 抓取策略
 
-1. 使用 `agent-browser` skill 抓取网页
-2. 提取正文文本和发布日期
-3. 如果输出超过 30KB，读取持久化的输出文件获取完整内容
+按优先级依次尝试，首选方案失败后再用下一个：
+
+1. **首选 — `agent-browser`**：`agent-browser open <url> && agent-browser wait --load networkidle && agent-browser get text body`。如果页面超时或被反爬阻断（如 `ERR_CONNECTION_RESET`），尝试 `agent-browser --headed open <url>`
+2. **降级 — `WebFetch`**：当 agent-browser 不可用或持续失败时使用
+3. 提取正文文本和发布日期
+4. 如果输出超过 30KB，读取持久化的输出文件获取完整内容
 
 ### 分析策略
 
@@ -95,9 +98,21 @@
 2. **降级 — `agent-browser`** 抓取网页
 
 **Twitter/X：**
-1. **首选 — `agent-browser`** 抓取推文/线程页面
-2. **降级 — Thread Reader App**：抓取 `threadreaderapp.com/thread/{tweet_id}`
-3. Twitter 线程通常只有一个作者的连续推文，按顺序拼接为完整文本
+
+> [!CAUTION] X.com 会在 TLS 层主动检测并阻断 headless 浏览器（返回 `ERR_CONNECTION_RESET`/`ERR_CONNECTION_CLOSED`）。必须使用 `--headed` 模式。
+
+1. **首选 — `agent-browser --headed`**：
+   ```
+   agent-browser --headed open "https://x.com/..."
+   agent-browser wait --load networkidle
+   agent-browser snapshot          # 必须用 snapshot，不要用 get text body（后者返回 JS fallback 页面）
+   agent-browser close
+   ```
+   `snapshot` 返回 accessibility tree，包含推文正文、作者、日期、统计数据（赞/转发/评论/阅读量）。
+   注意：未登录状态下无法获取评论区回复内容。
+2. **降级 — Thread Reader App**：抓取 `threadreaderapp.com/thread/{tweet_id}`（不稳定，经常超时）
+3. **最终降级 — 请求用户粘贴**：如果以上方案均失败，告知用户 X.com 反爬限制并请求手动粘贴推文内容
+4. Twitter 线程通常只有一个作者的连续推文，按顺序拼接为完整文本
 
 **其他平台（降级）：**
 1. 使用 `agent-browser` 通用抓取
