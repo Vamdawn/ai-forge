@@ -4,6 +4,21 @@ All notable changes to **ai-forge** are documented in this file.
 
 ---
 
+## 2026-03-02
+
+### ✨ New Features
+
+- **Claude Code Status Line 脚本**：双行状态栏，实时展示模型名称、context window 用量进度条（三色阈值：绿 <60%、黄 60-83%、红 ≥84% 对齐 auto-compact）、API 费用和会话耗时、完整工作目录及 Git 分支
+
+### ♻️ Refactoring
+
+- **Content Summarizer**：MOC 索引列表长度改为遵循文档定义的限制，而非硬编码
+
+### 📝 Documentation
+
+- 参考文档重组至 `docs/references/` 子目录
+- Status Line 设计文档及实施计划
+
 ## 2026-02-28
 
 - **Content Summarizer**：网页抓取工具从 playwright-cli 迁移至 agent-browser，移除 WebFetch 回退逻辑
