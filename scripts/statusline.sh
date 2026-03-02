@@ -6,11 +6,13 @@
 input=$(cat)
 
 # 提取字段，// 提供 null 回退
-MODEL=$(echo "$input" | jq -r '.model.display_name // "--"')
-PCT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)
-COST=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
-DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
-DIR=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // "--"')
+eval "$(echo "$input" | jq -r '
+  @sh "MODEL=\(.model.display_name // "--")",
+  @sh "PCT=\(.context_window.used_percentage // 0 | floor)",
+  @sh "COST=\(.cost.total_cost_usd // 0)",
+  @sh "DURATION_MS=\(.cost.total_duration_ms // 0)",
+  @sh "DIR=\(.workspace.current_dir // .cwd // "--")"
+')"
 
 # ANSI 颜色
 GREEN='\033[32m'
@@ -45,8 +47,8 @@ SECS=$(((DURATION_MS % 60000) / 1000))
 echo -e "🤖 ${MODEL} ${BAR_COLOR}${BAR}${RESET} ${PCT}% | 💰 ${COST_FMT} | ⏱️ ${MINS}m ${SECS}s"
 
 # 第二行：目录 + git 分支
-if git rev-parse --git-dir > /dev/null 2>&1; then
-    BRANCH=$(git branch --show-current 2>/dev/null)
+if git -C "$DIR" rev-parse --git-dir > /dev/null 2>&1; then
+    BRANCH=$(git -C "$DIR" branch --show-current 2>/dev/null)
     echo -e "📂 ${DIR} (🌿 ${BRANCH})"
 else
     echo -e "📂 ${DIR}"
