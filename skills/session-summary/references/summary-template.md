@@ -39,11 +39,25 @@
 
 ## 会话明细
 
-**[1]** 用户原始输入内容
-↳ 助手操作与回复摘要
+### Turn 1
+User:
+```markdown
+用户原始输入内容
+```
+Agent:
+```markdown
+助手操作与回复摘要
+```
 
-**[2]** 用户原始输入内容
-↳ 助手操作与回复摘要
+### Turn 2
+User:
+```markdown
+用户原始输入内容
+```
+Agent:
+```markdown
+助手操作与回复摘要
+```
 
 ---
 *由 session-summary skill 自动生成*
