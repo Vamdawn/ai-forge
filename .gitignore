@@ -26,3 +26,8 @@ build/
 
 # Playwright
 .playwright-cli/
+
+# LLM Agent
+.agents/
+.claude/
+skills-lock.json
