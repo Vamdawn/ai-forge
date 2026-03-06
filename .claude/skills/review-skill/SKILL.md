@@ -17,15 +17,23 @@ allowed-tools: Read, Glob, Grep
 3. 读取官方规范（按优先级尝试）：
    - 项目根目录下 `docs/references/Extend Claude with skills.md`（Claude Code 官方文档）
    - 项目根目录下 `docs/references/The-Complete-Guide-to-Building-Skill-for-Claude.md`（完整构建指南）
-   - 若两份均不存在 → 基于内置知识完成审查，并在报告开头注明「未加载官方规范，结果基于内置知识」
+   - 若两份均不存在 → 基于内置知识完成审查，并以如下告警块开头输出报告：
+     > ⚠️ **置信度：中** — 未加载官方规范文档（路径不存在），结果基于 `references/checklist.md` 和内置知识，建议更新文档路径后重新审查。
 4. 读取完整检查表：本 Skill 目录下的 `references/checklist.md`
 
 ## 步骤 2 — 逐项检查
 
 对照 `references/checklist.md` 中的检查表逐项判定。每项标记 ✅ 通过、❌ 不通过、⚠️ 建议优化。
-使用 Grep 在目标 SKILL.md 中检索关键模式（如 `$ARGUMENTS`、工具名称、`{{`、`<PLACEHOLDER>` 等）以辅助 C1、E1-E5 等项的判定。
 
-检查覆盖 5 个类别共 30 项：
+使用 Grep 辅助以下项目的判定（避免纯目测遗漏）：
+
+- **A3/C1 工具声明**：Grep `\bBash\b`、`\bRead\b`、`\bWrite\b`、`\bEdit\b`、`\bGlob\b`、`\bGrep\b`、`\bWebFetch\b`、`\bSkill\b`、`\bTask\b` 检查工具实际出现位置，与 `allowed-tools` 交叉比对
+- **A11 未知字段**：Grep frontmatter 块（`^---` 之间）提取所有 key，与合法字段列表对比
+- **D1/D2 文件引用**：Grep `\.md`、`.py`、`.sh` 等扩展名检查路径，与 Glob 文件列表交叉核对孤立/断链文件
+- **E1 非标准占位符**：Grep `\{\{` 和 `<[A-Z_]+>` 检测 `{{...}}` 和 `<PLACEHOLDER>` 等非标准语法
+- **F1 硬编码路径**：Grep `/Users/`、`/home/`、`/root/` 等绝对路径模式
+
+检查覆盖 6 个类别共 33 项：
 
 | 类别 | 编号范围 | 检查要点 |
 |------|----------|----------|
@@ -34,6 +42,7 @@ allowed-tools: Read, Glob, Grep
 | C. 工具使用合规性 | C1-C3 | 声明一致性、参数约束、Task 子代理 |
 | D. 文件引用有效性 | D1-D3 | 正向/反向引用检查、路径格式 |
 | E. 变量与动态内容 | E1-E5 | 标准语法、索引合理性、动态注入安全性、argument-hint 一致性 |
+| F. 可移植性 | F1-F3 | 硬编码路径、语言/文化绑定、工具链硬绑定 |
 
 **判定原则**：
 - 规范文档中有明确规则的项 → 严格判定（❌ 或 ✅）
@@ -60,7 +69,7 @@ allowed-tools: Read, Glob, Grep
 
 ### 无问题时
 
-输出：`✅ 未发现问题。已检查 A1-A13、B1-B6、C1-C3、D1-D3、E1-E5 共 30 项。`
+输出：`✅ 未发现问题。已检查 A1-A13、B1-B6、C1-C3、D1-D3、E1-E5、F1-F3 共 33 项。`
 
 ## 示例
 
@@ -80,7 +89,7 @@ allowed-tools: Read, Glob, Grep
 
 输入：`/review-skill .claude/skills/explain-code/`
 
-输出：`✅ 未发现问题。已检查 A1-A13、B1-B6、C1-C3、D1-D3、E1-E5 共 30 项。`
+输出：`✅ 未发现问题。已检查 A1-A13、B1-B6、C1-C3、D1-D3、E1-E5、F1-F3 共 33 项。`
 
 ## 判定模糊时的处理
 
