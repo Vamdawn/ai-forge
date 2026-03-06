@@ -1,16 +1,20 @@
 # 会话摘要模板
 
 ```markdown
-# 会话摘要 — YYYY-MM-DD HH:MM
+# 会话摘要 — YYYY-MM-DD
 
 ## 基本信息
 | 字段 | 内容 |
 |------|------|
-| 日期 | YYYY-MM-DD |
+| 开始时间 | YYYY-MM-DD HH:MM |
+| 结束时间 | YYYY-MM-DD HH:MM |
 | 工作目录 | /path/to/project |
 | 交互轮次 | N 轮（用户消息 N 条 / 助手回复 N 条） |
-| 预估 Token 消耗 | ~N,000 tokens |
-| 整体耗时 | 约 N 分钟 |
+| Input Tokens | ~Nk |
+| Output Tokens | ~Nk |
+| Cache Read Tokens | ~Nk |
+| Cache Write Tokens | ~Nk |
+| Total Tokens | ~Nk |
 | 主要语言 | 中文 / 英文 |
 
 ## 会话概要
