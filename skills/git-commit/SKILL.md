@@ -1,13 +1,12 @@
 ---
 name: git-commit
 description: "Create well-formatted atomic git commits with conventional commit messages and emoji. Use when making git commits, splitting large changesets into logical units, or crafting commit messages."
-argument-hint: "[message-hint]"
 allowed-tools: Bash(git *), Read
 ---
 
 # Git Commit
 
-Create atomic, well-formatted commits with emoji conventional commit messages. $ARGUMENTS
+Create atomic, well-formatted commits with emoji conventional commit messages.
 
 ## Workflow
 
@@ -113,7 +112,7 @@ EOF
 
 - **Binary files**: Note in commit context; do not analyze diff content
 - **Large changesets (>500 lines)**: Always propose splitting, even if changes appear to be a single logical unit
-- **User hint via $ARGUMENTS**: Use as primary guide but validate against the actual diff — adjust if hint doesn't match changes
+- **User-described intent**: If the user describes the purpose of changes in the conversation, use that as primary guide but validate against the actual diff — adjust if it doesn't match
 
 ## Examples
 
