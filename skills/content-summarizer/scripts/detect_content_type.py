@@ -11,14 +11,60 @@ import json
 import re
 import subprocess
 import sys
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
+
+TWITTER_STATUS_PATTERNS = (
+    re.compile(r"^/(?P<author>[^/]+)/status/(?P<tweet_id>\d+)$"),
+    re.compile(r"^/i/status/(?P<tweet_id>\d+)$"),
+    re.compile(r"^/i/web/status/(?P<tweet_id>\d+)$"),
+    re.compile(r"^/status/(?P<tweet_id>\d+)$"),
+)
+
+TWITTER_HOSTS = {
+    "twitter.com",
+    "www.twitter.com",
+    "x.com",
+    "www.x.com",
+    "mobile.twitter.com",
+    "mobile.x.com",
+    "fxtwitter.com",
+    "www.fxtwitter.com",
+    "vxtwitter.com",
+    "www.vxtwitter.com",
+    "xfxtwitter.com",
+    "www.xfxtwitter.com",
+    "api.fxtwitter.com",
+    "api.vxtwitter.com",
+    "api.xfxtwitter.com",
+}
+
+
+def extract_twitter_status(path: str) -> tuple:
+    """Extract (author_handle, tweet_id) from a twitter-like status path."""
+    cleaned = path.rstrip("/") or "/"
+    for pattern in TWITTER_STATUS_PATTERNS:
+        match = pattern.match(cleaned)
+        if not match:
+            continue
+        tweet_id = match.group("tweet_id")
+        author_handle = match.groupdict().get("author")
+        if author_handle == "i":
+            author_handle = None
+        return author_handle, tweet_id
+    return None, None
+
+
+def build_twitter_canonical_url(author_handle: str, tweet_id: str) -> str:
+    if author_handle:
+        return f"https://x.com/{author_handle}/status/{tweet_id}"
+    return f"https://x.com/i/web/status/{tweet_id}"
 
 
 def detect(url: str) -> dict:
     """根据 URL 模式匹配返回内容类型信息。"""
     parsed = urlparse(url)
-    host = parsed.hostname or ""
-    path = parsed.path.rstrip("/")
+    host = (parsed.hostname or "").lower()
+    path = parsed.path.rstrip("/") or "/"
     result = {"type": None, "platform": None, "fetcher": None, "template": None, "metadata": {}}
 
     # GitHub Repo
@@ -80,16 +126,20 @@ def detect(url: str) -> dict:
             return result
 
     # Twitter / X
-    if host in ("twitter.com", "www.twitter.com", "x.com", "www.x.com",
-                "mobile.twitter.com", "mobile.x.com"):
-        m = re.match(r"/([^/]+)/status/(\d+)", path)
-        if m:
+    if host in TWITTER_HOSTS:
+        author_handle, tweet_id = extract_twitter_status(path)
+        if tweet_id:
             result.update(
                 type="thread",
                 platform="twitter",
                 fetcher="references/fetchers/twitter.md",
                 template="references/templates/thread.md",
-                metadata={"author_handle": m.group(1), "tweet_id": m.group(2)},
+                metadata={
+                    "author_handle": author_handle,
+                    "tweet_id": tweet_id,
+                    "source_host": host,
+                    "canonical_url": build_twitter_canonical_url(author_handle, tweet_id),
+                },
             )
             return result
 

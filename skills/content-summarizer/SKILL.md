@@ -25,7 +25,11 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 ### Step 1: 抓取内容
 
-用 Read 工具读取脚本返回的 `fetcher` 路径对应的文件，遵循其中的**抓取策略**获取内容。严格按策略中的优先级顺序尝试，首选方案失败后再尝试下一个。
+先用 Glob 将 `fetcher`（相对路径）解析为 skill 目录内的**唯一绝对路径**，再用 Read 读取该绝对路径对应文件，遵循其中的**抓取策略**获取内容。严格按策略中的优先级顺序尝试，首选方案失败后再尝试下一个。
+
+若 `fetcher` 解析失败（0 个或多个匹配），回退到 `references/fetchers/common.md` 并重复“Glob 解析绝对路径 → Read”流程；仍无法唯一定位时终止并报告错误。
+
+平台专用抓取规则（如 Twitter/X）只在对应 `references/fetchers/*.md` 中维护；主 `SKILL.md` 不重复定义。读取到专用 fetcher 后，必须完整执行其“抓取策略”“验证门”和字段映射约定。
 
 所有类型均需估算阅读元数据：
 - `word_count` — 大致字数（中文按字数，英文按 word count）
@@ -80,10 +84,12 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 ### Step 4: 写入 Obsidian 笔记
 
-**4a. 读取模板** — 用 Read 工具读取脚本返回的 `template` 路径对应的模板文件，确保笔记结构严格匹配模板。不得凭记忆构建笔记结构。若 `template` 为 null，根据判断的类型选择：
+**4a. 读取模板** — 先用 Glob 将 `template`（相对路径）解析为 skill 目录内的**唯一绝对路径**，再用 Read 读取模板文件，确保笔记结构严格匹配模板。不得凭记忆构建笔记结构。若 `template` 为 null，根据判断的类型选择：
 - `article` → `references/templates/article.md`
 - `repo` → `references/templates/repo.md`
 - `thread` → `references/templates/thread.md`
+
+若模板路径解析失败（0 个或多个匹配），按上面的类型默认值回退，并重复“Glob 解析绝对路径 → Read”流程；仍无法唯一定位时终止并报告错误。
 
 **4b. 标签对齐** — 写入笔记前，用 Grep 搜索 vault 中所有 frontmatter tags（搜索模式 `^  - ` 在 `*.md` 文件中），收集已有标签集合。为新笔记选择标签时：
 - 优先复用已有标签（如 vault 中已有 `架构` 则不创建 `软件架构`）

@@ -2,6 +2,12 @@
 
 帖子/讨论内容摘要笔记的标准结构。适用于 Reddit、Hacker News、Twitter/X 等平台的讨论帖。
 
+## 语言适配（必须）
+
+- 模板中的章节标题与说明文字仅为结构示例；生成最终笔记时按用户当前语言渲染。
+- frontmatter 字段键保持固定，不做翻译：`tags`、`type`、`source`、`authors`、`publish`、`creation`、`date_saved`、`word_count`、`reading_time`、`difficulty`、`status`、`新颖度`、`质量`、`可行性`、`综合评分`、`建议操作`、`description`。
+- 占位符 `<...>` 可按语义本地化填充，但结构顺序保持不变。
+
 ```markdown
 ---
 tags:

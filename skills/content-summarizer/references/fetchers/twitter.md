@@ -2,22 +2,40 @@
 
 ## 抓取策略
 
-> [!CAUTION] X.com 会在 TLS 层主动检测并阻断 headless 浏览器（返回 `ERR_CONNECTION_RESET`/`ERR_CONNECTION_CLOSED`）。必须使用 `--headed` 模式。
+> [!IMPORTANT] 优先使用镜像 API（无需登录，稳定性更高），浏览器抓取仅作为兜底方案。
+
+**适用范围与前置条件（必须）**：
+- 仅当 Step 0 检测结果 `platform=twitter` 时适用本文件。
+- `metadata` 至少包含：`tweet_id`、`author_handle`（可空）、`source_host`、`canonical_url`。
+- 本文件是 Twitter/X 的唯一抓取规则来源；不得在主 `SKILL.md` 重复或覆盖。
 
 按优先级依次尝试，首选方案失败后再用下一个：
 
-1. **首选 — `agent-browser --headed`**：
+1. **首选 — 运行脚本 `scripts/fetch_twitter_status.py`**（输入为原始 URL 或 `metadata.tweet_id`）：
    ```
-   agent-browser --headed open "https://x.com/..."
-   agent-browser wait --load networkidle
-   agent-browser snapshot          # 必须用 snapshot，不要用 get text body（后者返回 JS fallback 页面）
-   agent-browser close
+   python3 scripts/fetch_twitter_status.py "https://x.com/<user>/status/<tweet_id>"
    ```
-   `snapshot` 返回 accessibility tree，包含推文正文、作者、日期、统计数据（赞/转发/评论/阅读量）。
-   注意：未登录状态下无法获取评论区回复内容。
-2. **降级 — Thread Reader App**：抓取 `threadreaderapp.com/thread/{tweet_id}`（不稳定，经常超时）
-3. **最终降级 — 请求用户粘贴**：如果以上方案均失败，告知用户 X.com 反爬限制并请求手动粘贴推文内容
-4. Twitter 线程通常只有一个作者的连续推文，按顺序拼接为完整文本
+   脚本内部按以下顺序自动降级：
+   - `https://api.fxtwitter.com/status/<tweet_id>`（主路径）
+   - `https://api.vxtwitter.com/status/<tweet_id>`（降级）
+   - `https://api.xfxtwitter.com/status/<tweet_id>`（可选降级，短超时快速跳过）
+   仅当脚本返回 `ok=true` 时，才视为抓取成功；使用标准字段：`text`、`author`、`published_at`、`stats`、`media`、`canonical_url`。
+2. **仅在用户明确要求且 API 全部失败时**，再尝试 `agent-browser --headed` 手动抓取。
+3. **最终降级 — 请求用户粘贴**：当脚本返回 `ok=false` 且浏览器抓取不可用时，告知失败原因并请用户粘贴原文（需记录完整失败尝试）。
+4. Twitter 线程通常只有一个作者的连续推文，按顺序拼接为完整文本。
+
+**验证门（必须满足）**：
+- `text` 非空
+- `author`（name 或 handle）存在
+- `tweet_id` 与目标一致
+- 原帖链接优先使用 `canonical_url`
+
+**字段映射约定**：
+- 正文：`text`
+- 作者：`author.name` / `author.handle`
+- 发布时间：`published_at`
+- 互动数据：`stats.likes` / `stats.replies` / `stats.retweets` / `stats.views`
+- 多媒体：`media`（无则 `[]`）
 
 ## 分析策略
 
