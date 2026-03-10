@@ -90,14 +90,16 @@ For other specialized sub-types, read [references/emoji-mapping.md](references/e
 
 **Add a body** (blank line after subject) when the "why" isn't obvious, breaking changes need explanation, or the commit closes an issue (`Closes #NNN`).
 
-**Always use HEREDOC syntax:**
+**Use direct `git commit` flags:**
 ```bash
-git commit -m "$(cat <<'EOF'
-<emoji> <type>: <description>
+# Subject only
+git commit -m "<emoji> <type>: <description>"
 
-<optional body>
-EOF
-)"
+# Subject + body
+git commit -m "<emoji> <type>: <description>" -m "<optional body>"
+
+# Multiple body paragraphs
+git commit -m "<emoji> <type>: <description>" -m "<paragraph 1>" -m "<paragraph 2>"
 ```
 
 ### Step 5: Verify
