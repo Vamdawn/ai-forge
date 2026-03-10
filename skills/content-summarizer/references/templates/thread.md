@@ -5,7 +5,7 @@
 ## 语言适配（必须）
 
 - 模板中的章节标题与说明文字仅为结构示例；生成最终笔记时按用户当前语言渲染。
-- frontmatter 字段键保持固定，不做翻译：`tags`、`type`、`source`、`authors`、`publish`、`creation`、`date_saved`、`word_count`、`reading_time`、`difficulty`、`status`、`新颖度`、`质量`、`可行性`、`综合评分`、`建议操作`、`description`。
+- frontmatter 字段键保持固定，不做翻译：`tags`、`type`、`source`、`authors`、`publish`、`creation`、`date_saved`、`word_count`、`reading_time`、`difficulty`、`status`、`novelty`、`quality`、`actionability`、`overall_score`、`recommended_action`、`description`。
 - 占位符 `<...>` 可按语义本地化填充，但结构顺序保持不变。
 
 ```markdown
@@ -17,19 +17,19 @@ type: thread                    # article | repo | thread
 source: <url>
 authors:
   - <original-poster>
-publish: <YYYY-MM-DD>             # 发帖日期
+publish: <YYYY-MM-DD>             # thread publish date
 creation: <YYYY-MM-DD HH:MM>
-date_saved: <YYYY-MM-DD>            # 收录日期：内容被保存到 vault 的日期
+date_saved: <YYYY-MM-DD>            # date when content is saved to the vault
 word_count: <number>
 reading_time: "<N> min"
-difficulty: <入门 | 中级 | 高级>
+difficulty: <beginner | intermediate | advanced>
 status: captured
-新颖度: <1-5>
-质量: <1-5>
-可行性: <1-5>
-综合评分: <1-5>
-建议操作: <精读 | 速览 | 备查 | 归档>
-description: <一行摘要>
+novelty: <1-5>
+quality: <1-5>
+actionability: <1-5>
+overall_score: <1-5>
+recommended_action: <deep_read | skim | reference | archive>
+description: <one-line summary>
 ---
 
 # <讨论标题 — 用户语言的描述性标题>

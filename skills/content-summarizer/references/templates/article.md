@@ -13,17 +13,17 @@ authors:
   - <author-name>
 publish: <YYYY-MM-DD>
 creation: <YYYY-MM-DD HH:MM>
-date_saved: <YYYY-MM-DD>            # 收录日期：内容被保存到 vault 的日期
-word_count: <number>              # 大致字数
-reading_time: "<N> min"           # 预估阅读时长
-difficulty: <入门 | 中级 | 高级>
-status: captured                # captured → read → reviewed
-新颖度: <1-5>                     # 相对于常见知识的原创性
-质量: <1-5>                       # 论证深度、来源可信度、逻辑严密性
-可行性: <1-5>                     # 能否转化为具体行动？
-综合评分: <1-5>                   # 以上三项的四舍五入均值
-建议操作: <精读 | 速览 | 备查 | 归档>
-description: <一行摘要，用于搜索和 Dataview 查询>
+date_saved: <YYYY-MM-DD>            # date when content is saved to the vault
+word_count: <number>              # approximate word count
+reading_time: "<N> min"           # estimated reading time
+difficulty: <beginner | intermediate | advanced>
+status: captured                # captured -> read -> reviewed
+novelty: <1-5>                     # originality relative to common knowledge
+quality: <1-5>                       # argument depth, source credibility, logic rigor
+actionability: <1-5>                     # can this be turned into concrete actions?
+overall_score: <1-5>                   # rounded mean of the three scores above
+recommended_action: <deep_read | skim | reference | archive>
+description: <one-line summary for search and Dataview>
 ---
 
 # <文章标题 — 用户语言的描述性标题>

@@ -1,6 +1,6 @@
 ---
 name: content-summarizer
-description: "抓取、分析、摘要各类网络内容并生成结构化 Obsidian 笔记。支持网页文章、GitHub 仓库、Reddit/HN/Twitter 讨论帖等多种内容类型。自动识别 URL 类型并选择对应的处理流程和笔记模板。触发词：'总结这篇文章'、'summarize this'、'记录下这个'、'take notes on this'、'记录这个仓库'、'save this repo'、'总结这个讨论'、'summarize this thread'、或任何附带 URL 且意图是将其内容保存为 Obsidian 笔记的请求。"
+description: "Fetch, analyze, and summarize web content into structured Obsidian notes. Supports articles, GitHub repositories, and Reddit/HN/Twitter threads. Automatically detects URL type and selects the appropriate fetcher strategy and note template. Triggers include requests like 'summarize this article', 'take notes on this', 'save this repo', 'summarize this thread', or any URL-based request intended to be saved as an Obsidian note."
 argument-hint: "[url]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Bash(curl *), Bash(gh *), Bash(agent-browser *), Skill(agent-browser *), WebFetch
 ---
@@ -34,7 +34,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 所有类型均需估算阅读元数据：
 - `word_count` — 大致字数（中文按字数，英文按 word count）
 - `reading_time` — 预估阅读时长（中文 300 字/分钟，英文 200 words/min，向上取整，格式 `"N min"`）
-- `difficulty` — 内容难度：`入门`（无需背景知识）、`中级`（需要一定领域了解）、`高级`（需要深度专业知识）
+- `difficulty` — 内容难度：`beginner`（无需背景知识）、`intermediate`（需要一定领域了解）、`advanced`（需要深度专业知识）
 
 **抓取失败时**（URL 不可达、404、paywall、内容为空）：
 - 告知用户失败原因
@@ -57,17 +57,17 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 | 维度 | 1（低） | 3（中） | 5（高） |
 |:-----|:--------|:--------|:--------|
-| **新颖度** | 广为人知的常见知识 | 有部分新角度或新组合 | 全新观点或鲜为人知的信息 |
-| **质量** | 缺乏论据、逻辑松散 | 论证基本完整但不算深入 | 论证严密、证据充分、来源权威 |
-| **可行性** | 纯理论/纯新闻，无可执行要点 | 有一些可参考的建议 | 提供具体步骤/代码/工具可直接应用 |
+| **novelty** | 广为人知的常见知识 | 有部分新角度或新组合 | 全新观点或鲜为人知的信息 |
+| **quality** | 缺乏论据、逻辑松散 | 论证基本完整但不算深入 | 论证严密、证据充分、来源权威 |
+| **actionability** | 纯理论/纯新闻，无可执行要点 | 有一些可参考的建议 | 提供具体步骤/代码/工具可直接应用 |
 
 各维度在不同内容类型下的具体解读见对应 fetcher 文件的"评分解读"section。
 
-计算 `综合评分` 为三项评分的四舍五入均值。根据 `综合评分` 确定 `建议操作`：
-- `精读`: 综合评分 ≥ 4
-- `速览`: 综合评分 = 3
-- `备查`: 综合评分 = 2
-- `归档`: 综合评分 ≤ 1
+计算 `overall_score` 为三项评分的四舍五入均值。根据 `overall_score` 确定 `recommended_action`：
+- `deep_read`: overall_score ≥ 4
+- `skim`: overall_score = 3
+- `reference`: overall_score = 2
+- `archive`: overall_score ≤ 1
 
 以用户语言输出摘要（用户使用中文时默认中文）。
 
@@ -131,9 +131,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3 *), Bash(mkdir *), Ba
 
 逐项检查以下清单。发现遗漏时立即修复，全部通过后才算完成。
 
-- [ ] Frontmatter 完整：tags, type, source, authors, publish, creation, date_saved, word_count, reading_time, difficulty, status, 新颖度, 质量, 可行性, 综合评分, 建议操作, description
+- [ ] Frontmatter 完整：tags, type, source, authors, publish, creation, date_saved, word_count, reading_time, difficulty, status, novelty, quality, actionability, overall_score, recommended_action, description
 - [ ] 阅读元数据存在：word_count, reading_time, difficulty
-- [ ] AI 评分存在：新颖度, 质量, 可行性, 综合评分, 建议操作
+- [ ] AI 评分存在：novelty, quality, actionability, overall_score, recommended_action
 - [ ] 内容类型正确识别（article / repo / thread）
 - [ ] 笔记正文结构匹配内容类型的模板（Step 4a 已读取模板确认）
 - [ ] Tags 与 vault 已有标签对齐（Step 4b 已搜索确认）
