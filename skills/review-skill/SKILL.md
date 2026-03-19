@@ -14,9 +14,10 @@ allowed-tools: Read, Glob, Grep
    - 若为文件路径 → 直接读取该文件
    - 若路径不存在或无 SKILL.md → 输出错误信息并终止
 2. 用 Glob 列出该 Skill 目录下所有文件（含子目录）
-3. 读取官方规范（按优先级尝试）：
+3. 读取官方规范：
+   - 本 Skill 目录下 `references/The-Agent-Skills-Specification.md`（Agent Skills 官方规范）
    - 本 Skill 目录下 `references/Extend-Claude-with-skills.md`（Claude Code 官方文档）
-   - 本 Skill 目录下 `references/The-Complete-Guide-to-Building-Skill-for-Claude.md`（完整构建指南）
+   - 本 Skill 目录下 `references/The-Complete-Guide-to-Building-Skill-for-Claude.md`（Claude Skill 完整构建指南）
    - 若两份均不存在 → 基于内置知识完成审查，并以如下告警块开头输出报告：
      > ⚠️ **置信度：中** — 未加载官方规范文档（路径不存在），结果基于 `references/checklist.md` 和内置知识，建议更新文档路径后重新审查。
 4. 读取完整检查表：本 Skill 目录下的 `references/checklist.md`
