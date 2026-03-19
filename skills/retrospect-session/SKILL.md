@@ -70,8 +70,11 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 4. **Apply Rewrite / Merge / Split / Retire / Migrate**
    - 按目标结构执行重写、合并、拆分、`Retire` 与 `Migrate`，优先处理结构性问题，而不是在原文件上无序追加。
-   - 当单文件职责已经混杂时，允许整体重写；当多个文件表达同类约束时，允许合并；当一个文件承载多个独立场景时，允许拆分。
-   - 对已被更稳定规则完全覆盖的内容执行 `Retire`，对仍有效但归属不当的内容执行 `Migrate`。
+   - `Rewrite:` 文件职责混杂或局部 patch 无法恢复结构时，整体重写该主题文件。
+   - `Merge:` 两个文件约束同类决策、只是历史表述不同，合并为一个更稳定主题。
+   - `Split:` 一个文件同时覆盖多个独立场景，继续共存会降低可检索性时，拆分为多个文件。
+   - `Retire:` 旧规则已被更稳定、更可执行的规则完全覆盖时，退役旧条目，不再并列保留。
+   - `Migrate:` 规则仍有效但归属主题不再合适时，迁移到更合适的文件，并记录原因。
    - 当主题文件预计超过 `200` 行时，提前拆分为 `topic-part-1.md`、`topic-part-2.md` 等分片，主文件保留目录索引和适用说明。
 
 5. **Sync Project Prompts**
@@ -91,7 +94,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 ## Abstraction Standard
 
-当前仅保留骨架，后续任务再补充经验抽象方式。
+- 不要把本次会话中的具体事件原样写成长期规则。
+- 先识别可重复失败模式，再提炼为触发条件、动作和验证方式。
+- 仅会话局部、不可迁移的偶发经验，不进入长期规则库；只有能抽象为可复用规则的会话经验，才应写入 `docs/rules`。
 
 ## Rule Writing Standard
 
