@@ -1,0 +1,41 @@
+{
+  "skill_name": "retrospect-session",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "基于这次会话做一次复盘，并把教训沉淀到 docs/rules/。当前仓库里已经有 requirements-and-scope.md、planning-and-decomposition.md、implementation-and-quality.md 三个规则文件，其中 implementation-and-quality.md 和 planning-and-decomposition.md 都有一条关于“大任务必须先拆分”的规则，AGENTS.md 里的 Rules Index 还没提到新加的 testing-and-verification.md。不要只追加条目，我更想让规则体系更整洁。",
+      "expected_output": "优先识别跨文件重复和索引失真，判断需要体系重整，合并重复规则并同步 AGENTS.md / CLAUDE.md 的 Rules Index，而不是机械追加一条新经验。",
+      "files": [],
+      "expectations": [
+        "输出明确判断本次更适合 System Restructure 而不是 Incremental Update。",
+        "输出先盘点规则重复、职责边界或索引失真，再决定写入动作，而不是直接新增规则。",
+        "输出包含对 AGENTS.md 或 CLAUDE.md 中 Rules Index 的同步要求。",
+        "输出提到合并、迁移、Retire、拆分或重写中的至少一种治理动作。"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "帮我把这次会话里的教训写进规则库。现状是 docs/rules/communication-and-collaboration.md 里已经有一条“遇到高风险改动前先同步约束”的规则，这次会话只新增了一条非常接近的经验：'动手前先把限制条件说清楚'。另外 AGENTS.md 和 CLAUDE.md 的 Rules Index 都是最新的。这个场景应该尽量小改，不要上升成大规模重构。",
+      "expected_output": "识别这是局部增量更新场景，只在相关主题内做最小修改或合并相近规则，不触发不必要的全局重整，同时保持索引检查结论清晰。",
+      "files": [],
+      "expectations": [
+        "输出明确判断本次属于 Incremental Update 或等价的局部更新场景。",
+        "输出说明不需要全局重整的原因，例如无跨文件重复、主题边界稳定、Rules Index 已同步。",
+        "输出避免无根据地新增多个规则文件或发起大规模结构重排。",
+        "输出仍然保留对项目级提示词同步状态的检查或结论。"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "请复盘这次会话并更新规则体系。现有 docs/rules/tools-and-automation.md 已经超过 220 行，而且里面同时混着命令使用规范、自动化脚本约束和浏览器工具规则；这次会话又新增了一条关于 '使用 agent-browser 抓取非 GitHub 页面' 的经验。除了 rules 文件本身，CLAUDE.md 里对 tools-and-automation.md 的摘要也已经不准确。我要的是可维护的结构，不是再往 220 多行的文件末尾加一条。",
+      "expected_output": "识别单文件职责混杂且超过 200 行，应触发重整：拆分主题文件、更新主文件索引说明、同步项目级提示词摘要，并把新经验抽象成可迁移规则而非一次性日志。",
+      "files": [],
+      "expectations": [
+        "输出识别到 200 行分片策略已触发，不能继续原位追加。",
+        "输出提出拆分主文件和分片文件的结构方案，或等价的结构治理动作。",
+        "输出说明需要同步 CLAUDE.md 或 AGENTS.md 中对该规则文件的摘要。",
+        "输出把新经验抽象为可迁移规则，而不是原样记录会话细节。"
+      ]
+    }
+  ]
+}
