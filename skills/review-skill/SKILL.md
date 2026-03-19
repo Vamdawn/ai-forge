@@ -1,6 +1,6 @@
 ---
 name: review-skill
-description: "审查 Claude Code Skill 的 YAML frontmatter、指令质量、工具声明、文件引用和变量语法是否符合官方规范，输出含严重程度分级的结构化报告。Use when asked to review, check, validate, audit, or lint a skill. 触发词：review skill、检查 skill、审查技能、validate skill、lint skill、skill 审查、skill 合规检查。"
+description: "审查 Agent Skill 的 YAML frontmatter、指令质量、工具声明、文件引用和变量语法是否符合官方规范，输出含严重程度分级的结构化报告。Use when asked to review, check, validate, audit, or lint a skill. 触发词：review skill、检查 skill、审查技能、validate skill、lint skill、skill 审查、skill 合规检查。"
 argument-hint: "[skill]"
 allowed-tools: Read, Glob, Grep
 ---
