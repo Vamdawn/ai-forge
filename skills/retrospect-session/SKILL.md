@@ -37,9 +37,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 ### System Restructure
 
-- 当本次改动涉及 `3` 个及以上规则文件时，进入体系重整。
-- 当发现同义规则跨文件重复、单个文件承载多个主题、现有主题边界已无法容纳新教训，或项目级索引描述与实际职责不一致时，进入体系重整。
-- 当本次任务需要决定保留、合并、迁移或删除旧规则时，进入体系重整。
+- 以完整盘点、目标结构定稿和治理动作重写为主，不再依赖局部补丁式追加。
+- 适用于需要重写、合并、拆分、`Retire` 或 `Migrate` 规则的场景。
 - 默认优先判断是否需要 `System Restructure`，而不是默认走 `Incremental Update`。
 
 ## Restructure Triggers
@@ -49,67 +48,46 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 - 单个文件承载多个主题。
 - 现有主题边界已无法容纳新教训。
 - 项目级索引描述与实际职责不一致。
-- 需要决定保留、合并、迁移或删除旧规则。
+- 需要决定保留、合并、迁移或 `Retire` 旧规则。
 
 ## Workflow
 
-1. **收集输入**
-   - 回顾当前会话：用户目标、关键决策、失败尝试、返工点、有效做法。
-   - 扫描已有规则文件：读取 `docs/rules/**/*.md`。
-   - 扫描项目级提示词：读取 `AGENTS.md`、`CLAUDE.md`（若不存在，记录为待创建）。
+1. **Assess Current System**
+   - 回顾当前会话中的目标、关键决策、失败尝试、返工点和有效做法，明确本次要治理的结构问题。
+   - 读取 `docs/rules/**/*.md`、`AGENTS.md`、`CLAUDE.md`，先判断是否满足 `Restructure Triggers`；满足则进入 `System Restructure`，否则走 `Incremental Update`。
+   - `Incremental Update` 以局部更新、轻量合并和小范围修订为主；`System Restructure` 才进入完整的目标结构设计与重整动作。
 
-2. **统一提炼教训**
-   - 将“本次会话教训”与“历史规则要点”放到同一候选池。
-   - 去重与冲突处理：
-     - 语义重复：合并为一条更通用规则。
-     - 表述冲突：保留约束更明确、可验证性更强的版本，并在“变更记录”中说明取舍。
-   - 规则必须是可执行句式（建议用“当...时，必须/应当...”）。
+2. **Build Rule Inventory**
+   - `Incremental Update` 下，只盘点与本次局部更新直接相关的规则文件；`System Restructure` 下，盘点全部相关规则文件的职责边界、覆盖范围与文件间关系。
+   - 标注重复规则、表述冲突、主题漂移、职责交叉，以及项目级索引与真实结构不一致的地方。
+   - 不只记录文件名，而是形成“哪些规则在管什么、哪里已经失真”的结构视图。
 
-3. **主题分类**
-   - 先用已有主题；没有合适主题时再新增。
-   - 推荐主题（按需选用，不强制全建）：
-     - `requirements-and-scope.md`
-     - `planning-and-decomposition.md`
-     - `implementation-and-quality.md`
-     - `testing-and-verification.md`
-     - `communication-and-collaboration.md`
-     - `tools-and-automation.md`
-   - 文件名使用 kebab-case，主题稳定优先，避免频繁改名。
+3. **Design Target Structure**
+   - `System Restructure` 下，在动手改写之前，先决定哪些内容应保留、新增、合并、拆分、迁移或 `Retire`。
+   - `Incremental Update` 下，只对本次局部范围内需要调整的条目做最小结构决策，不展开全局重整。
+   - 明确每个主题文件的最终职责边界，再确定写入顺序和落盘方式。
+   - 如果目标结构需要调整项目级提示词的索引范围，先完成结构定稿，再进入同步步骤。
 
-4. **写入规则文件**
-   - 目标目录：`docs/rules/`。
-   - 每个主题文件必须采用统一结构（见“规则文档模板”）。
-   - 更新方式：优先“重整后覆盖写入”，避免无序追加导致漂移。
+4. **Apply Rewrite / Merge / Split / Retire / Migrate**
+   - 按目标结构执行重写、合并、拆分、`Retire` 与 `Migrate`，优先处理结构性问题，而不是在原文件上无序追加。
+   - 当单文件职责已经混杂时，允许整体重写；当多个文件表达同类约束时，允许合并；当一个文件承载多个独立场景时，允许拆分。
+   - 对已被更稳定规则完全覆盖的内容执行 `Retire`，对仍有效但归属不当的内容执行 `Migrate`。
+   - 当主题文件预计超过 `200` 行时，提前拆分为 `topic-part-1.md`、`topic-part-2.md` 等分片，主文件保留目录索引和适用说明。
 
-5. **200 行分片策略（硬性）**
-   - 任一主题文件预计超过 **200 行** 时，必须拆分：
-     - 按子主题或场景拆分为 `topic-part-1.md`、`topic-part-2.md`...
-   - 在原主题主文件保留目录索引和适用说明。
-   - 拆分后每个分片文件也应尽量低于 200 行。
+5. **Sync Project Prompts**
+   - 在规则结构定稿后，再同步 `AGENTS.md` / `CLAUDE.md`。
+   - 更新 `## Rules Index` 的文件路径、用途摘要和读取约定，确保索引反映当前真实结构。
+   - 如果两份项目级提示词存在描述差异，统一改成与当前治理结果一致的版本。
 
-6. **同步项目级提示词（AGENTS.md / CLAUDE.md）**
-   - 在两个文件中维护统一小节：`## Rules Index`（若不存在则新增）。
-   - `Rules Index` 至少包含：
-     - `docs/rules/*.md` 文件路径
-     - 每个文件 1 句用途说明（该文件约束什么）
-     - 使用约定：执行相关任务前先读取对应规则文件
-   - 发现新增规则文件时，必须在 `Rules Index` 增加对应条目。
-   - 若两个文件描述冲突，以更具体、可执行版本为准，并同步改写另一份。
+6. **Run Consistency Checks**
+   - 检查是否仍有跨文件重复、职责边界不清、规则漂移，或一次性经验被误写成长期规则。
+   - 检查 `AGENTS.md` 与 `CLAUDE.md` 中的 `Rules Index` 是否与 `docs/rules/*.md` 保持一致。
+   - 检查规则措辞是否仍然支持可执行、可验证的长期维护。
 
-7. **一致性检查**
-   - 检查是否遗漏历史规则中的有效内容。
-   - 检查是否存在跨文件重复规则。
-   - 检查规则措辞是否可执行、可验证。
-   - 检查 `AGENTS.md` 与 `CLAUDE.md` 中的 `Rules Index` 是否与 `docs/rules/*.md` 一致。
-
-8. **对用户汇报**
-   - 给出：
-     - 新增/更新了哪些 `docs/rules/*.md` 文件
-     - 是否创建/更新了 `AGENTS.md`、`CLAUDE.md`
-     - 新增了哪些 `Rules Index` 引用与摘要
-     - 合并了哪些重复规则
-     - 解决了哪些冲突
-     - 是否触发了 200 行拆分
+7. **Report Governance Changes**
+   - 汇报本次模式判断结果：是 `Incremental Update` 还是 `System Restructure`，以及做出该判断的依据。
+   - 汇报实际执行的治理动作，而不只是列出修改过的文件，例如合并、拆分、迁移、`Retire` 和重写了什么。
+   - 说明这次治理如何消除了重复、冲突、漂移或索引失真，并保留了哪些稳定规则。
 
 ## Abstraction Standard
 
