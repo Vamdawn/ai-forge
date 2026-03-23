@@ -1,0 +1,3 @@
+interface:
+  display_name: "Req Code Review"
+  short_description: "Plan and run multi-agent CR"
