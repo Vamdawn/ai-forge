@@ -1,7 +1,7 @@
 #!/bin/bash
 # Claude Code Status Line
 # 双行状态栏：模型 + context 进度条 + 费用 + 耗时 / 目录 + git 分支
-# 安装：复制到 ~/.claude/statusline.sh，配置 settings.json
+# 安装：复制到 ~/.claude/scripts/statusline.sh，配置 settings.json
 
 input=$(cat)
 
@@ -13,6 +13,33 @@ eval "$(echo "$input" | jq -r '
   @sh "DURATION_MS=\(.cost.total_duration_ms // 0)",
   @sh "DIR=\(.workspace.current_dir // .cwd // "--")"
 ')"
+
+# 用量信息字符串，默认为空
+USAGE_INFO=""
+# 检测 MiniMax 模型并获取用量（仅当使用 MiniMax API 时）
+if [[ "$ANTHROPIC_BASE_URL" == "https://api.minimaxi.com/anthropic" ]]; then
+    response=$(curl -s --max-time 5 'https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains' \
+        --header "Authorization: Bearer ${ANTHROPIC_AUTH_TOKEN}" \
+        --header 'Content-Type: application/json' 2>/dev/null)
+
+    if [ -n "$response" ] && [ "$response" != "null" ]; then
+        # 单次 jq 查询获取 5h 和 weekly 百分比
+        read -r MINIMAX_5H_PCT MINIMAX_WEEKLY_PCT <<<$(echo "$response" | jq -r --arg model "$MODEL" '
+            [.model_remains[] | select(.model_name as $pat | $model | test($pat | gsub("\\*"; ".*"))) |
+            ((.current_interval_usage_count * 100 / .current_interval_total_count) | floor | tostring),
+            ((.current_weekly_usage_count * 100 / .current_weekly_total_count) | floor | tostring)] |
+            join(" ")
+        ' 2>/dev/null)
+
+        if [ -n "$MINIMAX_5H_PCT" ] && [ "$MINIMAX_5H_PCT" != "null" ]; then
+            if [ -n "$MINIMAX_WEEKLY_PCT" ] && [ "$MINIMAX_WEEKLY_PCT" != "null" ]; then
+                USAGE_INFO=" | 5h ${MINIMAX_5H_PCT}% · 1w ${MINIMAX_WEEKLY_PCT}%"
+            else
+                USAGE_INFO=" | 5h ${MINIMAX_5H_PCT}%"
+            fi
+        fi
+    fi
+fi
 
 # ANSI 颜色
 GREEN='\033[32m'
@@ -49,7 +76,8 @@ DURATION_FMT="${MINS}m"
 [ "$DAYS" -gt 0 ] && DURATION_FMT="${DAYS}d ${DURATION_FMT}"
 
 # 第一行：模型 + 进度条 + 费用 + 耗时
-echo -e "🤖 ${MODEL} ${BAR_COLOR}${BAR}${RESET} ${PCT}% | 💰 ${COST_FMT} | ⏱️ ${DURATION_FMT}"
+LINE1="🌐 ${MODEL} ${BAR_COLOR}${BAR}${RESET} ${PCT}% | 💰 ${COST_FMT} | ⏱️ ${DURATION_FMT}${USAGE_INFO}"
+echo -e "$LINE1"
 
 # 第二行：目录 + git 分支
 if git -C "$DIR" rev-parse --git-dir > /dev/null 2>&1; then
