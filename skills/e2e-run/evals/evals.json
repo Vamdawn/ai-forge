@@ -1,0 +1,41 @@
+{
+  "skill_name": "e2e-run",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "运行这个项目现有的 Playwright 登录 e2e，只跑主链路或 smoke 用例，把结果保存到项目目录，并分析失败原因。",
+      "expected_output": "先发现 Playwright 配置、登录相关脚本与默认 smoke 范围，再启动目标服务并执行最小必要用例，把结果写入一次独立快照目录，包含 report.md、summary.json、日志和证据索引。",
+      "files": [],
+      "expectations": [
+        "会先发现 e2e runner、脚本和范围，再启动服务。",
+        "在未指定范围时默认选择 smoke、critical 或 main-path 小集合，而不是默认跑全量。",
+        "输出会同时给出人类可读报告和机器可读摘要。",
+        "失败分析会明确区分 test failure、environment、data/auth 等类别。"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "根据仓库里已有的 checkout e2e Markdown 规格验证当前服务，把执行结果和问题分析保存下来。",
+      "expected_output": "在没有可执行脚本时转入 spec 模式，读取 checkout 规格的主流程和终态断言，优先用 agent-browser 做验证，否则退化到最小 HTTP 证据，并把无法可靠证明的步骤标记为 blocked。",
+      "files": [],
+      "expectations": [
+        "会先判断没有合适脚本，再进入 spec 模式。",
+        "会优先使用 agent-browser；若不可用，也会给出可接受的降级验证策略。",
+        "不会把规格验证伪装成自动化脚本执行成功。",
+        "报告中会保留证据路径、问题归类和下一步建议。"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "帮我跑一下这个项目的 e2e，并把结果记下来。",
+      "expected_output": "如果仓库里既没有可执行 e2e 脚本，也没有 Markdown 规格，则停止执行，说明已经检查过哪些目录和配置，并明确建议用户先使用 /e2e-find 补齐用例。",
+      "files": [],
+      "expectations": [
+        "会检查常见 e2e runner 配置和规格目录，而不是直接说找不到。",
+        "在无资产时会返回 needs-cases 或等价结论，而不是盲目启动服务。",
+        "会明确建议转到 /e2e-find。",
+        "不会生成虚假的运行报告。"
+      ]
+    }
+  ]
+}

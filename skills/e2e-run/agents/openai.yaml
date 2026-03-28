@@ -1,0 +1,4 @@
+interface:
+  display_name: "E2E Run"
+  short_description: "Run project E2E and save failure analysis"
+  default_prompt: "Use $e2e-run to run the current project's e2e assets, save results, and analyze failures."
