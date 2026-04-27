@@ -31,3 +31,6 @@ build/
 .agents/
 .claude/
 skills-lock.json
+
+# Temporary files
+tmp/
