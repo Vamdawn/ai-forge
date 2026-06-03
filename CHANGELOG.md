@@ -4,6 +4,135 @@ All notable changes to **ai-forge** are documented in this file.
 
 ---
 
+## 2026-06-03
+
+### ♻️ Refactoring
+
+- **顶层结构收缩**：删除空壳目录 `agents/`、`hooks/`、`mcp-servers/`、`plugins/`、`shared/`、`workflows/`，仅保留当前真实使用的能力资产目录
+- **文档与测试目录清理**：删除项目级 `docs/` 与顶层 `tests/`，外部参考资料和局部测试不再作为顶层占位结构保留
+- **目录 README 清理**：删除空泛的 `skills/README.md` 与 `prompts/README.md`，由根 README 承担项目总览职责
+
+### 📝 Documentation
+
+- **README 定位更新**：将项目描述收敛为个人 Agent 能力资产库，明确 `skills/`、`prompts/`、`rules/`、`scripts/` 的顶层职责
+- **CHANGELOG 恢复维护**：补齐 2026-03-03 之后的主要能力演进记录
+
+### 🔧 Chores
+
+- **Skill Casebook 命名格式调整**：将 casebook 文件名改为以日期开头，便于按时间排序和检索
+
+## 2026-05-18
+
+### ✨ New Features
+
+- **Skill 使用反馈分析模板**：新增用于分析 skill 实际使用反馈、触发质量和改进机会的提示词模板
+- **Skill 错误复盘模板**：新增用于记录 skill 失败案例、根因、修复方式和可复用教训的文档模板
+
+## 2026-04-27
+
+### 🔧 Chores
+
+- `.gitignore` 新增临时文件目录排除
+
+### 📝 Documentation
+
+- 删除过时 planning 文档，避免保留失效治理材料
+
+## 2026-04-20
+
+### 📝 Documentation
+
+- 新增 SVPino interview-to-spec 提示词模板，用于通过逐轮访谈收敛规格说明
+
+## 2026-03-29
+
+### ✨ New Features
+
+- **E2E Run**：新增运行现有 e2e 资产、保存执行证据并分析失败原因的 skill
+
+## 2026-03-28
+
+### ✨ New Features
+
+- **E2E Find**：新增基于代码分析 Web 应用交互链路并沉淀 e2e 用例规格的 skill
+
+## 2026-03-23
+
+### ✨ New Features
+
+- **Req Code Review**：新增基于实现方案和当前代码发起系统性代码审查的 skill
+- **Ack Code Review**：新增消费审查报告、判断采纳与增量修复 review 问题的 skill
+
+### ♻️ Refactoring
+
+- **Claude Code Status Line**：新增 MiniMax 用量显示、超时保护和脚本清理
+
+## 2026-03-19
+
+### ✨ New Features
+
+- **Retrospect Session 治理流**：补充规则沉淀、体系重整触发条件、治理动作和抽象标准
+- **Retrospect Session Evals**：新增复盘规则治理场景的评测样例
+
+### ♻️ Refactoring
+
+- **Review Skill 规范对齐**：优先加载 Agent Skills Specification，并将参考文档迁移到 skill 内部
+- **Retrospect Session 重组**：将复盘流程改造为规则治理工作流
+
+### 📝 Documentation
+
+- 补充 retrospect-session 治理设计与实施计划
+
+## 2026-03-17
+
+### 📝 Documentation
+
+- Handoff 会话提示词的输出文件名增加 slug，提升交接文档可读性
+
+## 2026-03-16
+
+### ✨ New Features
+
+- **Handoff Session**：新增面向下一位 AI Agent 的会话交接摘要提示词
+
+### 📝 Documentation
+
+- Retrospect Session 文档强化项目级提示词与规则索引同步要求
+
+## 2026-03-13
+
+### ✨ New Features
+
+- **Retrospect Session**：新增会话复盘 skill，用于提炼可复用教训并沉淀为长期规则
+
+## 2026-03-10
+
+### ✨ New Features
+
+- **Content Summarizer Twitter 支持增强**：新增 Twitter/X mirror 抓取流程及脚本测试
+
+### 📝 Documentation
+
+- Content Summarizer 模板 frontmatter 字段标准化
+- Git Commit 文档将 heredoc 示例替换为直接 `-m` 参数示例
+
+## 2026-03-07
+
+### ♻️ Refactoring
+
+- **Git Commit**：移除 `$ARGUMENTS` 模板变量引用，降低误触发和解析歧义
+
+## 2026-03-06
+
+### ✨ New Features
+
+- **Session Summary**：新增会话摘要 skill，支持结构化记录会话概要和逐轮明细
+
+### ♻️ Refactoring
+
+- **Review Skill**：迁移到顶层 `skills/` 并扩展检查表覆盖范围
+- **Session Summary**：拆分起止时间和 token 用量，默认输出文件化会话摘要
+
 ## 2026-03-03
 
 ### ✨ New Features

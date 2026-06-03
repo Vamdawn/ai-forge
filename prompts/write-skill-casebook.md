@@ -6,4 +6,4 @@
 4. 验证方式（怎么确认修复生效）
 5. 教训总结（违反了哪条核心原则）
 
-文件放在当前项目根目录，命名为: casebook-{{skill-name}}-{{repo-name}}-{{slug}}-{{yyyyMMdd}}.md
+文件放在当前项目根目录，命名为: casebook-{{yyyyMMdd}}-{{skill-name}}-{{repo-name}}-{{slug}}.md
