@@ -4,6 +4,13 @@ All notable changes to **ai-forge** are documented in this file.
 
 ---
 
+## 2026-06-05
+
+### 📝 Documentation
+
+- 新增 HTML PR Review Artifact 提示词模板，用于生成带真实 diff、边注和严重程度标注的 PR 审查 HTML 产物
+- 新增 `AGENTS.md` 项目规则文档，沉淀 Markdown frontmatter 与正文编辑边界规则
+
 ## 2026-06-03
 
 ### ♻️ Refactoring
