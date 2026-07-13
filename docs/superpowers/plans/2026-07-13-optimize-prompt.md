@@ -13,6 +13,7 @@
 - Create the skill at `/Users/chen/Repository/ai-forge/skills/optimize-prompt`.
 - Support both general-purpose and coding-task prompts through one adaptive workflow.
 - Ask one to three focused questions only when missing information could materially change the result.
+- When Ask User is unavailable, require the user to answer clarification questions by explicitly invoking `$optimize-prompt` again, then resume from the original prompt and answers in the current conversation.
 - When information is sufficient, output exactly one complete, standalone prompt in a fenced code block.
 - Preserve the user's intent, language, facts, and hard constraints; do not invent missing context.
 - Set top-level `disable-model-invocation: true` in `SKILL.md`.
@@ -32,7 +33,7 @@
 
 **Interfaces:**
 - Consumes: an original prompt plus any context supplied in the current conversation.
-- Produces: either one clarification interaction when essential information is missing, or exactly one complete prompt in a fenced code block when information is sufficient.
+- Produces: either one clarification interaction when essential information is missing, including explicit reinvocation instructions for the plain-text fallback, or exactly one complete prompt in a fenced code block when information is sufficient.
 
 - [ ] **Step 1: Initialize the skill with the official scaffold**
 
@@ -69,7 +70,7 @@ disable-model-invocation: true
 3. Read [best-practices.md](references/best-practices.md) and classify the task as general-purpose or coding-related.
 4. Extract the explicit goal, context, constraints, requested output, and completion criteria.
 5. Identify only missing information that could materially change the optimized prompt.
-6. If essential information is missing, follow the clarification policy and stop until the user answers.
+6. If essential information is missing, follow the clarification policy and stop until the user answers through Ask User or explicitly invokes $optimize-prompt again.
 7. Rewrite the prompt with the minimum structure needed for reliable execution.
 8. Check the result against the preservation and output rules before returning it.
 
@@ -77,12 +78,13 @@ disable-model-invocation: true
 
 When essential information is missing:
 
-- Use Ask User when it is available; otherwise ask concise questions in plain text.
+- Use Ask User when it is available.
+- When Ask User is unavailable, ask concise questions in plain text and instruct the user to answer by explicitly invoking `$optimize-prompt` again.
 - Ask one to three highest-impact questions in one interaction, ordered by importance.
 - Use mutually exclusive choices when the valid options are known; otherwise use an open question.
 - Do not ask for details that are present, safely inferable, or merely nice to have.
 - Do not output a partial optimized prompt.
-- Resume the workflow after the user answers without repeating resolved questions.
+- After the user answers through Ask User or explicitly invokes `$optimize-prompt` again, read the original prompt and their answers from the current conversation and resume the workflow without repeating resolved questions.
 
 ## Rewrite Rules
 
@@ -245,7 +247,7 @@ Expected: one copy-ready fenced prompt that preserves file scope, API boundary, 
 Use $optimize-prompt at /Users/chen/Repository/ai-forge/skills/optimize-prompt to optimize this draft: “帮我写个方案。”
 ```
 
-Expected: one focused clarification interaction and no partial prompt code block.
+Expected: one focused clarification interaction and no partial prompt code block. When Ask User is unavailable, the response explicitly tells the user to answer by invoking `$optimize-prompt` again.
 
 ```text
 Use $optimize-prompt at /Users/chen/Repository/ai-forge/skills/optimize-prompt to optimize this draft:

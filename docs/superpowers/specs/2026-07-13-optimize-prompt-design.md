@@ -28,6 +28,8 @@ Do not bind the skill to one model, API, framework, or repository. Do not invent
 
 Allow only explicit human invocation through `$optimize-prompt`. Set the top-level `disable-model-invocation: true` field in `SKILL.md` frontmatter and configure `agents/openai.yaml` with `policy.allow_implicit_invocation: false` so the model cannot activate the skill automatically based on conversation content.
 
+This policy also applies to clarification follow-ups. When Ask User is unavailable, require the user to answer by explicitly invoking `$optimize-prompt` again; do not rely on a plain-text answer to reactivate the skill.
+
 The current `skill-creator` validator does not recognize `disable-model-invocation` and reports it as an unexpected frontmatter key. Preserve the user-required field despite that compatibility mismatch. Treat only that specific validator error as expected, and separately parse the YAML to confirm the field is the boolean value `true`; do not ignore other validation failures.
 
 ## Structure
@@ -51,10 +53,11 @@ Keep the operational workflow in `SKILL.md`. Put the detailed optimization check
 2. Identify the intended outcome and classify the task as general or coding-related.
 3. Extract explicit goals, context, constraints, output requirements, and completion criteria.
 4. Identify only missing information that could materially change the optimized prompt.
-5. If essential information is missing, use Ask User to ask one to three focused questions. If Ask User is unavailable, ask concise questions in plain text. Do not output a partial optimized prompt yet.
-6. When sufficient information is available, rewrite the prompt with the minimum structure needed for clarity and execution.
-7. Check that the result preserves the user's intent, facts, language, and hard constraints.
-8. Output one complete, standalone prompt in a fenced code block.
+5. If essential information is missing, use Ask User to ask one to three focused questions. If Ask User is unavailable, ask concise questions in plain text and instruct the user to answer by explicitly invoking `$optimize-prompt` again. Do not output a partial optimized prompt yet.
+6. After the user answers through Ask User or explicitly invokes `$optimize-prompt` again, read the original prompt and their answers from the current conversation and resume without repeating resolved questions.
+7. When sufficient information is available, rewrite the prompt with the minimum structure needed for clarity and execution.
+8. Check that the result preserves the user's intent, facts, language, and hard constraints.
+9. Output one complete, standalone prompt in a fenced code block.
 
 ## Adaptive Fields
 
@@ -80,11 +83,11 @@ Do not force every field into every prompt. Simple prompts should remain concise
 
 Ask only when a missing answer would materially affect the result. Do not ask for information that is already present, safely inferable, or merely nice to have. Prefer one interaction containing no more than three high-impact questions, ordered by importance.
 
-When options are known and mutually exclusive, use Ask User choices. Otherwise, ask an open question. After receiving answers, continue the workflow instead of repeating already resolved questions.
+When options are known and mutually exclusive, use Ask User choices. Otherwise, ask an open question. If Ask User is unavailable, require the user to answer by explicitly invoking `$optimize-prompt` again. On that invocation, read the original prompt and answers from the current conversation and continue the workflow without repeating already resolved questions.
 
 ## Output Contract
 
-When information is insufficient, output only the clarification request.
+When information is insufficient, output only the clarification request. If Ask User is unavailable, include the instruction to answer by explicitly invoking `$optimize-prompt` again as part of that request.
 
 When information is sufficient:
 
@@ -100,7 +103,7 @@ Run the skill validator and forward-test these cases:
 
 1. A sufficiently detailed general prompt produces one concise, copy-ready prompt without unnecessary questions.
 2. A sufficiently detailed coding prompt includes scope and verification criteria without inventing repository details.
-3. A vague prompt missing a material goal or context asks focused questions and does not emit a partial prompt.
+3. A vague prompt missing a material goal or context asks focused questions and does not emit a partial prompt. When Ask User is unavailable, the clarification request tells the user to answer by explicitly invoking `$optimize-prompt` again.
 4. A short but sufficient prompt remains short instead of being expanded mechanically.
 
 Review the final files for placeholders, contradictions, unnecessary scope, and alignment between `SKILL.md` and `agents/openai.yaml`.

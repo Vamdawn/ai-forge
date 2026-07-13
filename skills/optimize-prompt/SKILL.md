@@ -13,7 +13,7 @@ disable-model-invocation: true
 3. Read [best-practices.md](references/best-practices.md) and classify the task as general-purpose or coding-related.
 4. Extract the explicit goal, context, constraints, requested output, and completion criteria.
 5. Identify only missing information that could materially change the optimized prompt.
-6. If essential information is missing, follow the clarification policy and stop until the user answers.
+6. If essential information is missing, follow the clarification policy and stop until the user answers through Ask User or explicitly invokes $optimize-prompt again.
 7. Rewrite the prompt with the minimum structure needed for reliable execution.
 8. Check the result against the preservation and output rules before returning it.
 
@@ -21,12 +21,13 @@ disable-model-invocation: true
 
 When essential information is missing:
 
-- Use Ask User when it is available; otherwise ask concise questions in plain text.
+- Use Ask User when it is available.
+- When Ask User is unavailable, ask concise questions in plain text and instruct the user to answer by explicitly invoking `$optimize-prompt` again.
 - Ask one to three highest-impact questions in one interaction, ordered by importance.
 - Use mutually exclusive choices when the valid options are known; otherwise use an open question.
 - Do not ask for details that are present, safely inferable, or merely nice to have.
 - Do not output a partial optimized prompt.
-- Resume the workflow after the user answers without repeating resolved questions.
+- After the user answers through Ask User or explicitly invokes `$optimize-prompt` again, read the original prompt and their answers from the current conversation and resume the workflow without repeating resolved questions.
 
 ## Rewrite Rules
 
