@@ -1,0 +1,7 @@
+interface:
+  display_name: "Optimize Prompt"
+  short_description: "Improve prompts and ask for missing essentials"
+  default_prompt: "Use $optimize-prompt to turn my draft into one complete, copy-ready prompt."
+
+policy:
+  allow_implicit_invocation: false
