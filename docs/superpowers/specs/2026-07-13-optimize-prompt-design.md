@@ -24,6 +24,10 @@ Support two task classes through one adaptive workflow:
 
 Do not bind the skill to one model, API, framework, or repository. Do not invent missing business facts or technical context.
 
+## Invocation Policy
+
+Allow only explicit human invocation through `$optimize-prompt`. Configure `agents/openai.yaml` with `policy.allow_implicit_invocation: false` so the model cannot activate the skill automatically based on conversation content.
+
 ## Structure
 
 Create only the files needed by the skill:
@@ -98,3 +102,4 @@ Run the skill validator and forward-test these cases:
 4. A short but sufficient prompt remains short instead of being expanded mechanically.
 
 Review the final files for placeholders, contradictions, unnecessary scope, and alignment between `SKILL.md` and `agents/openai.yaml`.
+Confirm that `agents/openai.yaml` disables implicit invocation and that the default prompt demonstrates explicit `$optimize-prompt` usage.
