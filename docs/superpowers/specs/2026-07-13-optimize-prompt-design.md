@@ -26,7 +26,9 @@ Do not bind the skill to one model, API, framework, or repository. Do not invent
 
 ## Invocation Policy
 
-Allow only explicit human invocation through `$optimize-prompt`. Configure `agents/openai.yaml` with `policy.allow_implicit_invocation: false` so the model cannot activate the skill automatically based on conversation content.
+Allow only explicit human invocation through `$optimize-prompt`. Set the top-level `disable-model-invocation: true` field in `SKILL.md` frontmatter and configure `agents/openai.yaml` with `policy.allow_implicit_invocation: false` so the model cannot activate the skill automatically based on conversation content.
+
+The current `skill-creator` validator does not recognize `disable-model-invocation` and reports it as an unexpected frontmatter key. Preserve the user-required field despite that compatibility mismatch. Treat only that specific validator error as expected, and separately parse the YAML to confirm the field is the boolean value `true`; do not ignore other validation failures.
 
 ## Structure
 
@@ -102,4 +104,4 @@ Run the skill validator and forward-test these cases:
 4. A short but sufficient prompt remains short instead of being expanded mechanically.
 
 Review the final files for placeholders, contradictions, unnecessary scope, and alignment between `SKILL.md` and `agents/openai.yaml`.
-Confirm that `agents/openai.yaml` disables implicit invocation and that the default prompt demonstrates explicit `$optimize-prompt` usage.
+Confirm that `SKILL.md` sets `disable-model-invocation: true`, `agents/openai.yaml` disables implicit invocation, and the default prompt demonstrates explicit `$optimize-prompt` usage.
