@@ -1,6 +1,6 @@
 ---
 name: retrospect-session
-description: "基于当前会话进行复盘，提炼可复用教训并沉淀到 docs/rules/，并同步更新项目级 AGENTS.md / CLAUDE.md 的规则索引与说明。当用户提到“反思”“复盘”“沉淀规则”“lessons learned”“把经验写进规则”时都应触发。"
+description: "基于当前会话进行复盘，提炼可复用教训并沉淀到项目规则目录（优先 agents/rules/，回退 docs/rules/），并同步更新项目级 AGENTS.md / CLAUDE.md 的规则索引与说明。当用户提到“反思”“复盘”“沉淀规则”“lessons learned”“把经验写进规则”时都应触发。"
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 
@@ -8,7 +8,17 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 ## Overview
 
-将会话经验沉淀为长期可执行规则，统一维护在 `docs/rules/`，并让项目级提示词始终引用最新规则。
+将会话经验沉淀为长期可执行规则，统一维护在项目规则目录，并让项目级提示词始终引用最新规则。
+
+## Rules Home Resolution
+
+在一切治理动作之前，先解析规则目录 `RULES_DIR`：
+
+1. 若项目存在 `agents/rules/` → `RULES_DIR = agents/rules/`（Agent Harness 规范：`agents/` 是 Harness 真源）。
+2. 否则若存在 `docs/rules/` → `RULES_DIR = docs/rules/`。
+3. 两者都不存在 → 创建 `docs/rules/` 并使用之；若项目已有 `agents/` 目录，则改为创建并使用 `agents/rules/`。
+
+本文档后续所有 `docs/rules/` 字样均指解析后的 `RULES_DIR`。
 
 ## Goals
 
