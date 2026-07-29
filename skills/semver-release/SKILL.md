@@ -1,7 +1,7 @@
 ---
 name: semver-release
-description: 'Automated version release workflow. Analyzes git commit history to infer semantic version, auto-detects version files across ecosystems, updates multilingual CHANGELOGs, creates git commit and tag. Use when: (1) user says "release", "publish version", "bump version", (2) user invokes /release command, (3) preparing to release a new version.'
-argument-hint: "[version]"
+description: 'Automated version release workflow. Analyzes git commit history to infer semantic version, auto-detects version files across ecosystems, updates multilingual CHANGELOGs, creates git commit and tag. Supports monorepo asset mode: release a single asset with <name>@X.Y.Z tags, path-scoped commit analysis, and a root CHANGELOG release index. Use when: (1) user says "release", "publish version", "bump version", (2) user invokes /release command, (3) preparing to release a new version of a repo or a single asset in a monorepo.'
+argument-hint: "[asset-name] [version]"
 disable-model-invocation: true
 allowed-tools: Bash(git *), Glob, Read, Edit, Write, AskUserQuestion
 ---
@@ -9,6 +9,37 @@ allowed-tools: Bash(git *), Glob, Read, Edit, Write, AskUserQuestion
 # Versioning Workflow
 
 Automated version release based on [Semantic Versioning 2.0.0](https://semver.org/).
+
+## Mode Selection
+
+Two modes share the same step sequence; asset mode narrows every step's scope.
+
+- **Repo mode** (default): the whole repository is the release unit. Tag `vX.Y.Z`.
+- **Asset mode** (monorepo): a single asset directory is the release unit. Tag `<asset-name>@X.Y.Z`.
+
+Enter asset mode when the first argument matches an asset directory (e.g. `content-summarizer` → `skills/content-summarizer/`, `forge-lint` → `tools/forge-lint/`). Search common asset roots: `skills/`, `tools/`, `packages/`, `apps/`. If the argument matches no directory, ask the user instead of guessing.
+
+In asset mode, apply these scope overrides to the steps below:
+
+| Step | Repo mode | Asset mode override |
+|------|-----------|--------------------|
+| 1a Version files | Scan project root | Scan asset directory only (`tools/` assets have manifests; skill assets have none — version truth is tag + CHANGELOG) |
+| 1b CHANGELOG discovery | Project root | `<asset-path>/CHANGELOG.md`; create at release if missing |
+| 2a Last tag | `git tag -l 'v[0-9]*.[0-9]*.[0-9]*'` | `git tag -l '<asset-name>@[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname \| head -1` |
+| 3 Commit analysis | `git log <tag>..HEAD` | `git log <tag>..HEAD -- <asset-path>/` |
+| 5 CHANGELOG content | Repo CHANGELOG(s) | Asset CHANGELOG's `[Unreleased]` section is the primary source; git analysis fills gaps |
+| 7b CHANGELOG update | Repo CHANGELOG(s) | Asset CHANGELOG + append one line to the root CHANGELOG release index (see below) |
+| 7c Commit & tag | `🔖 release: vX.Y.Z` / tag `vX.Y.Z` | `🔖 release: <name>@X.Y.Z` / tag `<name>@X.Y.Z` |
+
+**Root CHANGELOG release index** (asset mode, step 7b): if the root `CHANGELOG.md` has a release-index section (e.g. a `# Releases` heading), append one line under the current period:
+
+```markdown
+- `<name>@X.Y.Z` (YYYY-MM-DD) — one-line summary → [详情](<asset-path>/CHANGELOG.md)
+```
+
+If the root CHANGELOG is a conventional changelog (not an index), skip this step.
+
+One release covers exactly one asset. If multiple assets changed, run the workflow once per asset, producing one tag each.
 
 ## Execution Steps
 
@@ -111,7 +142,7 @@ Parse **both subject and body** of each commit to identify type:
 
 ### Step 4: Calculate New Version
 
-**User override**: If `$ARGUMENTS` is a valid semver version (e.g. `1.0.0`, `2.0.0-rc.1`), use that version directly. Skip automatic calculation.
+**User override**: If the arguments contain a valid semver version (e.g. `1.0.0`, `2.0.0-rc.1` — in asset mode it follows the asset name), use that version directly. Skip automatic calculation.
 
 Based on current version `MAJOR.MINOR.PATCH`:
 
