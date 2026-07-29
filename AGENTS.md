@@ -1,8 +1,28 @@
 # Project Agent Guide
 
-## Scope
+## Positioning
 
-- 本文件约束 `/Users/chen/Repository/ai-forge` 中的 prompt、skill、rule、script 等资产编辑。
+- ai-forge 是个人 Agent 能力资产 monorepo，出品四类产品资产：`skills/`、`prompts/`、`rules/`、`tools/`（CLI 工具）。
+- 资产互不相关：版本、CHANGELOG、发布全部以单个资产为单位，没有全局版本号。
+- 本文件约束本仓库中所有资产的编辑与维护行为。
+
+## Layering
+
+| 层 | 位置 | 内容 |
+|----|------|------|
+| 产品层 | `skills/`、`prompts/`、`rules/`、`tools/` | 对外提供的可复用资产 |
+| Harness 层 | 本文件 + `agents/` | 维护本仓库的规则、流程与校验工具 |
+| Adapter 层 | `.claude/` 等点目录 | 工具运行时配置，不承载项目知识 |
+
+- Harness 真源在 `agents/`（见 [agents/README.md](agents/README.md)），不要把维护规则写进工具点目录。
+- 顶层 `rules/` 是对外的规则模板产品，与 `agents/rules/`（本仓库维护规则）无关，勿混淆。
+
+## Rules Index
+
+- [agents/rules/markdown-assets.md](agents/rules/markdown-assets.md): 编辑含 YAML frontmatter 的 Markdown 资产时的区域边界与范围词语义。
+- [agents/rules/versioning-and-release.md](agents/rules/versioning-and-release.md): 资产级版本、CHANGELOG、commit scope 与发布约定；改动 `skills/<name>/` 或 `tools/<name>/` 前必读。
+
+执行任务前，先读取与任务最相关的规则文件；新增 `agents/rules/*.md` 必须同步更新本索引。
 
 ## Preferences
 
@@ -36,17 +56,7 @@
 - 多步骤任务先给简短计划：步骤、验证方式、完成标准。
 - 修 bug 或加行为时优先写能复现或约束行为的测试，再让它通过。
 
-## Markdown Asset Rules
-
-1. 编辑含 YAML frontmatter 的 Markdown 文件时，必须把 `---` 包围的元数据和后续正文视为两个不同区域。
-   - Rationale: 用户要求修改“正文”时，通常不包含 frontmatter；误删元数据会破坏来源、作者、类型等可检索信息。
-   - Verification: 修改后检查 frontmatter 仍完整保留，且正文只包含用户要求保留的内容。
-
-2. 当用户说“只保留”“仅保留”“正文只保留”等范围词时，先按最窄语义执行：只改被点名的区域，不删除未被点名的元数据、索引或维护信息。
-   - Rationale: 范围词容易被误解为全文件清理；默认收窄范围能减少返工。
-   - Verification: `git diff` 中每个被删除的块都能对应用户明确点名的区域。
-
 ## Usage
 
-- 执行文档或提示词资产编辑前，先读取本文件中与任务相关的规则。
 - 更新本文件时保持简短，提交前确认 `AGENTS.md` 不超过 200 行。
+- 发布资产版本使用 `/semver-release`（产品 skill，本仓库自用，不复制进 `agents/`）。

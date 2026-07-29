@@ -1,6 +1,16 @@
-# Changelog
+# Releases
 
-All notable changes to **ai-forge** are documented in this file.
+本文件是全局发布索引：每次资产发版追加一行摘要，变更细节见各资产自己的 `CHANGELOG.md`。资产版本约定见 [agents/rules/versioning-and-release.md](agents/rules/versioning-and-release.md)。
+
+（暂无发布。首个资产发版后按 `` `<name>@X.Y.Z` (日期) — 摘要 → [详情](路径) `` 格式追加。）
+
+## Repository milestones
+
+- 2026-07-29: 确立目标架构：产品层/Harness 层分离（`agents/` 为 Harness 真源）、资产级独立版本化（tag 格式 `<name>@X.Y.Z`）、根 CHANGELOG 转为发布索引。设计见 [docs/specs/2026-07-29-repo-structure-and-release-workflow.md](docs/specs/2026-07-29-repo-structure-and-release-workflow.md)。
+
+## Pre-versioning history
+
+以下为资产级版本化约定确立之前的日期式变更记录，保留原貌，不再更新。
 
 ---
 
