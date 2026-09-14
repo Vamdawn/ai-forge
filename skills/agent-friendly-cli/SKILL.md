@@ -3,6 +3,7 @@ name: agent-friendly-cli
 description: 设计、实现或审查供 Agent 调用的命令行工具，检查发现能力、参数契约、机器输出、错误处理、安全副作用和可组合性是否满足 agent-friendly-cli 要求。仅在用户明确调用本 skill 或明确要求 agent-friendly CLI 设计审查时使用。
 metadata:
   short-description: 设计与审查 Agent 友好的 CLI
+  disable-model-invocation: true
 ---
 
 # Agent-friendly CLI
