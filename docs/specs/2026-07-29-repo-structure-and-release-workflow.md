@@ -2,6 +2,7 @@
 
 - 日期：2026-07-29
 - 状态：Target Design（已评审收敛）
+- 修订：2026-10-09，收敛维护执行文件归属，统一文档路径与导航入口。
 
 ## 1. 定位与原则
 
@@ -50,7 +51,7 @@ ai-forge/
 │   ├── skills/                  # 仅"维护本仓库"的流程 skill（按需创建）
 │   ├── hooks/                   # 执行边界控制（按需创建）
 │   ├── evals/                   # Harness 自身回归验证（按需创建）
-│   └── tools/                   # validate-skills / lint 等校验工具（按需创建）
+│   └── tools/                   # 仅维护本仓库的执行文件，如 validate-skills / lint（按需创建）
 │
 ├── .claude/                     # adapter：settings.json；需要时 symlink agents/hooks
 │
@@ -65,12 +66,14 @@ ai-forge/
 │
 ├── tools/                       # 【产品】CLI 工具，每个工具独立成包、独立版本化
 │   └── <tool-name>/
-│       ├── package.json / pyproject.toml   # 独立 manifest 与版本号
+│       ├── package.json / pyproject.toml   # 生态需要时维护独立 manifest 与版本号
 │       ├── CHANGELOG.md
 │       ├── src/  tests/  README.md
 │
-├── scripts/                     # 仓库级散脚本（不属于任何单一资产）
-├── docs/                        # 设计文档 / plans
+├── docs/                        # 按用途组织，生成工具名称不作为目录分类
+│   ├── README.md                # 文档用途、状态与链接索引
+│   ├── specs/                   # 设计文档
+│   └── plans/                   # 实施计划
 ├── CHANGELOG.md                 # 全局发布索引 + 仓库里程碑（见 §6.2）
 ├── README.md
 └── LICENSE
@@ -78,8 +81,10 @@ ai-forge/
 
 结构决策依据：
 
-- **`tools/` 而非 `packages/`**：`packages/` 暗示被 import 的库，本仓库场景是独立可运行的 CLI。顶层按产品划分、不按语言划分；工具语言可混杂（Node/Python/shell），每个工具自带 manifest、测试、CHANGELOG，互不感知。
-- **skill 不设 version 字段**：版本真源是 git tag + 该 skill CHANGELOG 的版本节标题，SKILL.md frontmatter 不携带版本号，避免多处声明漂移。CLI 工具因生态要求必须有 manifest 版本，由发版流程保证与 tag 一致。
+- **`tools/` 而非 `packages/`**：`packages/` 暗示被 import 的库，本仓库场景是独立可运行的 CLI。顶层按产品划分、不按语言划分；工具语言可混杂（Node/Python/shell），每个工具独立维护使用说明、测试与 CHANGELOG，并按生态要求提供 manifest，互不感知。
+- **执行文件按使用者归属**：对外工具进 `tools/<name>/`，仅维护本仓库的执行文件进 `agents/tools/`；不另设顶层 `scripts/` 分类。单文件 shell 工具保持原结构，manifest 仅在其生态要求时提供。
+- **导航入口分工**：根 README 提供产品链接目录，`AGENTS.md` / `agents/` 提供维护约束，`docs/README.md` 提供设计与计划索引。历史文档保留原内容，其生成时路径和执行指令由索引注明历史身份。
+- **skill 不设 version 字段**：版本真源是 git tag + 该 skill CHANGELOG 的版本节标题，SKILL.md frontmatter 不携带版本号，避免多处声明漂移。CLI 工具在生态要求 manifest 版本时，由发版流程保证其与 tag 一致。
 - **AGENTS.md 保持精简**（200 行以内），只放：一句话定位、分层边界声明、必守红线、构建/校验/提交的最小执行方式、指向 `agents/` 的入口。
 - **不预建空目录**：`agents/` 子目录、`tools/`、各资产 CHANGELOG 均在出现真实需求时创建。
 
@@ -113,7 +118,7 @@ ai-forge/
 步骤：
 
 1. 将资产 CHANGELOG 的 `[Unreleased]` 挪至 `## [X.Y.Z] - YYYY-MM-DD`。
-2. （tool 类）同步 manifest 版本号。
+2. （tool 类，有 manifest 版本时）同步 manifest 版本号。
 3. 在根 `CHANGELOG.md` 发布索引追加一行（§6.2）。
 4. commit：`🔖 release: <name>@X.Y.Z`。
 5. annotated tag + `git push --follow-tags`。

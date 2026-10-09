@@ -16,6 +16,7 @@
 
 - Harness 真源在 `agents/`（见 [agents/README.md](agents/README.md)），不要把维护规则写进工具点目录。
 - 顶层 `rules/` 是对外的规则模板产品，与 `agents/rules/`（本仓库维护规则）无关，勿混淆。
+- 仅维护本仓库的执行文件归 `agents/tools/`；对外工具归 `tools/<name>/`。资产增删或改名时同步根 README 的资产链接目录。
 
 ## Rules Index
 

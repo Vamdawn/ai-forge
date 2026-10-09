@@ -6,6 +6,7 @@
 
 ## Repository milestones
 
+- 2026-10-09: 收敛执行文件归属：将 statusline 归入 `tools/claude-statusline/`，仅维护本仓库的执行文件统一归 `agents/tools/`；设计与计划分别归入 `docs/specs/`、`docs/plans/`，补充产品与文档链接索引。
 - 2026-07-29: 确立目标架构：产品层/Harness 层分离（`agents/` 为 Harness 真源）、资产级独立版本化（tag 格式 `<name>@X.Y.Z`）、根 CHANGELOG 转为发布索引。设计见 [docs/specs/2026-07-29-repo-structure-and-release-workflow.md](docs/specs/2026-07-29-repo-structure-and-release-workflow.md)。
 
 ## Pre-versioning history

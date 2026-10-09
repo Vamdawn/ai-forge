@@ -28,7 +28,7 @@ agents/
 ├── skills/      # 仅"维护本仓库"的流程 skill（按需创建）
 ├── hooks/       # 执行边界控制（按需创建）
 ├── evals/       # Harness 自身回归验证（按需创建）
-└── tools/       # validate-skills / lint 等校验工具（按需创建）
+└── tools/       # 仅维护本仓库的执行文件，如 validate-skills / lint（按需创建）
 ```
 
 按需子目录在出现真实需求时创建，不预建占位。
@@ -38,4 +38,4 @@ agents/
 - 修改 Harness 时只改 `agents/` 真源，不直接改工具点目录。
 - 约束尽可能落为 validator / hook / CI 检查（机器可校验优先于散文规则）。
 - 新增 `agents/rules/*.md` 必须同步更新 `AGENTS.md` 的 Rules Index。
-- 完整设计见 [docs/specs/2026-07-29-repo-structure-and-release-workflow.md](../docs/specs/2026-07-29-repo-structure-and-release-workflow.md)。
+- 设计与计划入口见 [docs/README.md](../docs/README.md)；完整架构设计见 [仓库结构与发布工作流](../docs/specs/2026-07-29-repo-structure-and-release-workflow.md)。
