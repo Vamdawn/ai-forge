@@ -11,7 +11,6 @@ A personal Agent capability asset monorepo: reusable skills, prompts, rules, and
 | `rules/` | Reusable Agent behavior rules and project-rule templates intended for sharing or reuse (not versioned) |
 | `tools/` | Standalone tool assets, each with its own usage documentation and changelog; manifests follow the tool's ecosystem |
 | `agents/` | Agent Harness for maintaining this repository — not a distributable asset ([details](agents/README.md)) |
-| `docs/` | Design specifications and implementation plans, organized by purpose ([index](docs/README.md)) |
 
 ## Usage
 
@@ -62,7 +61,7 @@ Browse into the directory that matches the asset you need and use the relevant s
 - Versioned assets (skills and tools) each follow independent semver with annotated tags named `<asset-name>@X.Y.Z`.
 - Each versioned asset keeps its own `CHANGELOG.md`; the root [CHANGELOG.md](CHANGELOG.md) is a release index plus repository milestones.
 - There is no repository-wide version number.
-- Conventions: [agents/rules/versioning-and-release.md](agents/rules/versioning-and-release.md). Design: [docs/specs/2026-07-29-repo-structure-and-release-workflow.md](docs/specs/2026-07-29-repo-structure-and-release-workflow.md).
+- Conventions: [agents/rules/versioning-and-release.md](agents/rules/versioning-and-release.md).
 
 ## Maintenance
 
