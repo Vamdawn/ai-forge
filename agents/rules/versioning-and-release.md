@@ -3,7 +3,6 @@
 ## Scope
 
 - 本仓库产品资产（`skills/<name>/`、`tools/<name>/`）的版本、CHANGELOG、commit 与发布约定。
-- 完整设计与理由见 [docs/specs/2026-07-29-repo-structure-and-release-workflow.md](../../docs/specs/2026-07-29-repo-structure-and-release-workflow.md)。
 
 ## 版本化单位
 
