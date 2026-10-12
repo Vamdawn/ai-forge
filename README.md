@@ -8,7 +8,7 @@ A personal Agent capability asset monorepo: reusable skills, prompts, rules, and
 |-----------|-------------|
 | `skills/` | Reusable Agent Skills, each self-contained (instructions, references, scripts, evals) and independently versioned |
 | `prompts/` | Prompt templates for one-off analysis, planning, review, and documentation tasks (not versioned) |
-| `rules/` | Reusable Agent behavior rules and project-rule templates intended for sharing or reuse (not versioned) |
+| `rules/` | Always-loaded Agent context meant for reuse: rule fragments and whole-file project-rule templates such as AGENTS.md (loaded every session, not on demand; not versioned) |
 | `tools/` | Standalone tool assets, each with its own usage documentation and changelog; manifests follow the tool's ecosystem |
 | `agents/` | Agent Harness for maintaining this repository — not a distributable asset ([details](agents/README.md)) |
 
@@ -51,6 +51,7 @@ Browse into the directory that matches the asset you need and use the relevant s
 ### Rules
 
 - [CLAUDE-From-Boris](rules/CLAUDE-From-Boris.md)
+- [deepseek-harness-inspired-agents-md](rules/deepseek-harness-inspired-agents-md.md)
 
 ### Tools
 

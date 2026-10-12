@@ -6,6 +6,7 @@
 
 ## Repository milestones
 
+- 2026-10-12: 新增 `rules/deepseek-harness-inspired-agents-md.md`（受 deepseek-ai/deepseek-harness 的 AGENTS.md 启发的项目规则模板），并明确 `rules/` 的判定标准：常驻加载的规则片段或整文件模板；与 `prompts/`（手动触发的一次性提示词）、`skills/`（按需触发或带资源）区分。
 - 2026-10-12: 移除 `docs/`（设计与计划文档），并清理 README 与 `agents/` 中的相关引用；版本与发布约定以 `agents/rules/versioning-and-release.md` 为准。
 - 2026-10-09: 收敛执行文件归属：将 statusline 归入 `tools/claude-statusline/`，仅维护本仓库的执行文件统一归 `agents/tools/`；设计与计划分别归入 `docs/specs/`、`docs/plans/`，补充产品与文档链接索引。
 - 2026-07-29: 确立目标架构：产品层/Harness 层分离（`agents/` 为 Harness 真源）、资产级独立版本化（tag 格式 `<name>@X.Y.Z`）、根 CHANGELOG 转为发布索引。
