@@ -1,3 +1,9 @@
+---
+title: PRD 实现方案 — 多智能体并行分析
+type: prompt-template
+language: zh
+---
+
 # PRD 实现方案 — 多智能体并行分析
 
 ## 角色

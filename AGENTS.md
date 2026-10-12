@@ -22,6 +22,7 @@
 ## Rules Index
 
 - [agents/rules/markdown-assets.md](agents/rules/markdown-assets.md): 编辑含 YAML frontmatter 的 Markdown 资产时的区域边界与范围词语义。
+- [agents/rules/prompt-assets.md](agents/rules/prompt-assets.md): 新增或编辑 `prompts/*.md` 时的 frontmatter 字段、来源标注与 prompt/skill 边界。
 - [agents/rules/versioning-and-release.md](agents/rules/versioning-and-release.md): 资产级版本、CHANGELOG、commit scope 与发布约定；改动 `skills/<name>/` 或 `tools/<name>/` 前必读。
 
 执行任务前，先读取与任务最相关的规则文件；新增 `agents/rules/*.md` 必须同步更新本索引。

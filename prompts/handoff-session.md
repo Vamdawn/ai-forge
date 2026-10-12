@@ -1,6 +1,9 @@
 ---
+title: 会话交接摘要
 source: https://x.com/cholf5/status/2032770329702265299
 author: 周尔复 (@cholf5)
+type: prompt-template
+language: zh
 ---
 
 当前上下文已经过长，我将开启一个新的会话继续这项工作。

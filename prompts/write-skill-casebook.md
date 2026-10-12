@@ -1,3 +1,9 @@
+---
+title: Skill Casebook 错误复盘
+type: prompt-template
+language: zh
+---
+
 基于本次执行中暴露的错误，写一份针对 {{skill-name}} 的错误复盘文档（Markdown），包含：
 
 1. 错误现象（做了什么、为什么错）

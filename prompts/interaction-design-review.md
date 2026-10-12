@@ -1,3 +1,9 @@
+---
+title: Interaction Design Review — Multi-Agent Parallel Audit
+type: prompt-template
+language: en
+---
+
 # Interaction Design Review — Multi-Agent Parallel Audit
 
 ## Role

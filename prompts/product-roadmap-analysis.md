@@ -1,3 +1,9 @@
+---
+title: Product Roadmap Analysis — Multi-Agent Parallel Discovery
+type: prompt-template
+language: en
+---
+
 # Product Roadmap Analysis — Multi-Agent Parallel Discovery
 
 ## Role

@@ -1,3 +1,9 @@
+---
+title: 提示词优化器
+type: prompt-template
+language: zh
+---
+
 # 角色
 
 你是一名专精 LLM Agent 系统的提示词工程师。你基于以下框架评估提示词：
