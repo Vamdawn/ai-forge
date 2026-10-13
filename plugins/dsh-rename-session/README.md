@@ -80,7 +80,6 @@ npm pack --dry-run
 - `tsconfig.host.json` and `tsconfig.client.json`: strictly check each side against the official DSH types without mixing Host and Client service declarations.
 - `build.mjs`: uses esbuild to emit ESM `dist/index.js` and lazy-CJS `dist/client.js`. Shared DSH and React modules remain external. Generated files are ignored by Git and included in the installable package.
 - `cordis.patch.yml`: supplies the installable bundle configuration layer.
-- [RESEARCH.md](RESEARCH.md): records the official plugin documentation, API evidence, and version baseline.
 
 Tests cover context selection, model routing, preservation of existing titles on failure, cancellation, concurrent title changes, duplicate requests, unload cleanup, and the client-to-host request flow. Real title quality depends on the selected model.
 
