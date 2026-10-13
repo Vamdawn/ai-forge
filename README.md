@@ -60,7 +60,7 @@ Browse into the directory that matches the asset you need and use the relevant s
 
 ### Plugins
 
-- [dsh-rename-session](plugins/dsh-rename-session/README.md)
+- [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.md)
 
 ## Versioning & Releases
 

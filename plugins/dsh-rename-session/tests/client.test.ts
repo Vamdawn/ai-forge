@@ -7,6 +7,7 @@ import type { RenameResult } from '../src/protocol.js';
 // The VM exposes plain test elements and only the services exercised by the
 // compiled Client. Keep that boundary explicit instead of asserting a full Context.
 interface ClientPlugin {
+  id: string;
   factory(requireModule: (id: string) => unknown): { apply(context: object): void };
 }
 
@@ -99,6 +100,7 @@ test('menu, pending, success and all errors follow the selected official locale'
     } },
   };
   assert.ok(plugin);
+  assert.equal(plugin.id, '@vamdawn/dsh-rename-session');
   plugin.factory(id => modules[id]).apply(ctx);
   assert.ok(dictionaries);
   assert.deepEqual(Object.keys(dictionaries).sort(), ['en', 'zh']);

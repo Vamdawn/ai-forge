@@ -7,8 +7,9 @@ import type { RenameReason, RenameResult } from '../src/protocol.js';
 
 // The built JavaScript has no declarations. Keep the import boundary typed
 // against the fixture's exercised services rather than casting a partial Context.
+const PACKAGE_NAME = '@vamdawn/dsh-rename-session';
 const { apply }: { apply(ctx: ReturnType<typeof fixture>['ctx']): void } =
-  await import(new URL('../dist/index.js', import.meta.url).href);
+  await import(PACKAGE_NAME);
 
 interface FixtureMessage {
   role: Message['role'];
