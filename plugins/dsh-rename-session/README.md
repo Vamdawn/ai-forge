@@ -10,7 +10,7 @@ Supports the officially shipped Chinese (`zh`) and English (`en`) locales. Switc
 
 ### From npm
 
-The first npm release is being prepared. After it is published, install the public scoped package into your active DSH profile:
+Install the public scoped package into your active DSH profile:
 
 ```sh
 dsh plugin --profile desktop add @vamdawn/dsh-rename-session
@@ -112,7 +112,7 @@ Development and test execution require Node.js 24 or newer. `npm run typecheck` 
 
 ## Publishing to npm
 
-The package is prepared for a first release as `@vamdawn/dsh-rename-session@0.1.0`. Publishing is a separate, explicit action; committing changes or running validation does not publish the package.
+The first release is `@vamdawn/dsh-rename-session@0.1.0`. Publishing is a separate, explicit action; committing changes or running validation does not publish the package.
 
 1. Sign in to an npm account with permission to publish under `@vamdawn`. A personal scope must match the npm username; ownership of the GitHub account alone does not grant npm permissions. Enable npm's required two-factor authentication for interactive publishing.
 2. Finalize the asset's version in both `package.json` and `package-lock.json`. At release time, move the current `Added` entries from `[Unreleased]` to a dated `[0.1.0]` section and retain an empty `[Unreleased]`. Record the release in the repository's release index and create the asset's annotated tag, `dsh-rename-session@0.1.0`. The tag uses the repository asset name, while npm uses the scoped package name. Keep the changelog unreleased until that release is authorized.

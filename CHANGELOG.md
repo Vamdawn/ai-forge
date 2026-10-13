@@ -2,7 +2,7 @@
 
 本文件是全局发布索引：每次资产发版追加一行摘要，变更细节见各资产自己的 `CHANGELOG.md`。资产版本约定见 [agents/rules/versioning-and-release.md](agents/rules/versioning-and-release.md)。
 
-（暂无发布。首个资产发版后按 `` `<name>@X.Y.Z` (日期) — 摘要 → [详情](路径) `` 格式追加。）
+- `dsh-rename-session@0.1.0` (2026-10-13) — 首次发布 `@vamdawn/dsh-rename-session`，支持根据会话上下文生成名称与中英文界面 → [详情](plugins/dsh-rename-session/CHANGELOG.md)
 
 ## Repository milestones
 
