@@ -1,6 +1,6 @@
 # AI Forge
 
-A personal Agent capability asset monorepo: reusable skills, prompts, rules, and CLI tools. Assets are unrelated to each other and are versioned, changelogged, and released independently.
+A personal Agent capability asset monorepo: reusable skills, prompts, rules, CLI tools, and application plugins. Assets are unrelated to each other and are versioned, changelogged, and released independently.
 
 ## Structure
 
@@ -10,6 +10,7 @@ A personal Agent capability asset monorepo: reusable skills, prompts, rules, and
 | `prompts/` | Prompt templates for one-off analysis, planning, review, and documentation tasks (not versioned) |
 | `rules/` | Always-loaded Agent context meant for reuse: rule fragments and whole-file project-rule templates such as AGENTS.md (loaded every session, not on demand; not versioned) |
 | `tools/` | Standalone tool assets, each with its own usage documentation and changelog; manifests follow the tool's ecosystem |
+| `plugins/` | Installable application plugins, each self-contained with its own manifest and usage documentation |
 | `agents/` | Agent Harness for maintaining this repository — not a distributable asset ([details](agents/README.md)) |
 
 ## Usage
@@ -56,6 +57,10 @@ Browse into the directory that matches the asset you need and use the relevant s
 ### Tools
 
 - [claude-statusline](tools/claude-statusline/README.md)
+
+### Plugins
+
+- [dsh-rename-session](plugins/dsh-rename-session/README.md)
 
 ## Versioning & Releases
 
