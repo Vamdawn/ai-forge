@@ -78,12 +78,13 @@ npm pack --dry-run
 - `src/client.tsx`: registers the menu and persistent notices; `sessions.using` waits for history opening and releases the reference.
 - `src/locales.ts` and `src/protocol.ts`: define the bilingual dictionaries and client-host response types.
 - `tsconfig.host.json` and `tsconfig.client.json`: strictly check each side against the official DSH types without mixing Host and Client service declarations.
+- `tsconfig.tests.json`: strictly checks the TypeScript fixtures and tests with syntax supported by Node's native type stripping.
 - `build.mjs`: uses esbuild to emit ESM `dist/index.js` and lazy-CJS `dist/client.js`. Shared DSH and React modules remain external. Generated files are ignored by Git and included in the installable package.
 - `cordis.patch.yml`: supplies the installable bundle configuration layer.
 
 Tests cover context selection, model routing, preservation of existing titles on failure, cancellation, concurrent title changes, duplicate requests, unload cleanup, and the client-to-host request flow. Real title quality depends on the selected model.
 
-`npm test` builds first and exercises the compiled Host and Client artifacts. `npm pack` checks types and builds before packaging. `prepare` builds a Git checkout during installation; Git installs require the package's build to be allowlisted in pnpm. A packed tarball contains ready-to-load JavaScript and needs no consumer-side build.
+Development and test execution require Node.js 24 or newer. `npm run typecheck` checks the Host, Client, and tests independently. `npm test` builds first and runs `tests/*.test.ts` with Node's native TypeScript support, exercising the compiled Host and Client artifacts. `npm pack` checks types and builds before packaging. `prepare` builds a Git checkout during installation; Git installs require the package's build to be allowlisted in pnpm. A packed tarball contains ready-to-load JavaScript and needs no consumer-side build.
 
 The i18n checks cover matching Chinese and English dictionary keys, language changes during progress and success notices, bilingual rendering of every plugin error code, and localized fallback for unknown backend errors. Chinese conversation fixtures and the `zh` UI dictionary remain intentionally bilingual test data and translations.
 

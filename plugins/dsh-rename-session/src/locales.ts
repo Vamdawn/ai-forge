@@ -1,12 +1,17 @@
-import type { RenameReason } from './protocol.js'
+import type { RenameReason } from './protocol.js';
 
-export type ErrorKey = `error.${RenameReason}`
-export type LocaleKey = 'rename' | 'pending' | 'success' | 'error' | ErrorKey
+/** Maps Host failure reasons to localized message keys. */
+export type ErrorKey = `error.${RenameReason}`;
+/** Defines the keys available to the renameSession UI namespace. */
+export type LocaleKey = 'rename' | 'pending' | 'success' | 'error' | ErrorKey;
 
-export const dictionaries = {
+/** Supplies both officially shipped locales, including every Host failure reason. */
+export const DICTIONARIES = {
   zh: {
-    rename: '根据上下文重命名', pending: '正在根据会话上下文生成名称…',
-    success: '会话已重命名为：{title}', error: '重命名失败：{message}',
+    rename: '根据上下文重命名',
+    pending: '正在根据会话上下文生成名称…',
+    success: '会话已重命名为：{title}',
+    error: '重命名失败：{message}',
     'error.invalid-request': '无效的会话改名请求。',
     'error.session-not-open': '请重新打开会话后再试。',
     'error.busy': '该会话正在生成名称，请稍候。',
@@ -22,8 +27,10 @@ export const dictionaries = {
     'error.failed': '无法重命名会话，请重试。',
   },
   en: {
-    rename: 'Rename from context', pending: 'Generating a name from the conversation…',
-    success: 'Session renamed to: {title}', error: 'Rename failed: {message}',
+    rename: 'Rename from context',
+    pending: 'Generating a name from the conversation…',
+    success: 'Session renamed to: {title}',
+    error: 'Rename failed: {message}',
     'error.invalid-request': 'Invalid session rename request.',
     'error.session-not-open': 'Reopen the session and try again.',
     'error.busy': 'A name is already being generated for this session. Please wait.',
@@ -38,10 +45,10 @@ export const dictionaries = {
     'error.cancelled': 'Name generation was cancelled.',
     'error.failed': 'Could not rename the session. Please try again.',
   },
-} satisfies Record<'zh' | 'en', Record<LocaleKey, string>>
+} satisfies Record<'zh' | 'en', Record<LocaleKey, string>>;
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    renameSession: LocaleKey
+    renameSession: LocaleKey;
   }
 }
