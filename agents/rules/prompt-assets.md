@@ -14,10 +14,10 @@
    - Rationale: 归属信息一旦丢失无法回溯；给自写内容补虚假来源同样会误导。
    - Verification: 有 `source` 的文件同时有 `author`，且链接与原文一致。
 
-3. prompt 是用户手动触发、单文件、不附带资源、不做版本管理的提示词。需要 references 或脚本、需要被模型按描述自动触发、或需要版本化时，做成 `skills/<name>/`。
-   - Rationale: 触发方式和是否带资源决定资产类别，内容主题不决定。
+3. prompt 与 skill 的分类以 [asset-layout.md](asset-layout.md) 为准，`prompts/` 仅放单个 `.md` 文件。
    - Verification: `prompts/` 下只有单个 `.md` 文件，没有子目录。
 
 ## Change Log
 
+- 2026-10-13: 资产分类改为引用目录规范真源，保留 prompt 文件布局的校验要求。
 - 2026-10-12: 初版，固化 prompts frontmatter 约定与 prompt/skill 边界。

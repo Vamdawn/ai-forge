@@ -2,7 +2,7 @@
 
 ## Scope
 
-- 本仓库产品资产（`skills/<name>/`、`tools/<name>/`）的版本、CHANGELOG、commit 与发布约定。
+- 本仓库产品资产（`skills/<name>/`、`tools/<name>/`、`plugins/<name>/`）的版本、CHANGELOG、commit 与发布约定；目录归属见 [asset-layout.md](asset-layout.md)。
 
 ## 版本化单位
 
@@ -10,18 +10,20 @@
 |----------|-----------|
 | `skills/<name>/` | 是 |
 | `tools/<name>/` | 是 |
+| `plugins/<name>/` | 是 |
 | `prompts/*.md`、`rules/*.md` | 否（git 历史即变更记录） |
 | 仓库整体 | 否（无全局版本号；仓库级约定演进记入根 CHANGELOG 的 Repository milestones） |
 
 ## Rules
 
 1. 每个版本化资产独立 semver，互不联动；tag 格式为 `<asset-name>@X.Y.Z`（annotated），资产名即目录名。
+   - npm 等生态中的包名可带 scope；例如目录资产名 `dsh-rename-session` 对应 tag `dsh-rename-session@X.Y.Z`，npm 包名为 `@vamdawn/dsh-rename-session`。
    - Verification: `git tag -l '<name>@*'` 能列出该资产的完整版本历史。
 
-2. skill 的 semver 语义：MAJOR = 触发条件（frontmatter description）、输入约定、输出格式的破坏性调整或删除子能力；MINOR = 新增子能力、新增 references/scripts；PATCH = 修 bug、文案修正、references 内容修订。tool 遵循标准 semver（CLI flag / 输出格式 / 退出码为兼容面）。
+2. skill 的 semver 语义：MAJOR = 触发条件（frontmatter description）、输入约定、输出格式的破坏性调整或删除子能力；MINOR = 新增子能力、新增 references/scripts；PATCH = 修 bug、文案修正、references 内容修订。tool 与 plugin 遵循标准 semver：tool 的兼容面为 CLI flag / 输出格式 / 退出码，plugin 的兼容面为宿主兼容性、配置与公开导出。
    - Rationale: skill 的"接口"是其行为语义，不是代码签名。
 
-3. 对 `skills/<name>/` 或 `tools/<name>/` 的用户可见变更，必须在同一 commit 中更新该资产 `CHANGELOG.md` 的 `[Unreleased]` 节；纯内部变更（重构、typo、Harness 调整）豁免。资产 CHANGELOG 不存在时随本次变更创建。
+3. 对 `skills/<name>/`、`tools/<name>/` 或 `plugins/<name>/` 的用户可见变更，必须在同一 commit 中更新该资产 `CHANGELOG.md` 的 `[Unreleased]` 节；纯内部变更（重构、typo、Harness 调整）豁免。资产 CHANGELOG 不存在时随本次变更创建。
    - Rationale: 变更记录在改动发生时最准确；发版时靠 git log 重建容易失真。
    - Verification: diff 触及资产实质内容时，该资产 CHANGELOG 同 commit 有对应条目。
 
@@ -31,6 +33,7 @@
    - Verification: `git log --oneline` 中每个产品资产变更的 scope 可直接映射到资产目录。
 
 6. 发布是显式动作：由 `/semver-release` 的资产模式执行，一次发布只针对一个资产；不随 merge 自动触发，CI 不做发布。
+   - `/semver-release` 是对外通用 skill，本仓库自用时直接引用，不复制或定制；调用时明确目标资产及目录路径，并按本规则核对作用域，不使用整库发布模式。资产路径未被识别时先明确作用域再继续。
    - Rationale: agent 维护的仓库中，自动发布会让中间提交意外成为对外版本。
 
 7. 发版时由发布流程在根 `CHANGELOG.md` 的 Releases 节追加一行：`` `<name>@X.Y.Z` (日期) — 摘要 → [详情](<asset-path>/CHANGELOG.md) ``。
@@ -46,4 +49,5 @@
 
 ## Change Log
 
+- 2026-10-13: 将应用插件纳入资产级版本与发布约定，明确目录资产名与生态包名的区别，以及通用发布 skill 的本仓库使用范围。
 - 2026-07-29: 初版，依据目标设计方案确立。

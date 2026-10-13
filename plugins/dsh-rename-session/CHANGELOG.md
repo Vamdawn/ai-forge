@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Make the npm publishing guide reusable for subsequent versions by reading the approved manifest version and linking to the repository release rules. Mark past validation records as historical so they are distinct from the checks required for a new release.
+
 ## [0.1.0] - 2026-10-13
 
 ### Added

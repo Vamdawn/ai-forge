@@ -1,40 +1,39 @@
 # Agent Harness
 
-`agents/` 是本仓库 Agent Harness 的 canonical source of truth：维护 ai-forge 仓库所需的规则、流程与校验工具都在这里维护。
+`agents/` 是本仓库 Agent Harness 的维护真源，承载维护 ai-forge 所需的规则、私有流程与校验工具。维护入口为根 [AGENTS.md](../AGENTS.md)。
 
-`.claude/`、`.agents/` 等工具点目录只是 adapter 或运行时集成点，不承载项目知识。
+工具点目录作为运行时 adapter；项目知识维护在 Harness 真源中。
 
-## 与产品层的边界
+## 职责与文档入口
 
-ai-forge 有双层身份，勿混淆：
+产品资产由 `skills/`、`prompts/`、`rules/`、`tools/`、`plugins/` 五类目录提供；Harness 服务于本仓库维护。详细分类以 [目录规范](rules/asset-layout.md) 为准。
 
-| 层 | 位置 | 内容 |
-|----|------|------|
-| 产品层 | 顶层 `skills/`、`prompts/`、`rules/`、`tools/` | 仓库出品、对外提供的可复用资产 |
-| Harness 层 | `AGENTS.md` + `agents/` | 只服务于维护本仓库的 CodeAgent |
+- 使用产品资产：根 [README.md](../README.md) 的资产索引。
+- 维护仓库：根 [AGENTS.md](../AGENTS.md) 的约束摘要与 Rules Index。
+- 调整目录或文档入口：[asset-layout.md](rules/asset-layout.md)。
+- 调整版本或准备发布：[versioning-and-release.md](rules/versioning-and-release.md)。
 
-判定规则：
-
-- 对外可复用的资产进产品层；只约束本仓库维护行为的内容进 `agents/`。
-- 产品 skill 本仓库自用时直接引用（如发版用 `/semver-release`），不复制进 `agents/`。
-- `agents/skills/` 只放纯仓库私有流程（如"新增一个 skill 的标准步骤"）。
-
-## 目录结构
+## 现有目录
 
 ```text
 agents/
-├── README.md    # 本文件
-├── rules/       # 广泛适用的维护规则（AGENTS.md 的 Rules Index 逐一引用）
-├── skills/      # 仅"维护本仓库"的流程 skill（按需创建）
-├── hooks/       # 执行边界控制（按需创建）
-├── evals/       # Harness 自身回归验证（按需创建）
-└── tools/       # 仅维护本仓库的执行文件，如 validate-skills / lint（按需创建）
+├── README.md    # Harness 说明
+└── rules/       # 按主题维护的仓库规范
 ```
 
-按需子目录在出现真实需求时创建，不预建占位。
+## 按需扩展
+
+以下目录当前不存在，出现实际维护需求时再创建：
+
+| 目录 | 用途 |
+|------|------|
+| `skills/` | 只服务于本仓库的私有流程 |
+| `hooks/` | 执行边界控制 |
+| `evals/` | Harness 自身回归验证 |
+| `tools/` | 仅维护本仓库的执行文件，如校验与 lint 工具 |
 
 ## 维护原则
 
 - 修改 Harness 时只改 `agents/` 真源，不直接改工具点目录。
 - 约束尽可能落为 validator / hook / CI 检查（机器可校验优先于散文规则）。
-- 新增 `agents/rules/*.md` 必须同步更新 `AGENTS.md` 的 Rules Index。
+- 目录、文档入口与规则索引的更新要求以 [目录规范](rules/asset-layout.md) 为准。

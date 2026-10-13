@@ -112,18 +112,22 @@ Development and test execution require Node.js 24 or newer. `npm run typecheck` 
 
 ## Publishing to npm
 
-The first release is `@vamdawn/dsh-rename-session@0.1.0`. Publishing is a separate, explicit action; committing changes or running validation does not publish the package.
+For each release, follow the [repository release rules](https://github.com/Vamdawn/ai-forge/blob/main/agents/rules/versioning-and-release.md) for the asset version, changelog, annotated tag, and root release index. The repository asset name is `dsh-rename-session`; npm uses the scoped package name `@vamdawn/dsh-rename-session`.
+
+Publishing to npm is a separate, explicit action; committing changes, creating a tag, or running validation does not publish the package. The steps below apply to the next authorized version and reuse the same shell from the plugin directory.
 
 1. Sign in to an npm account with permission to publish under `@vamdawn`. A personal scope must match the npm username; ownership of the GitHub account alone does not grant npm permissions. Enable npm's required two-factor authentication for interactive publishing.
-2. Finalize the asset's version in both `package.json` and `package-lock.json`. At release time, move the current `Added` entries from `[Unreleased]` to a dated `[0.1.0]` section and retain an empty `[Unreleased]`. Record the release in the repository's release index and create the asset's annotated tag, `dsh-rename-session@0.1.0`. The tag uses the repository asset name, while npm uses the scoped package name. Keep the changelog unreleased until that release is authorized.
+2. Once the asset release is authorized, ensure `package.json` and `package-lock.json` both contain the approved version. Complete the repository release records according to the shared rules above; the following commands read the finalized version from `package.json`.
 3. From the plugin directory, validate and pack the exact artifact to publish:
 
    ```sh
    npm ci --ignore-scripts --registry=https://registry.npmjs.org/
    npm run typecheck
    npm test
+   release_version=$(node -p "require('./package.json').version")
+   release_tarball="vamdawn-dsh-rename-session-${release_version}.tgz"
    npm pack
-   tar -tzf ./vamdawn-dsh-rename-session-0.1.0.tgz
+   tar -tzf "./${release_tarball}"
    ```
 
    The archive should contain `package.json`, `dist/index.js`, `dist/client.js`, `cordis.patch.yml`, `README.md`, `CHANGELOG.md`, and `LICENSE`. Source files, tests, build tools, and `node_modules` are excluded. The plugin-local LICENSE preserves the repository's MIT notice.
@@ -131,7 +135,7 @@ The first release is `@vamdawn/dsh-rename-session@0.1.0`. Publishing is a separa
 
    ```sh
    dsh --profile rename-publish-test --from-default-profile web --dump-config
-   dsh plugin --profile rename-publish-test add "$PWD/vamdawn-dsh-rename-session-0.1.0.tgz"
+   dsh plugin --profile rename-publish-test add "$PWD/${release_tarball}"
    dsh --profile rename-publish-test
    ```
 
@@ -140,7 +144,7 @@ The first release is `@vamdawn/dsh-rename-session@0.1.0`. Publishing is a separa
    ```sh
    npm login --registry=https://registry.npmjs.org/
    npm whoami --registry=https://registry.npmjs.org/
-   npm publish ./vamdawn-dsh-rename-session-0.1.0.tgz \
+   npm publish "./${release_tarball}" \
      --registry=https://registry.npmjs.org/ --access public
    ```
 
@@ -148,16 +152,16 @@ The first release is `@vamdawn/dsh-rename-session@0.1.0`. Publishing is a separa
 6. Check the registry entry and install the released version into DSH:
 
    ```sh
-   npm view @vamdawn/dsh-rename-session@0.1.0 \
+   npm view "@vamdawn/dsh-rename-session@${release_version}" \
      version dist.integrity --registry=https://registry.npmjs.org/
-   dsh plugin --profile <profile> add @vamdawn/dsh-rename-session@0.1.0
+   dsh plugin --profile <profile> add "@vamdawn/dsh-rename-session@${release_version}"
    ```
 
    Refresh the Plugins page and restart the profile if needed. A published name/version pair cannot be overwritten; subsequent changes require a new version.
 
-For later releases, GitHub Actions can use npm [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) with OIDC and provenance. Keep publishing tied to an explicitly authorized asset release, rather than ordinary CI runs. See npm's [scoped public package guide](https://docs.npmjs.com/creating-and-publishing-scoped-public-packages/) and [publish reference](https://docs.npmjs.com/cli/v11/commands/npm-publish/).
+For each release, keep npm publishing tied to explicit authorization. See npm's [scoped public package guide](https://docs.npmjs.com/creating-and-publishing-scoped-public-packages/), [pack reference](https://docs.npmjs.com/cli/v11/commands/npm-pack/), and [publish reference](https://docs.npmjs.com/cli/v11/commands/npm-publish/).
 
-## Validation record
+## Historical validation records
 
 Scoped-package validation on 2026-10-13: Host, Client, and test type checks passed, along with all seven tests against compiled artifacts. The tarball contained exactly the seven distribution files listed above. It was installed from the tarball into a clean Node.js 24 consumer using the public registry with lifecycle scripts disabled; the scoped Host export loaded successfully, and all seven behavioral tests passed against the installed Host and Client artifacts.
 

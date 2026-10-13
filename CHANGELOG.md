@@ -6,6 +6,7 @@
 
 ## Repository milestones
 
+- 2026-10-13: 统一 skills、prompts、rules、tools、plugins 五类资产的目录口径，将归属与文档职责集中到 `agents/rules/asset-layout.md`；补齐插件版本约定，资产索引增加用途与直接入口，Harness 说明区分现有目录与按需扩展。
 - 2026-10-12: 统一 `prompts/` 的 frontmatter（必填 `title`、`type`、`language`，第三方来源另有 `source`、`author`），并新增 `agents/rules/prompt-assets.md` 固化该约定。
 - 2026-10-12: 新增 `rules/deepseek-harness-inspired-agents-md.md`（受 deepseek-ai/deepseek-harness 的 AGENTS.md 启发的项目规则模板），并明确 `rules/` 的判定标准：常驻加载的规则片段或整文件模板；与 `prompts/`（手动触发的一次性提示词）、`skills/`（按需触发或带资源）区分。
 - 2026-10-12: 移除 `docs/`（设计与计划文档），并清理 README 与 `agents/` 中的相关引用；版本与发布约定以 `agents/rules/versioning-and-release.md` 为准。
