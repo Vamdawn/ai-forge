@@ -3,6 +3,7 @@
 本文件是全局发布索引：每次资产发版追加一行摘要，变更细节见各资产自己的 `CHANGELOG.md`。资产版本约定见 [agents/rules/versioning-and-release.md](agents/rules/versioning-and-release.md)。
 
 - `dsh-rename-session@0.1.0` (2026-10-13) — 首次发布 `@vamdawn/dsh-rename-session`，支持根据会话上下文生成名称与中英文界面 → [详情](plugins/dsh-rename-session/CHANGELOG.md)
+- `dsh-appearance-plus@0.1.0` (2026-10-15) — 首次发布 `@vamdawn/dsh-appearance-plus`，支持自定义界面字体、代码字体与背景图片 → [详情](plugins/dsh-appearance-plus/CHANGELOG.md)
 
 ## Repository milestones
 

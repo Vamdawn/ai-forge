@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-15
+
 ### Added
 
 - Add `@vamdawn/dsh-appearance-plus` with an **Appearance+** page in the official Web and Desktop settings panel. Customize the interface font, code font, and window background without editing host stylesheets.

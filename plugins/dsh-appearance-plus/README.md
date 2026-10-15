@@ -6,7 +6,19 @@ Validated with DSH `0.2.0-rc.2`. Supports the Web UI on loopback pages and the D
 
 ## Installation
 
-The plugin is not published to npm yet. Build the local checkout first. From the repository root:
+### From npm
+
+Install the public scoped package into your active DSH profile:
+
+```sh
+dsh plugin --profile desktop add @vamdawn/dsh-appearance-plus
+```
+
+Use `--profile web` for a Web profile. The npm package contains compiled JavaScript and needs no consumer-side build. It targets Node.js 24 or newer and the DSH versions declared in `peerDependencies`.
+
+### From a source checkout
+
+Build the local checkout first. From the repository root:
 
 ```sh
 cd plugins/dsh-appearance-plus
