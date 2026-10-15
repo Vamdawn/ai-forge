@@ -16,7 +16,7 @@ import type { BackgroundFit, FontFamily, PickKind, SkinResult, SkinSettings } fr
 
 const NS = 'dshSkin';
 const SOURCE = 'dsh-skin';
-const MAX_MATCHES = 50;
+const MAX_MATCHES = 200;
 const COMMIT_DELAY_MS = 300;
 const DEFAULTS: SkinSettings = {
   uiFont: '', codeFont: '', fontDir: '', backgroundImage: '', backgroundFit: 'cover', overlayOpacity: 60,
@@ -81,7 +81,21 @@ const ROW_STYLE = { display: 'flex', alignItems: 'center', gap: 8 } as const;
 const HEADING_STYLE = { margin: 0, font: 'var(--dsw-font-s-strong-14)', color: 'var(--dsw-alias-label-primary)' };
 const HINT_STYLE = { margin: 0, font: 'var(--dsw-font-xs-13)', color: 'var(--dsw-alias-label-secondary)' };
 const ERROR_STYLE = { ...HINT_STYLE, color: 'var(--dsw-alias-state-error-primary)' };
-const LIST_STYLE = { listStyle: 'none', margin: 0, padding: 0, maxHeight: 240, overflowY: 'auto' } as const;
+// The host Input wrapper is inline-flex; a column container stretches it to the full width.
+const FIELD_STYLE = { position: 'relative', display: 'flex', flexDirection: 'column' } as const;
+// An opaque layer fill: translucent menu materials let the fields below show through here.
+const POPUP_STYLE = {
+  position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 10, maxHeight: 280, overflowY: 'auto',
+  padding: 4, borderRadius: 'var(--dsw-radius-lg)', background: 'var(--dsw-alias-bg-layer-1)',
+  boxShadow: 'var(--dsw-elevation-panel)',
+} as const;
+const OPTION_STYLE = {
+  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 'var(--dsw-radius-sm)',
+  cursor: 'pointer', font: 'var(--dsw-font-s-14)', color: 'var(--dsw-alias-label-primary)',
+} as const;
+// Tags use the interface font even when the option previews another family.
+const TAG_STYLE = { marginLeft: 'auto', font: 'var(--dsw-font-xs-13)', color: 'var(--dsw-alias-label-secondary)' };
+const STATUS_STYLE = { ...HINT_STYLE, padding: '6px 8px' };
 
 function fileUrl(path: string): string {
   return `api/file?path=${encodeURIComponent(path)}`;
@@ -112,6 +126,10 @@ function backgroundCss(path: string, fit: BackgroundFit, opacity: number): strin
     + `html:root body[data-ds-dark-theme]{${layer('21 21 23', '#151517')}}`;
 }
 
+/**
+ * Searchable font picker. The input shows the saved family; focusing it lists
+ * every family, typing filters them, and the first option restores the default.
+ */
 function FontField({ id, label, value, catalog, onChange, t }: {
   id: string;
   label: string;
@@ -120,41 +138,109 @@ function FontField({ id, label, value, catalog, onChange, t }: {
   onChange: (family: string) => void;
   t: Translate;
 }) {
-  const [query, setQuery] = useState('');
-  const needle = query.trim().toLowerCase();
+  // Null while the list is closed; otherwise the filter typed since opening.
+  const [query, setQuery] = useState<string | null>(null);
+  const [active, setActive] = useState(0);
+  const open = query !== null;
+  const needle = (query ?? '').trim().toLowerCase();
   const matches = useMemo(() => catalog.fonts
-    .filter(font => font.family.toLowerCase().includes(needle))
-    .slice(0, MAX_MATCHES), [catalog.fonts, needle]);
-  let results = null;
-  if (needle && catalog.status === 'ready' && matches.length > 0) {
-    results = (
-      <ul style={LIST_STYLE} aria-label={label}>
-        {matches.map(font => (
-          <li key={font.family}>
-            <Button variant="ghost" size="sm" style={{ fontFamily: cssString(font.family) }} onClick={() => {
-              onChange(font.family);
-              setQuery('');
-            }}>
-              {font.source === 'extra' ? `${font.family} · ${t('extraSource')}` : font.family}
-            </Button>
-          </li>
-        ))}
-      </ul>
-    );
-  } else if (needle) {
-    const status = { idle: 'fontsLoading', loading: 'fontsLoading', ready: 'fontsEmpty', failed: 'fontsFailed' } as const;
-    results = <p style={HINT_STYLE}>{t(status[catalog.status])}</p>;
+    .filter(font => font.family.toLowerCase().includes(needle)), [catalog.fonts, needle]);
+  // Null stands for the host default, offered until the user starts filtering.
+  const options = useMemo(() => [...needle ? [] : [null], ...matches.slice(0, MAX_MATCHES)], [needle, matches]);
+  const current = Math.min(active, options.length - 1);
+  const listId = `${id}-list`;
+  const optionId = (index: number): string => `${id}-option-${index}`;
+  useEffect(() => {
+    if (open && current >= 0) {
+      document.getElementById(optionId(current))?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [open, current]);
+  const show = (): void => {
+    // A closed field lists every family, so the saved one can be highlighted.
+    setActive(Math.max(0, options.findIndex(font => (font?.family ?? '') === value)));
+    setQuery('');
+  };
+  const choose = (font: FontFamily | null): void => {
+    setQuery(null);
+    if ((font?.family ?? '') !== value) {
+      onChange(font?.family ?? '');
+    }
+  };
+  let status: 'fontsLoading' | 'fontsFailed' | 'fontsEmpty' | 'fontsMore' | undefined;
+  if (catalog.status === 'failed') {
+    status = 'fontsFailed';
+  } else if (catalog.status !== 'ready') {
+    status = 'fontsLoading';
+  } else if (matches.length === 0) {
+    status = 'fontsEmpty';
+  } else if (matches.length > MAX_MATCHES) {
+    status = 'fontsMore';
   }
   return (
-    <section style={SECTION_STYLE} aria-labelledby={`${id}-label`}>
-      <h3 id={`${id}-label`} style={HEADING_STYLE}>{label}</h3>
-      <div style={ROW_STYLE}>
-        <span style={{ fontFamily: value ? cssString(value) : undefined }}>{value || t('fontDefault')}</span>
-        {value ? <Button variant="ghost" size="sm" onClick={() => onChange('')}>{t('clear')}</Button> : null}
+    <section style={SECTION_STYLE}>
+      <label htmlFor={id} style={HEADING_STYLE}>{label}</label>
+      <div style={FIELD_STYLE}>
+        <Input id={id} role="combobox" autoComplete="off" spellCheck={false}
+          aria-expanded={open} aria-controls={listId} aria-autocomplete="list"
+          aria-activedescendant={open && current >= 0 ? optionId(current) : undefined}
+          value={query ?? value} placeholder={open ? value || t('search') : t('fontDefault')}
+          style={!open && value ? { fontFamily: cssString(value) } : undefined}
+          onFocus={show}
+          onClick={() => {
+            if (!open) {
+              show();
+            }
+          }}
+          onBlur={() => setQuery(null)}
+          onChange={event => {
+            setQuery(event.target.value);
+            setActive(0);
+          }}
+          onKeyDown={event => {
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault();
+              if (!open) {
+                show();
+              } else if (options.length > 0) {
+                const step = event.key === 'ArrowDown' ? 1 : -1;
+                setActive((current + step + options.length) % options.length);
+              }
+            } else if (event.key === 'Enter' && open && current >= 0) {
+              event.preventDefault();
+              choose(options[current]);
+            } else if (event.key === 'Escape' && open) {
+              // Escape closes only the list, not the settings panel around it.
+              event.preventDefault();
+              event.stopPropagation();
+              setQuery(null);
+            }
+          }} />
+        {open ? (
+          // Keep focus in the input while the pointer selects or scrolls the list.
+          <div style={POPUP_STYLE} onMouseDown={event => event.preventDefault()}>
+            <div id={listId} role="listbox" aria-label={label}>
+              {options.map((font, index) => {
+                const family = font?.family ?? '';
+                const tags = [font?.source === 'extra' ? t('extraSource') : '', family === value ? '✓' : ''];
+                return (
+                  <div key={family} id={optionId(index)} role="option" aria-selected={family === value}
+                    style={{
+                      ...OPTION_STYLE,
+                      background: index === current ? 'var(--dsw-alias-interactive-bg-hover)' : undefined,
+                      fontFamily: font ? cssString(family) : undefined,
+                    }}
+                    onMouseEnter={() => setActive(index)}
+                    onClick={() => choose(font)}>
+                    {font ? family : t('fontDefault')}
+                    <span style={TAG_STYLE}>{tags.filter(Boolean).join(' ')}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {status ? <p role="status" style={STATUS_STYLE}>{t(status)}</p> : null}
+          </div>
+        ) : null}
       </div>
-      <Input type="search" value={query} placeholder={t('search')} aria-label={`${label}: ${t('search')}`}
-        onChange={event => setQuery(event.target.value)} />
-      {results}
     </section>
   );
 }

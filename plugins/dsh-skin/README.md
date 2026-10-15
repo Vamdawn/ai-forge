@@ -38,7 +38,7 @@ dsh plugin --profile <profile> remove @vamdawn/dsh-skin
 
 Open **Settings** at the bottom of the sidebar, then select **Fonts & Background** in the left navigation. Changes apply immediately without reloading.
 
-- **Interface font** and **Code font**: search installed families by name and select one. **Clear** returns to the host default. The chosen family goes first, followed by the host's shipped font stack as fallbacks.
+- **Interface font** and **Code font**: the field shows the selected family. Click it to list every family, type to filter by name, and select with the pointer or the arrow keys and Enter. **Default** at the top of the list returns to the host default. The chosen family goes first, followed by the host's shipped font stack as fallbacks.
 - **Extra font folder**: one additional folder whose fonts appear in search, marked as *extra folder*. Supported files are `.ttf`, `.otf`, `.ttc`, `.woff`, and `.woff2`; subfolders are included. **Rescan** picks up newly installed fonts.
 - **Background image**: an absolute path to a PNG, JPEG, or WebP file. **Fit** selects cover, contain, or tile. **Overlay opacity** (0–100, default 60) places a light or dark layer over the image to keep text readable, matching the current palette.
 

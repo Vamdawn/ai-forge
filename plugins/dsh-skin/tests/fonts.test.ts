@@ -84,6 +84,8 @@ async function fixtureDir(): Promise<string> {
     { family: 'DshSkin Fixture Serif', weight: 400, italic: false },
     { family: 'DshSkin Fixture Serif', weight: 400, italic: true },
   ], true));
+  await writeFile(join(dir, 'Private.ttf'),
+    fontFile([{ family: '.DshSkin Private', weight: 400, italic: false }], false));
   await writeFile(join(dir, 'broken.ttf'), 'not a font');
   await writeFile(join(dir, 'notes.txt'), 'ignored');
   return dir;

@@ -162,6 +162,10 @@ export async function scanFonts(dirs: readonly string[], source: FontFamily['sou
         continue;
       }
       for (const face of faces) {
+        // macOS marks private system families with a leading dot; CSS cannot select them.
+        if (face.family.startsWith('.')) {
+          continue;
+        }
         let family = families.get(face.family);
         if (!family) {
           family = { family: face.family, source, files: [] };

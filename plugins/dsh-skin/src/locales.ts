@@ -9,7 +9,7 @@ export type ErrorKey = `error.${SkinReason | ClientReason}`;
 /** Defines the keys available to the dshSkin UI namespace. */
 export type LocaleKey =
   | 'nav' | 'uiFont' | 'codeFont' | 'fontDefault' | 'search' | 'fontsLoading' | 'fontsEmpty'
-  | 'fontsFailed' | 'extraSource' | 'fontDir' | 'fontDirHint' | 'rescan' | 'backgroundImage'
+  | 'fontsFailed' | 'fontsMore' | 'extraSource' | 'fontDir' | 'fontDirHint' | 'rescan' | 'backgroundImage'
   | 'backgroundHint' | 'choose' | 'clear' | 'pathPlaceholder' | 'fit' | 'fit.cover' | 'fit.contain'
   | 'fit.tile' | 'overlay' | ErrorKey;
 
@@ -24,6 +24,7 @@ export const DICTIONARIES = {
     fontsLoading: '正在扫描字体…',
     fontsEmpty: '没有匹配的字体。',
     fontsFailed: '无法读取字体列表。',
+    fontsMore: '仅显示前 200 个结果，输入更多字符以缩小范围。',
     extraSource: '额外目录',
     fontDir: '额外字体目录',
     fontDirHint: '系统已安装的字体会自动列出；这里可以再添加一个目录。',
@@ -61,6 +62,7 @@ export const DICTIONARIES = {
     fontsLoading: 'Scanning fonts…',
     fontsEmpty: 'No matching fonts.',
     fontsFailed: 'Could not load the font list.',
+    fontsMore: 'Showing the first 200 matches. Type more to narrow the list.',
     extraSource: 'extra folder',
     fontDir: 'Extra font folder',
     fontDirHint: 'Installed system fonts are listed automatically. Add one more folder here.',
