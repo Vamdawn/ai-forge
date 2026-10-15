@@ -61,7 +61,7 @@
 ### Plugins
 
 - [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.md)：根据会话上下文为 DeepSeek Harness 会话生成名称。
-- [@vamdawn/dsh-skin](plugins/dsh-skin/README.md)：自定义 DeepSeek Harness 的界面字体、代码字体与背景图片。
+- [@vamdawn/dsh-appearance-plus](plugins/dsh-appearance-plus/README.md)：自定义 DeepSeek Harness 的界面字体、代码字体与背景图片。
 
 ## 版本与发布
 

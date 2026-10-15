@@ -12,13 +12,13 @@ import type {} from '@deepseek-ai/dsh-client-locale/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import { DICTIONARIES } from './locales.js';
 import type { ClientReason, ErrorKey } from './locales.js';
-import type { BackgroundFit, FontFamily, PickKind, SkinResult, SkinSettings } from './protocol.js';
+import type { BackgroundFit, FontFamily, PickKind, AppearanceResult, AppearanceSettings } from './protocol.js';
 
-const NS = 'dshSkin';
-const SOURCE = 'dsh-skin';
+const NS = 'dshAppearancePlus';
+const SOURCE = 'dsh-appearance-plus';
 const MAX_MATCHES = 200;
 const COMMIT_DELAY_MS = 300;
-const DEFAULTS: SkinSettings = {
+const DEFAULTS: AppearanceSettings = {
   uiFont: '', codeFont: '', fontDir: '', backgroundImage: '', backgroundFit: 'cover', overlayOpacity: 60,
 };
 // The selected family goes first; the host's shipped stacks remain as fallbacks.
@@ -62,12 +62,12 @@ interface CatalogState {
 
 interface PageInjected {
   hooks: {
-    form: ConfigForm<SkinSettings>;
+    form: ConfigForm<AppearanceSettings>;
     applyIssues: SnapshotStore<Issues>;
     actionIssues: SnapshotStore<Issues>;
     catalog: SnapshotStore<CatalogState>;
   };
-  save: (field: keyof SkinSettings, value: string | number) => void;
+  save: (field: keyof AppearanceSettings, value: string | number) => void;
   pick: (kind: PickKind, field: 'fontDir' | 'backgroundImage') => void;
   loadCatalog: (refresh: boolean) => void;
 }
@@ -111,7 +111,7 @@ function both(value: string): ThemeTokenModes {
 }
 
 function errorKey(code: string): ErrorKey {
-  const key = code.replace(/^dsh-skin\//, 'error.');
+  const key = code.replace(/^dsh-appearance-plus\//, 'error.');
   return key.startsWith('error.') && Object.hasOwn(DICTIONARIES.en, key) ? key as ErrorKey : 'error.failed';
 }
 
@@ -302,17 +302,17 @@ function OverlayField({ value, disabled, onCommit, t }: {
   }, [draft]);
   return (
     <section style={SECTION_STYLE}>
-      <label htmlFor="dsh-skin-overlay" style={HEADING_STYLE}>{t('overlay')}</label>
+      <label htmlFor="dsh-appearance-plus-overlay" style={HEADING_STYLE}>{t('overlay')}</label>
       <div style={ROW_STYLE}>
-        <input id="dsh-skin-overlay" type="range" min={0} max={100} step={1} value={draft} disabled={disabled}
+        <input id="dsh-appearance-plus-overlay" type="range" min={0} max={100} step={1} value={draft} disabled={disabled}
           onChange={event => setDraft(Number(event.target.value))} />
-        <output htmlFor="dsh-skin-overlay">{`${draft}%`}</output>
+        <output htmlFor="dsh-appearance-plus-overlay">{`${draft}%`}</output>
       </div>
     </section>
   );
 }
 
-function SkinPage({ useForm, useApplyIssues, useActionIssues, useCatalog, save, pick, loadCatalog, t }: PageProps) {
+function AppearancePage({ useForm, useApplyIssues, useActionIssues, useCatalog, save, pick, loadCatalog, t }: PageProps) {
   const settings = { ...DEFAULTS, ...useForm(snapshot => snapshot.value) };
   const applied = useApplyIssues(value => value);
   const action = useActionIssues(value => value);
@@ -328,22 +328,22 @@ function SkinPage({ useForm, useApplyIssues, useActionIssues, useCatalog, save, 
   return (
     <div style={PAGE_STYLE}>
       {issue('save')}
-      <FontField id="dsh-skin-ui-font" label={t('uiFont')} value={settings.uiFont} catalog={catalog} t={t}
+      <FontField id="dsh-appearance-plus-ui-font" label={t('uiFont')} value={settings.uiFont} catalog={catalog} t={t}
         onChange={family => save('uiFont', family)} />
       {issue('uiFont')}
-      <FontField id="dsh-skin-code-font" label={t('codeFont')} value={settings.codeFont} catalog={catalog} t={t}
+      <FontField id="dsh-appearance-plus-code-font" label={t('codeFont')} value={settings.codeFont} catalog={catalog} t={t}
         onChange={family => save('codeFont', family)} />
       {issue('codeFont')}
-      <PathField key={`dir:${settings.fontDir}`} id="dsh-skin-font-dir" label={t('fontDir')} hint={t('fontDirHint')}
+      <PathField key={`dir:${settings.fontDir}`} id="dsh-appearance-plus-font-dir" label={t('fontDir')} hint={t('fontDirHint')}
         value={settings.fontDir} t={t} onCommit={path => save('fontDir', path)} onPick={() => pick('directory', 'fontDir')}>
         <Button variant="ghost" size="sm" onClick={() => loadCatalog(true)}>{t('rescan')}</Button>
       </PathField>
       {issue('fontDir')}
-      <PathField key={`image:${settings.backgroundImage}`} id="dsh-skin-background" label={t('backgroundImage')}
+      <PathField key={`image:${settings.backgroundImage}`} id="dsh-appearance-plus-background" label={t('backgroundImage')}
         hint={t('backgroundHint')} value={settings.backgroundImage} t={t}
         onCommit={path => save('backgroundImage', path)} onPick={() => pick('image', 'backgroundImage')} />
       {issue('backgroundImage')}
-      <SegmentedControl id="dsh-skin-fit" label={t('fit')} value={settings.backgroundFit} disabled={noImage}
+      <SegmentedControl id="dsh-appearance-plus-fit" label={t('fit')} value={settings.backgroundFit} disabled={noImage}
         options={(['cover', 'contain', 'tile'] as const).map(fit => ({ value: fit, label: t(`fit.${fit}`) }))}
         onChange={fit => save('backgroundFit', fit)} />
       <OverlayField value={settings.overlayOpacity} disabled={noImage} t={t}
@@ -352,12 +352,12 @@ function SkinPage({ useForm, useApplyIssues, useActionIssues, useCatalog, save, 
   );
 }
 
-export const name = 'dsh-skin-client';
+export const name = 'dsh-appearance-plus-client';
 export const inject = ['slots', 'locale', 'theme', 'configForms'];
 
 /** Applies the persisted fonts and background, and registers the settings page. */
 export function apply(ctx: Context): void {
-  const form = ctx.configForms.get<SkinSettings>('dsh-skin');
+  const form = ctx.configForms.get<AppearanceSettings>('dsh-appearance-plus');
   const applyIssues = createSnapshotStore<Issues>({});
   const actionIssues = createSnapshotStore<Issues>({});
   const catalog = createSnapshotStore<CatalogState>({ status: 'idle', fonts: [] });
@@ -370,19 +370,19 @@ export function apply(ctx: Context): void {
   let appliedKey: string | undefined;
   let catalogRequest = 0;
 
-  const currentSettings = (): SkinSettings => ({ ...DEFAULTS, ...form.getSnapshot().value });
-  const fontDir = (settings: SkinSettings): string =>
+  const currentSettings = (): AppearanceSettings => ({ ...DEFAULTS, ...form.getSnapshot().value });
+  const fontDir = (settings: AppearanceSettings): string =>
     ABSOLUTE_PATH.test(settings.fontDir.trim()) ? settings.fontDir.trim() : '';
 
   const fetchCatalog = (dir: string): Promise<FontFamily[]> => {
     let pending = catalogs.get(dir);
     if (!pending) {
-      const request = fetch(`api/dsh-skin/fonts?${new URLSearchParams(dir ? { dir } : {})}`, { signal: lifetime.signal })
+      const request = fetch(`api/dsh-appearance-plus/fonts?${new URLSearchParams(dir ? { dir } : {})}`, { signal: lifetime.signal })
         .then(async response => {
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
           }
-          const result: SkinResult<FontFamily[]> = await response.json();
+          const result: AppearanceResult<FontFamily[]> = await response.json();
           if (!result.ok) {
             throw new Error(result.error.code);
           }
@@ -406,7 +406,7 @@ export function apply(ctx: Context): void {
     if (refresh) {
       catalogs.clear();
       // The Host clears its own scan cache when asked to refresh.
-      await fetch('api/dsh-skin/fonts?refresh=', { signal: lifetime.signal }).catch(() => undefined);
+      await fetch('api/dsh-appearance-plus/fonts?refresh=', { signal: lifetime.signal }).catch(() => undefined);
     }
     catalog.set({ status: 'loading', fonts: [] });
     try {
@@ -449,7 +449,7 @@ export function apply(ctx: Context): void {
 
   // Resolves every setting before touching the document. A font or image that
   // fails keeps its previously applied value instead of dropping to defaults.
-  const sync = async (settings: SkinSettings): Promise<void> => {
+  const sync = async (settings: AppearanceSettings): Promise<void> => {
     const key = JSON.stringify(settings);
     if (key === appliedKey) {
       return;
@@ -537,7 +537,7 @@ export function apply(ctx: Context): void {
   });
   ctx.effect(() => ctx.locale.register(NS, DICTIONARIES));
 
-  const save = (field: keyof SkinSettings, value: string | number): void => {
+  const save = (field: keyof AppearanceSettings, value: string | number): void => {
     actionIssues.set({});
     form.set(field, value).then(accepted => {
       if (!accepted) {
@@ -551,7 +551,7 @@ export function apply(ctx: Context): void {
   const pick = async (kind: PickKind, field: 'fontDir' | 'backgroundImage'): Promise<void> => {
     actionIssues.set({});
     try {
-      const response = await fetch('api/dsh-skin/pick', {
+      const response = await fetch('api/dsh-appearance-plus/pick', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ kind }),
@@ -560,7 +560,7 @@ export function apply(ctx: Context): void {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      const result: SkinResult<string | null> = await response.json();
+      const result: AppearanceResult<string | null> = await response.json();
       if (!result.ok) {
         actionIssues.set({ [field]: errorKey(result.error.code) });
       } else if (result.value !== null) {
@@ -576,7 +576,7 @@ export function apply(ctx: Context): void {
   const t = ctx.locale.bind(NS);
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
-    id: 'dsh-skin',
+    id: 'dsh-appearance-plus',
     order: 10,
     label: () => t('nav'),
     locale: NS,
@@ -590,5 +590,5 @@ export function apply(ctx: Context): void {
         void loadCatalog(refreshCatalog);
       },
     }),
-  }, SkinPage));
+  }, AppearancePage));
 }

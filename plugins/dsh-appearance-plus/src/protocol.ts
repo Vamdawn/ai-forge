@@ -2,7 +2,7 @@
 export type BackgroundFit = 'cover' | 'contain' | 'tile';
 
 /** Persisted settings shared by the Host schema and the settings page. Empty strings select host defaults. */
-export interface SkinSettings {
+export interface AppearanceSettings {
   uiFont: string;
   codeFont: string;
   fontDir: string;
@@ -29,9 +29,9 @@ export interface FontFamily {
 export type PickKind = 'image' | 'directory';
 
 /** Enumerates Host failures that have dedicated UI translations. */
-export type SkinReason = 'invalid-request' | 'busy' | 'unsupported-platform' | 'picker-failed' | 'failed';
+export type AppearanceReason = 'invalid-request' | 'busy' | 'unsupported-platform' | 'picker-failed' | 'failed';
 
 /** Describes a Host route's success or structured failure response. */
-export type SkinResult<T> =
+export type AppearanceResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: { code: string; message: string } };

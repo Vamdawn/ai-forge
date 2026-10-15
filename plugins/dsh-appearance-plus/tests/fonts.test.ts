@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import type { FontFamily, SkinResult } from '../src/protocol.js';
+import type { FontFamily, AppearanceResult } from '../src/protocol.js';
 // Font parsing is internal to the Host bundle, so it is tested from source.
 import { parseFamily, readFaces, scanFonts, systemFontDirs } from '../src/fonts.ts';
 import { pickPath } from '../src/picker.ts';
@@ -76,16 +76,16 @@ function fontFile(faces: FixtureFace[], collection: boolean): Buffer {
 }
 
 async function fixtureDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'dsh-skin-fonts-'));
+  const dir = await mkdtemp(join(tmpdir(), 'dsh-appearance-plus-fonts-'));
   await mkdir(join(dir, 'nested'));
   await writeFile(join(dir, 'Sans-Bold.TTF'),
-    fontFile([{ family: 'DshSkin Fixture Sans', weight: 700, italic: false }], false));
+    fontFile([{ family: 'DshAppearancePlus Fixture Sans', weight: 700, italic: false }], false));
   await writeFile(join(dir, 'nested', 'Serif.ttc'), fontFile([
-    { family: 'DshSkin Fixture Serif', weight: 400, italic: false },
-    { family: 'DshSkin Fixture Serif', weight: 400, italic: true },
+    { family: 'DshAppearancePlus Fixture Serif', weight: 400, italic: false },
+    { family: 'DshAppearancePlus Fixture Serif', weight: 400, italic: true },
   ], true));
   await writeFile(join(dir, 'Private.ttf'),
-    fontFile([{ family: '.DshSkin Private', weight: 400, italic: false }], false));
+    fontFile([{ family: '.DshAppearancePlus Private', weight: 400, italic: false }], false));
   await writeFile(join(dir, 'broken.ttf'), 'not a font');
   await writeFile(join(dir, 'notes.txt'), 'ignored');
   return dir;
@@ -106,10 +106,10 @@ test('faces are read from fonts, collections, and compressed web fonts', async (
   const dir = await fixtureDir();
   try {
     assert.deepEqual(await readFaces(join(dir, 'Sans-Bold.TTF')),
-      [{ family: 'DshSkin Fixture Sans', weight: 700, italic: false }]);
+      [{ family: 'DshAppearancePlus Fixture Sans', weight: 700, italic: false }]);
     assert.deepEqual(await readFaces(join(dir, 'nested', 'Serif.ttc')), [
-      { family: 'DshSkin Fixture Serif', weight: 400, italic: false },
-      { family: 'DshSkin Fixture Serif', weight: 400, italic: true },
+      { family: 'DshAppearancePlus Fixture Serif', weight: 400, italic: false },
+      { family: 'DshAppearancePlus Fixture Serif', weight: 400, italic: true },
     ]);
     await assert.rejects(readFaces(join(dir, 'broken.ttf')));
     const woff2 = new URL(
@@ -125,9 +125,9 @@ test('scans group faces by family and skip missing directories and damaged files
   try {
     const sort = (fonts: FontFamily[]) => fonts.sort((a, b) => a.family.localeCompare(b.family));
     assert.deepEqual(sort(await scanFonts([join(dir, 'missing'), dir], 'extra')), [
-      { family: 'DshSkin Fixture Sans', source: 'extra',
+      { family: 'DshAppearancePlus Fixture Sans', source: 'extra',
         files: [{ path: join(dir, 'Sans-Bold.TTF'), weight: 700, italic: false }] },
-      { family: 'DshSkin Fixture Serif', source: 'extra', files: [
+      { family: 'DshAppearancePlus Fixture Serif', source: 'extra', files: [
         { path: join(dir, 'nested', 'Serif.ttc'), weight: 400, italic: false },
         { path: join(dir, 'nested', 'Serif.ttc'), weight: 400, italic: true },
       ] },
@@ -148,12 +148,12 @@ test('system font directories follow the platform', () => {
 
 test('native pickers report unsupported platforms instead of running a command', async () => {
   await assert.rejects(pickPath('image', AbortSignal.timeout(1_000), 'linux'),
-    (error: unknown) => error instanceof Error && 'code' in error && error.code === 'dsh-skin/unsupported-platform');
+    (error: unknown) => error instanceof Error && 'code' in error && error.code === 'dsh-appearance-plus/unsupported-platform');
 });
 
 // The compiled Host is loaded through its package export, as DSH loads it.
 // The built JavaScript has no declarations, so type the exercised exports here.
-const PACKAGE_NAME = '@vamdawn/dsh-skin';
+const PACKAGE_NAME = '@vamdawn/dsh-appearance-plus';
 const { apply, Config }: {
   apply(ctx: object): void;
   Config(value: object): Record<string, { get(): unknown }>;
@@ -185,25 +185,25 @@ test('Host routes validate input and serve the extra folder catalog', async () =
     } } },
   });
   assert.deepEqual(presentation, { auto: false });
-  const call = async <T>(path: string, init?: RequestInit): Promise<SkinResult<T>> => {
+  const call = async <T>(path: string, init?: RequestInit): Promise<AppearanceResult<T>> => {
     const route = routes.get(path.split('?')[0]);
     assert.ok(route);
-    return await (await route(new Request(`http://127.0.0.1${path}`, init))).json() as SkinResult<T>;
+    return await (await route(new Request(`http://127.0.0.1${path}`, init))).json() as AppearanceResult<T>;
   };
-  assert.deepEqual(await call('/api/dsh-skin/fonts?dir=relative/fonts'),
-    { ok: false, error: { code: 'dsh-skin/invalid-request', message: 'invalid-request' } });
+  assert.deepEqual(await call('/api/dsh-appearance-plus/fonts?dir=relative/fonts'),
+    { ok: false, error: { code: 'dsh-appearance-plus/invalid-request', message: 'invalid-request' } });
   for (const body of ['{"kind":"file"}', 'not json']) {
-    assert.deepEqual(await call('/api/dsh-skin/pick', { method: 'POST', body }),
-      { ok: false, error: { code: 'dsh-skin/invalid-request', message: 'invalid-request' } });
+    assert.deepEqual(await call('/api/dsh-appearance-plus/pick', { method: 'POST', body }),
+      { ok: false, error: { code: 'dsh-appearance-plus/invalid-request', message: 'invalid-request' } });
   }
   const dir = await fixtureDir();
   try {
-    const result = await call<FontFamily[]>(`/api/dsh-skin/fonts?dir=${encodeURIComponent(dir)}`);
+    const result = await call<FontFamily[]>(`/api/dsh-appearance-plus/fonts?dir=${encodeURIComponent(dir)}`);
     assert.ok(result.ok);
     const families = result.value.map(font => font.family);
     assert.deepEqual(families, [...families].sort((a, b) => a.localeCompare(b)));
-    assert.deepEqual(result.value.find(font => font.family === 'DshSkin Fixture Sans'), {
-      family: 'DshSkin Fixture Sans', source: 'extra',
+    assert.deepEqual(result.value.find(font => font.family === 'DshAppearancePlus Fixture Sans'), {
+      family: 'DshAppearancePlus Fixture Sans', source: 'extra',
       files: [{ path: join(dir, 'Sans-Bold.TTF'), weight: 700, italic: false }],
     });
   } finally {

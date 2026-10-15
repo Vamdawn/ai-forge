@@ -1,13 +1,13 @@
 {
-  "name": "@vamdawn/dsh-skin",
+  "name": "@vamdawn/dsh-appearance-plus",
   "version": "0.1.0",
   "description": "Customize DeepSeek Harness interface fonts, code fonts, and background image",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Vamdawn/ai-forge.git",
-    "directory": "plugins/dsh-skin"
+    "directory": "plugins/dsh-appearance-plus"
   },
-  "homepage": "https://github.com/Vamdawn/ai-forge/tree/main/plugins/dsh-skin#readme",
+  "homepage": "https://github.com/Vamdawn/ai-forge/tree/main/plugins/dsh-appearance-plus#readme",
   "bugs": {
     "url": "https://github.com/Vamdawn/ai-forge/issues"
   },
@@ -17,7 +17,7 @@
     "plugin",
     "font",
     "background",
-    "skin"
+    "appearance"
   ],
   "engines": {
     "node": ">=24"

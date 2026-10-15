@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { runInNewContext } from 'node:vm';
-import type { FontFamily, SkinSettings } from '../src/protocol.js';
+import type { FontFamily, AppearanceSettings } from '../src/protocol.js';
 
 // The VM exposes only the DOM and services exercised by the compiled Client.
 // Keep that boundary explicit instead of asserting a full Context.
@@ -91,17 +91,17 @@ test('settings apply fonts and background, keep the last good values, and fully 
         const status = fileStatus.get(new URLSearchParams(url.slice('api/file?'.length)).get('path') ?? '') ?? 200;
         return { ok: status === 200, status };
       }
-      const value = url.startsWith('api/dsh-skin/pick') ? '/picked/bg.webp' : catalog;
+      const value = url.startsWith('api/dsh-appearance-plus/pick') ? '/picked/bg.webp' : catalog;
       return { ok: true, status: 200, json: async () => ({ ok: true, value }) };
     },
   });
 
-  let settings: Partial<SkinSettings> = {
+  let settings: Partial<AppearanceSettings> = {
     uiFont: 'LXGW Bright', backgroundImage: '/Users/test/bg.jpg', backgroundFit: 'tile', overlayOpacity: 40,
   };
   let notify: (() => void) | undefined;
   const writes: Array<[string, unknown]> = [];
-  const update = async (next: Partial<SkinSettings>): Promise<void> => {
+  const update = async (next: Partial<AppearanceSettings>): Promise<void> => {
     settings = { ...settings, ...next };
     notify?.();
     await settle();
@@ -122,13 +122,13 @@ test('settings apply fonts and background, keep the last good values, and fully 
     },
   };
   assert.ok(plugin);
-  assert.equal(plugin.id, '@vamdawn/dsh-skin');
+  assert.equal(plugin.id, '@vamdawn/dsh-appearance-plus');
   plugin.factory(id => modules[id]).apply({
     effect: (callback: () => () => void) => {
       disposers.push(callback());
     },
     configForms: { get: (id: string) => {
-      assert.equal(id, 'dsh-skin');
+      assert.equal(id, 'dsh-appearance-plus');
       return {
         getSnapshot: () => ({ value: settings }),
         subscribe: (listener: () => void) => {
@@ -142,13 +142,13 @@ test('settings apply fonts and background, keep the last good values, and fully 
       };
     } },
     theme: { overrideTokens: (layerSource: string, tokens: Record<string, TokenModes>) => {
-      assert.equal(layerSource, 'dsh-skin');
+      assert.equal(layerSource, 'dsh-appearance-plus');
       layers.push(structuredClone(tokens));
       return () => { removedLayers++; };
     } },
     locale: {
       register: (namespace: string, value: typeof dictionaries) => {
-        assert.equal(namespace, 'dshSkin');
+        assert.equal(namespace, 'dshAppearancePlus');
         dictionaries = value;
         return () => {};
       },
@@ -169,7 +169,7 @@ test('settings apply fonts and background, keep the last good values, and fully 
   assert.deepEqual(Object.keys(dictionaries.en).sort(), Object.keys(dictionaries.zh).sort());
   assert.ok(page);
   assert.deepEqual([page.name, page.id, page.order, page.label()],
-    ['settings.section', 'dsh-skin', 10, 'Fonts & Background']);
+    ['settings.section', 'dsh-appearance-plus', 10, 'Appearance+']);
   const injected = page.inject();
   const issues = () => structuredClone(injected.hooks.applyIssues.getSnapshot());
   const active = () => layers.at(-1) ?? {};
@@ -216,7 +216,7 @@ test('settings apply fonts and background, keep the last good values, and fully 
     ['Fixture Mono', 'url("api/file?path=%2Ffonts%2FFixture%20Mono%20Bold.ttf")', { weight: '700', style: 'normal' }],
     ['Fixture Mono', 'url("api/file?path=%2Ffonts%2FFixtureMono-Italic.ttf")', { weight: '400', style: 'italic' }],
   ]);
-  assert.ok(calls.some(call => call.url === 'api/dsh-skin/fonts?dir=%2Ffonts'));
+  assert.ok(calls.some(call => call.url === 'api/dsh-appearance-plus/fonts?dir=%2Ffonts'));
 
   // A failed font load keeps the previous family and its loaded faces.
   TestFontFace.failing.add('Broken Mono');
@@ -233,8 +233,8 @@ test('settings apply fonts and background, keep the last good values, and fully 
   // The native picker result is saved through the settings form.
   injected.pick('image', 'backgroundImage');
   await settle();
-  assert.deepEqual(calls.find(call => call.url === 'api/dsh-skin/pick'),
-    { url: 'api/dsh-skin/pick', method: 'POST', body: '{"kind":"image"}' });
+  assert.deepEqual(calls.find(call => call.url === 'api/dsh-appearance-plus/pick'),
+    { url: 'api/dsh-appearance-plus/pick', method: 'POST', body: '{"kind":"image"}' });
   assert.deepEqual(writes, [['backgroundImage', '/picked/bg.webp']]);
 
   await update({ fontDir: '/fonts', codeFont: 'Fixture Mono', backgroundImage: '/Users/test/bg.jpg' });

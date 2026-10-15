@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { PickKind, SkinReason } from './protocol.js';
+import type { PickKind, AppearanceReason } from './protocol.js';
 
 const run = promisify(execFile);
 
@@ -11,12 +11,12 @@ const SCRIPTS: Record<PickKind, string> = {
 };
 
 /** Carries a failure reason that the client translates. */
-export class SkinError extends Error {
-  readonly code: `dsh-skin/${SkinReason}`;
+export class AppearanceError extends Error {
+  readonly code: `dsh-appearance-plus/${AppearanceReason}`;
 
-  constructor(reason: SkinReason) {
+  constructor(reason: AppearanceReason) {
     super(reason);
-    this.code = `dsh-skin/${reason}`;
+    this.code = `dsh-appearance-plus/${reason}`;
   }
 }
 
@@ -26,7 +26,7 @@ export class SkinError extends Error {
  */
 export async function pickPath(kind: PickKind, signal: AbortSignal, platform = process.platform): Promise<string | null> {
   if (platform !== 'darwin') {
-    throw new SkinError('unsupported-platform');
+    throw new AppearanceError('unsupported-platform');
   }
   try {
     // `activate` raises the dialog above the DSH window instead of behind it.
@@ -37,6 +37,6 @@ export async function pickPath(kind: PickKind, signal: AbortSignal, platform = p
     if (typeof error === 'object' && error !== null && 'stderr' in error && String(error.stderr).includes('(-128)')) {
       return null;
     }
-    throw new SkinError('picker-failed');
+    throw new AppearanceError('picker-failed');
   }
 }

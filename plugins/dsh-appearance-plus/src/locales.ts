@@ -1,12 +1,12 @@
-import type { SkinReason } from './protocol.js';
+import type { AppearanceReason } from './protocol.js';
 
 /** Failures detected in the browser before or while applying a setting. */
 export type ClientReason =
   | 'not-absolute' | 'unsupported-format' | 'not-found' | 'too-large' | 'denied'
   | 'unavailable' | 'font-load-failed' | 'save-failed';
 /** Maps Host and client failure reasons to localized message keys. */
-export type ErrorKey = `error.${SkinReason | ClientReason}`;
-/** Defines the keys available to the dshSkin UI namespace. */
+export type ErrorKey = `error.${AppearanceReason | ClientReason}`;
+/** Defines the keys available to the dshAppearancePlus UI namespace. */
 export type LocaleKey =
   | 'nav' | 'uiFont' | 'codeFont' | 'fontDefault' | 'search' | 'fontsLoading' | 'fontsEmpty'
   | 'fontsFailed' | 'fontsMore' | 'extraSource' | 'fontDir' | 'fontDirHint' | 'rescan' | 'backgroundImage'
@@ -16,7 +16,7 @@ export type LocaleKey =
 /** Supplies both officially shipped locales, including every failure reason. */
 export const DICTIONARIES = {
   zh: {
-    nav: '字体与背景',
+    nav: '外观+',
     uiFont: '界面字体',
     codeFont: '代码字体',
     fontDefault: '默认',
@@ -54,7 +54,7 @@ export const DICTIONARIES = {
     'error.save-failed': '设置未保存，请重试。',
   },
   en: {
-    nav: 'Fonts & Background',
+    nav: 'Appearance+',
     uiFont: 'Interface font',
     codeFont: 'Code font',
     fontDefault: 'Default',
@@ -95,6 +95,6 @@ export const DICTIONARIES = {
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    dshSkin: LocaleKey;
+    dshAppearancePlus: LocaleKey;
   }
 }

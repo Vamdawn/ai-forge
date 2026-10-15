@@ -6,10 +6,10 @@ import type { Context, Volatile } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-client-connection';
 import type {} from '@deepseek-ai/dsh-settings';
 import { scanFonts, systemFontDirs } from './fonts.js';
-import { pickPath, SkinError } from './picker.js';
-import type { BackgroundFit, FontFamily, PickKind, SkinResult } from './protocol.js';
+import { pickPath, AppearanceError } from './picker.js';
+import type { BackgroundFit, FontFamily, PickKind, AppearanceResult } from './protocol.js';
 
-export const name = 'dsh-skin';
+export const name = 'dsh-appearance-plus';
 export const inject = ['connection'];
 
 /** Live settings; the settings page and `cordis.patch.yml` edit the same values. */
@@ -33,11 +33,11 @@ export const Config = z.object({
 });
 
 async function respond<T>(operation: () => Promise<T>): Promise<Response> {
-  let result: SkinResult<T>;
+  let result: AppearanceResult<T>;
   try {
     result = { ok: true, value: await operation() };
   } catch (error) {
-    const code = error instanceof SkinError ? error.code : 'dsh-skin/failed';
+    const code = error instanceof AppearanceError ? error.code : 'dsh-appearance-plus/failed';
     result = { ok: false, error: { code, message: error instanceof Error ? error.message : code } };
   }
   return Response.json(result);
@@ -59,14 +59,14 @@ export function apply(ctx: Context): void {
   let picking = false;
 
   ctx.effect(() => ctx.connection.fetch.register({
-    path: '/api/dsh-skin/fonts',
+    path: '/api/dsh-appearance-plus/fonts',
     methods: ['GET'],
     requestBody: 'buffered',
     fetch: request => respond(async () => {
       const params = new URL(request.url).searchParams;
       const dir = params.get('dir') ?? '';
       if (dir && !isAbsolute(dir)) {
-        throw new SkinError('invalid-request');
+        throw new AppearanceError('invalid-request');
       }
       if (params.has('refresh')) {
         systemFonts = undefined;
@@ -87,7 +87,7 @@ export function apply(ctx: Context): void {
   }));
 
   ctx.effect(() => ctx.connection.fetch.register({
-    path: '/api/dsh-skin/pick',
+    path: '/api/dsh-appearance-plus/pick',
     methods: ['POST'],
     requestBody: 'buffered',
     fetch: async request => {
@@ -95,10 +95,10 @@ export function apply(ctx: Context): void {
       return respond(async () => {
         if (typeof payload !== 'object' || payload === null || !('kind' in payload)
           || (payload.kind !== 'image' && payload.kind !== 'directory')) {
-          throw new SkinError('invalid-request');
+          throw new AppearanceError('invalid-request');
         }
         if (picking) {
-          throw new SkinError('busy');
+          throw new AppearanceError('busy');
         }
         picking = true;
         try {
