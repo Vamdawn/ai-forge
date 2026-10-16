@@ -107,10 +107,7 @@ export const CSS = `
 .dwt-child:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .dwt-child-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dwt-row-mark { flex: none; width: 14px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
-.dwt-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--dsw-alias-state-idle-primary); }
-.dwt-dot[data-state='running'] { background: var(--dsw-alias-state-success-primary); }
-.dwt-dot[data-state='input'] { background: var(--dsw-alias-state-warn-primary); }
-.dwt-unread { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--dsw-alias-state-success-primary); }
+.dwt-child-time { flex: none; font-size: 11px; color: var(--dsw-alias-label-secondary); }
 .dwt-trailing { flex: none; font-size: 11px; color: var(--dsw-alias-label-secondary); }
 /* The row keeps two controls. Both live in one strip that is out of flow at
    rest, so the relative time holds the trailing cell on its own; hovering swaps
@@ -176,6 +173,10 @@ export const CSS = `
 .dwt-card { position: fixed; z-index: 40; max-width: 340px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-overlay, var(--dsw-alias-bg-layer-2)); box-shadow: 0 6px 20px rgb(0 0 0 / .18); pointer-events: none; }
 .dwt-card-title { font-size: 13px; color: var(--dsw-alias-label-primary); overflow-wrap: anywhere; }
 .dwt-card-meta { margin-top: 4px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+/* The Workspace's directory and creation instant, under the row's own line and
+   one step quieter than the title. */
+.dwt-card-path { margin-top: 4px; font-size: 11px; color: var(--dsw-alias-label-tertiary); overflow-wrap: anywhere; }
+.dwt-card-created { margin-top: 2px; font-size: 11px; color: var(--dsw-alias-label-tertiary); }
 .dwt-rail { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; }
 .dwt-rail-button { position: relative; appearance: none; border: 0; background: none; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 15px; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; }
 .dwt-rail-button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-interactive-bg-hover); }

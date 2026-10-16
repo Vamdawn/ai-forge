@@ -11,6 +11,7 @@ export type LocaleKey =
   | 'addWorkspace' | 'addFailed' | 'dismiss'
   | 'ws.rename' | 'ws.delete' | 'ws.deleteConfirm' | 'common.cancel'
   | 'ws.menu' | 'ws.newSession' | 'ws.sessions' | 'ws.path' | 'ws.pathCopied'
+  | 'card.created' | 'date.ymd'
   | 'time.now' | 'time.minute' | 'time.hour' | 'time.day';
 
 /** Copy for the officially shipped Chinese and English locales. */
@@ -57,6 +58,8 @@ export const DICTIONARIES = {
     'ws.path': '工作区目录',
     'ws.pathCopied': '已复制路径',
     'common.cancel': '取消',
+    'card.created': '创建于 {time}',
+    'date.ymd': '{y}年{m}月{d}日',
     'time.now': '刚刚',
     'time.minute': '{n} 分钟前',
     'time.hour': '{n} 小时前',
@@ -104,6 +107,8 @@ export const DICTIONARIES = {
     'ws.path': 'Workspace directory',
     'ws.pathCopied': 'Path copied',
     'common.cancel': 'Cancel',
+    'card.created': 'Created {time}',
+    'date.ymd': '{y}-{m}-{d}',
     'time.now': 'just now',
     'time.minute': '{n}m ago',
     'time.hour': '{n}h ago',

@@ -14,6 +14,9 @@ All notable changes to this asset are documented in this file. The format follow
 ### Changed
 
 - Rewrite the README around install, usage, limitations, and development. The slot-contract implementation notes, the route trade-off analysis, the source map, and the dated verification narrative are no longer part of it.
+- Mark a Session row only where it needs attention: waiting on you, working — its own turn or a delegation it started — or a completed turn you have not opened. The working marks use the shipped ongoing loader, blank and idle rows keep the leading cell empty, and the separate unread dot beside the title is gone.
+- Show the nested subagent layer while a Session is working, has a delegation running, or owes a look, instead of leaving it listed once everything stopped. Each row is titled by its delegation label, prints its own last-activity time, and carries the loader only while it runs; five rows show at a time, and a running delegation is never the one left out.
+- Add the Workspace name, directory, and creation time to a Session's hover card: the three facts the shipped sidebar prints for a Workspace.
 
 ## [0.1.0] - 2026-10-16
 

@@ -51,7 +51,9 @@ dsh plugin --profile <profile> remove @vamdawn/dsh-astrolabe
 - **Workspaces** groups sessions by registered Workspace, then Ungrouped; **Status** groups them by Needs input, Working, and Completed. Both tabs open with a **Pinned** section while anything is pinned, and a pinned session leaves the section it would otherwise sit in.
 - Sections collapse, and Workspace menus show their section counts. Completed stays folded and reveals 20 more rows per press, unseen completions first.
 - Search matches titles and Workspace names immediately, then adds debounced conversation matches with snippets. It follows the host `session.search` binding (⌘K / Ctrl+K by default, including custom keys); the plugin registers no duplicate shortcut. Archived results restore from their row action.
-- Subagent sessions nest under the session that spawned them and open on click.
+- A Session row carries a mark only where it needs attention: waiting on you, working — its own turn or a delegation it started — or a completed turn you have not opened. Blank and idle rows leave the leading cell empty.
+- Subagent sessions nest under the session that spawned them and open on click, newest activity first, titled by their delegation label and printing their own time. The layer appears while that Session is working, has a delegation running, or owes a look, and shows five rows at a time — a running delegation is never the one left out.
+- Hovering a Session adds its Workspace name, directory, and when that Workspace was created.
 - Rows keep the host and third-party session menu actions, including pin, unpin, and archive. The native directory picker adds a Workspace or opens a new session; Workspace menus offer rename and remove.
 - Sessions and Workspace groups can be dragged to reorder. Automatic reordering animates (200ms within a group, 240ms for nearby cross-group moves, 120ms fades), and reduced-motion preferences are respected.
 - The 56px rail renders when the sidebar is collapsed. Plugin copy ships in Chinese and English.
@@ -63,6 +65,7 @@ dsh plugin --profile <profile> remove @vamdawn/dsh-astrolabe
 - A session drag switches to a saved manual order with no control to return to recent-activity order, and drops reorder only within the same group.
 - Workspace groups reveal five idle sessions at a time; running, pending-input, and selected blank sessions do not consume that quota.
 - The nested layer carries subagent sessions only: the running turn, background jobs, and scheduled reminders stay out of the sidebar.
+- A Session shows five nested rows at a time, so delegations beyond them are reachable only from the host's own subagent menu in the session header.
 - The rail uses placeholder glyphs rather than the shipped icon set.
 - Full native drag-and-drop is unverified: automation triggered `dragstart` but never completed a reliable `drop`. Web and non-macOS platforms have not been validated live.
 

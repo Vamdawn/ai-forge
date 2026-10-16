@@ -13,6 +13,12 @@ export const PINNED_ACCOUNT = '__pinned__';
 /** The three pending-interaction kinds the runtime classifies (see `visiblePendingKind` in ui-workspace). */
 export type PendingKind = 'approval' | 'plan-review' | 'question';
 export type RowState = 'idle' | 'running' | 'input';
+/**
+ * One nested subagent row. Only an active child carries a mark; a stopped one
+ * is identified by the absence of the loader, so completion never competes with
+ * the Session marks for the same green.
+ */
+export type ChildState = 'ongoing' | 'idle';
 export type TabId = 'workspaces' | 'status';
 
 /** One Host content match: the Session and the matched excerpt. */
@@ -42,8 +48,10 @@ export interface ContentHits {
 export interface ActivityChild {
   readonly key: string;
   readonly title: string;
-  readonly state: RowState;
+  readonly state: ChildState;
   readonly openable: SessionId;
+  /** Latest activity, shown as the row's trailing time. */
+  readonly updatedAt: number;
 }
 
 export interface Row {
@@ -81,11 +89,22 @@ function pendingKind(kind: string | undefined): PendingKind | undefined {
   return kind === 'approval' || kind === 'plan-review' || kind === 'question' ? kind : undefined;
 }
 
+/**
+ * One direct child as the parent-owned catalog records it: the identity the
+ * shipped browser nests by, plus the durable delegation label it titles the
+ * child's row with and the creation time a missing Session summary falls back to.
+ */
+interface SubagentEntry {
+  readonly id: SessionId;
+  readonly label?: string;
+  readonly createdAt: number;
+}
+
 /** Subagent children are projected per parent; the shipped browser hides those rows entirely. */
-function subagentIds(list: SessionListState, parentId: SessionId): readonly SessionId[] {
+function subagentEntries(list: SessionListState, parentId: SessionId): readonly SubagentEntry[] {
   const values = list.projectionsBySession?.[parentId]?.values as
-    { readonly subagentCatalog?: readonly { readonly id: SessionId }[] } | undefined;
-  return (values?.subagentCatalog ?? []).map(child => child.id);
+    { readonly subagentCatalog?: readonly SubagentEntry[] } | undefined;
+  return values?.subagentCatalog ?? [];
 }
 
 export function relativeTime(updatedAt: number, now: number, t: PropsLocale<'astrolabe'>['t']): string {
@@ -101,37 +120,72 @@ export function relativeTime(updatedAt: number, now: number, t: PropsLocale<'ast
   return hours < 24 ? t('time.hour', { n: hours }) : t('time.day', { n: Math.round(hours / 24) });
 }
 
+/** Non-running nested rows one Session shows; an active child never uses this quota. */
+const CHILD_QUOTA = 5;
+
 /**
- * The one nested layer a row offers: the subagent sessions it spawned, in the
- * session projection's own order. Subagent rows are the only sessions the
- * top-level filter hides, so nesting is what makes them reachable at all.
+ * The nested layer a row renders: every active child, then the most recently
+ * active others while the quota lasts. The excess stays out of the sidebar
+ * rather than behind a reveal, so a wide fan-out cannot stretch it.
+ */
+function visibleChildren(children: readonly ActivityChild[]): ActivityChild[] {
+  let slots = Math.max(0, CHILD_QUOTA - children.filter(child => child.state === 'ongoing').length);
+  return children.filter(child => {
+    if (child.state === 'ongoing') {
+      return true;
+    }
+    if (slots === 0) {
+      return false;
+    }
+    slots -= 1;
+    return true;
+  });
+}
+
+/**
+ * The one nested layer a row offers: the subagent sessions it spawned, most
+ * recently active first, each carrying the delegation label the shipped catalog
+ * shows as that row's title. Subagent rows are the only sessions the top-level
+ * filter hides, so nesting is what makes them reachable at all.
  */
 function subagentChildren(
   list: SessionListState,
   statuses: SessionStatusSnapshot,
   id: SessionId,
 ): ActivityChild[] {
-  return subagentIds(list, id).map(child => {
-    const status = statuses.get(child);
+  return subagentEntries(list, id).map(entry => {
+    const summary = list.byId[entry.id];
+    const status = statuses.get(entry.id);
+    const running = status?.running ?? summary?.running ?? false;
+    const label = entry.label?.trim();
+    const at = summary?.updatedAt ?? entry.createdAt;
     return {
-      key: child,
-      title: list.byId[child]?.displayTitle ?? child,
-      state: (status?.running ?? list.byId[child]?.running ?? false) ? 'running' : 'idle',
-      openable: child,
+      child: {
+        key: entry.id,
+        // The log-backed title is only the fallback: for a delegated child it is
+        // the first sentence of its prompt rather than the task it was given.
+        title: label === undefined || label === '' ? summary?.displayTitle ?? entry.id : label,
+        state: running ? 'ongoing' : 'idle',
+        openable: entry.id,
+        updatedAt: at,
+      } satisfies ActivityChild,
+      at,
     };
-  });
+  }).sort((left, right) => right.at - left.at).map(item => item.child);
 }
 
 export function rowStateOf(
   statuses: SessionStatusSnapshot,
   id: SessionId,
   fallbackRunning: boolean,
+  childRunning = false,
 ): { readonly state: RowState; readonly pending?: PendingKind } {
-  const pending = pendingKind(statuses.get(id)?.pendingInteraction?.kind);
+  const status = statuses.get(id);
+  const pending = pendingKind(status?.pendingInteraction?.kind);
   if (pending !== undefined) {
     return { state: 'input', pending };
   }
-  return { state: (statuses.get(id)?.running ?? fallbackRunning) ? 'running' : 'idle' };
+  return { state: (status?.running ?? fallbackRunning) || childRunning ? 'running' : 'idle' };
 }
 
 /**
@@ -155,17 +209,24 @@ export function topRows(
     if (summary.blank && id !== current) {
       continue;
     }
-    const { state, pending } = rowStateOf(statuses, id, summary.running);
+    const status = statuses.get(id);
+    const selfRunning = status?.running ?? summary.running;
+    const unread = status?.completionUnread === true;
+    const children = subagentChildren(list, statuses, id);
+    const childRunning = children.some(child => child.state === 'ongoing');
+    const { state, pending } = rowStateOf(statuses, id, summary.running, childRunning);
     rows.push({
       id,
       title: summary.displayTitle,
       state,
       ...pending === undefined ? {} : { pending },
       updatedAt: summary.updatedAt,
-      unread: statuses.get(id)?.completionUnread === true,
+      unread,
       current: id === current,
       blank: summary.blank,
-      children: state === 'running' ? subagentChildren(list, statuses, id) : [],
+      // The nested layer belongs to a Session that is working or owes a look, so
+      // it folds away with the last of those and never grows past its quota.
+      children: selfRunning || childRunning || unread ? visibleChildren(children) : [],
     });
   }
   rows.sort((left, right) => right.updatedAt - left.updatedAt);
@@ -349,6 +410,18 @@ export function statusGroups(
       quota: false,
     });
   return groups.filter(group => group.rows.length > 0);
+}
+
+/**
+ * Layout identity of the rendered sections. `rows` gates the hover card, which
+ * a nested change does not invalidate; `nested` also carries each row's nested
+ * order, so the list animates a re-sorted subagent layer as well.
+ */
+export function layoutKeys(groups: readonly Group[]): { readonly rows: string; readonly nested: string } {
+  return {
+    rows: JSON.stringify(groups.map(group => [group.key, group.rows.map(row => row.id)])),
+    nested: JSON.stringify(groups.map(group => [group.key, group.rows.map(row => [row.id, row.children.map(child => child.key)])])),
+  };
 }
 
 /** Merge immediate metadata matches with the bounded Host content page. */

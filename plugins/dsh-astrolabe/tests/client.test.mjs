@@ -10,6 +10,7 @@ const source = await readFile(new URL('../dist/client.js', import.meta.url), 'ut
 const primitives = new Proxy({}, { get: (_, name) => {
   if (name === 'Menu') return ({ anchor, open, children }) => React.createElement('div', null, anchor, open ? children : null);
   if (name === 'Tooltip') return ({ children }) => children;
+  if (name === 'StateDot') return ({ state }) => React.createElement('span', { className: 'dwt-state-dot', 'data-state': state });
   return ({ children, ...props }) => React.createElement(name === 'Button' || name === 'MenuItemButton' ? 'button' : 'span', props, children);
 } });
 const summary = (id, updatedAt = 1) => ({ displayTitle: id, updatedAt, running: false, blank: false, retainedBy: {} });
@@ -107,6 +108,100 @@ test('directory adoption starts a session in the created workspace', async t => 
   await mount(t, { startSession: id => started.push(id), renderSlot: (name, owner) => { if (name === 'astrolabe.directoryFlow') flow = owner; return null; } });
   await act(async () => flow.onPicked('/new'));
   assert.deepEqual(started, ['created']);
+});
+
+/** One parent above `children` (`[id, label, updatedAt]`), running unless told otherwise. */
+const nested = (children, parentRunning = true) => ({
+  list: {
+    ids: ['p'],
+    phase: 'ready',
+    byId: {
+      p: { ...summary('p'), running: parentRunning },
+      ...Object.fromEntries(children.map(([id, , updatedAt]) => [id, { ...summary(id, updatedAt), origin: 'subagent' }])),
+    },
+    projectionsBySession: { p: { values: { subagentCatalog: children.map(([id, label]) => ({
+      id, createdAt: 1, mode: 'continuable', label,
+    })) } } },
+  },
+  workspaces: { items: [workspace('one', ['p'])], pinnedSessionIds: [], archivedSessionIds: [] },
+});
+
+test('a nested list keeps every running row and fills the rest to five', async t => {
+  const { list, workspaces } = nested([
+    ['r1', 'Running one', 90], ['r2', 'Running two', 89], ['r3', 'Running three', 88],
+    ['s1', 'Stopped one', 80], ['s2', 'Stopped two', 79], ['s3', 'Stopped three', 78],
+  ]);
+  const { renderer } = await mount(t, {
+    useSessions: () => list,
+    useWorkspaces: () => workspaces,
+    useSessionStatus: () => new Map(['r1', 'r2', 'r3'].map(id => [id, { running: true }])),
+  });
+  assert.deepEqual(findClass(renderer, 'dwt-child-title').map(node => node.children.join('')),
+    ['Running one', 'Running two', 'Running three', 'Stopped one', 'Stopped two']);
+  assert.equal(findClass(renderer, 'dwt-more').length, 0);
+});
+
+test('a nested row carries the loader only while it runs, plus its own time', async t => {
+  const { list, workspaces } = nested([['c1', 'Running child', 100], ['c2', 'Stopped child', 200]]);
+  const { renderer } = await mount(t, {
+    useSessions: () => list,
+    useWorkspaces: () => workspaces,
+    useSessionStatus: () => new Map([['c1', { running: true }]]),
+  });
+  assert.deepEqual(findClass(renderer, 'dwt-child-title').map(node => node.children.join('')),
+    ['Stopped child', 'Running child']);
+  // Only the nested rows' own marks: the parent row carries the working
+  // aggregate that this child gives it.
+  assert.deepEqual(findClass(renderer, 'dwt-child').flatMap(row => row
+    .findAll(node => node.props.className === 'dwt-state-dot' && typeof node.type === 'string'))
+    .map(node => node.props['data-state']), ['ongoing']);
+  assert.deepEqual(findClass(renderer, 'dwt-child-time').map(node => node.children.join('')), ['time.day', 'time.day']);
+});
+
+test('a Session row marks only what needs attention, keeping the leading cell', async t => {
+  const { renderer } = await mount(t, {
+    useSessions: () => ({ ids: ['run', 'done', 'wait', 'idle'], phase: 'ready', byId: {
+      run: { ...summary('run'), running: true },
+      done: summary('done'),
+      wait: summary('wait'),
+      idle: summary('idle'),
+    } }),
+    useWorkspaces: () => ({ items: [workspace('one', ['run', 'done', 'wait', 'idle'])], pinnedSessionIds: [], archivedSessionIds: [] }),
+    useSessionStatus: () => new Map([
+      ['done', { completionUnread: true }],
+      ['wait', { pendingInteraction: { kind: 'question' } }],
+    ]),
+  });
+  assert.deepEqual(findClass(renderer, 'dwt-state-dot').map(node => node.props['data-state']),
+    ['ongoing', 'done', 'warning']);
+  assert.equal(findClass(renderer, 'dwt-row-mark').length, 4);
+});
+
+test('the hover card prints the Workspace the Session is accounted to', async t => {
+  const { renderer } = await mount(t, {
+    useWorkspaces: () => ({ items: [{
+      workspaceId: 'one', title: 'ai-forge', path: '/repo/ai-forge',
+      createdAt: '2026-10-16T06:05:00.000Z', sessionIds: ['a'],
+    }], pinnedSessionIds: [], archivedSessionIds: [] }),
+  });
+  await act(async () => findClass(renderer, 'dwt-row')[0]
+    .props.onMouseEnter({ currentTarget: { getBoundingClientRect: () => ({ top: 0, right: 10 }) } }));
+  assert.deepEqual(findClass(renderer, 'dwt-card-meta').map(node => node.children.join('')),
+    ['ai-forge · status.idle · time.day']);
+  assert.deepEqual(findClass(renderer, 'dwt-card-path').map(node => node.children.join('')), ['/repo/ai-forge']);
+  assert.deepEqual(findClass(renderer, 'dwt-card-created').map(node => node.children.join('')), ['card.created']);
+});
+
+test('the blank New Session row carries no mark', async t => {
+  const { renderer } = await mount(t, {
+    useSessions: () => ({ ids: ['blank'], phase: 'ready', byId: {
+      blank: { ...summary('blank'), blank: true, retainedBy: { mainView: 1 } },
+    } }),
+    useWorkspaces: () => ({ items: [workspace('one', ['blank'])], pinnedSessionIds: [], archivedSessionIds: [] }),
+  });
+  assert.equal(findClass(renderer, 'dwt-row').length, 1);
+  assert.equal(findClass(renderer, 'dwt-state-dot').length, 0);
+  assert.equal(findClass(renderer, 'dwt-row-mark').length, 1);
 });
 
 test('failed restore stays actionable and reports the failure', async t => {

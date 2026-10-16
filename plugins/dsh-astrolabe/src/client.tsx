@@ -14,7 +14,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { Context } from '@deepseek-ai/cordis';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
-import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client';
+import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client';
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
 // These imports provide service type augmentations; the Desktop loader owns the runtime services.
 import type {} from '@deepseek-ai/dsh-client-locale/client';
@@ -30,7 +30,7 @@ import { createMirror } from './mirror.js';
 import { createViewStore } from './store.js';
 import { CSS } from './styles.js';
 import { AnimatedList } from './motion.js';
-import { PINNED_ACCOUNT, UNGROUPED_ACCOUNT, relativeTime, topRows, mainSessionId, workspaceGroups, statusGroups, searchHits } from './model.js';
+import { PINNED_ACCOUNT, UNGROUPED_ACCOUNT, relativeTime, topRows, mainSessionId, workspaceGroups, statusGroups, layoutKeys, searchHits } from './model.js';
 import type { ActivityChild, ContentHits, Group, Row, SearchHit, TabId } from './model.js';
 import type { ViewStoreHandle } from './store.js';
 
@@ -115,14 +115,36 @@ type Props = PropsRuntime<'sidebar.workspaces'>
   & PropsLocale<typeof NS>
   & InjectFace<Injected>;
 
+/**
+ * A Workspace's absolute creation instant, in the shipped hover card's own
+ * shape: a locale-ordered date followed by a padded 24-hour time.
+ */
+function createdLabel(createdAt: string, t: Props['t']): string {
+  const at = new Date(createdAt);
+  const pad = (value: number): string => String(value).padStart(2, '0');
+  const date = t('date.ymd', { y: at.getFullYear(), m: at.getMonth() + 1, d: at.getDate() });
+  return t('card.created', { time: `${date} ${pad(at.getHours())}:${pad(at.getMinutes())}` });
+}
+
+/**
+ * The nested subagent layer: one row per delegation the parent is showing, most
+ * recently active first. Only an active child carries a mark, so the layer
+ * reads as what the Session is doing now rather than as a second history, and
+ * every row keeps the time it was last touched.
+ */
 function ActivityList(props: {
   readonly children: readonly ActivityChild[];
   readonly openSession: Injected['openSession'];
+  readonly now: number;
+  readonly t: Props['t'];
 }): ReactElement {
-  const { children, openSession } = props;
+  const { children, openSession, now, t } = props;
   return h('div', { className: 'dwt-children' }, children.map(child => h('div', {
     key: child.key,
     className: 'dwt-child',
+    // A nested row animates on its own: it is a sibling of the row carrying
+    // the Session id, so the two position transforms never compound.
+    'data-motion-id': `child:${child.key}`,
     'data-openable': true,
     role: 'button',
     tabIndex: 0,
@@ -136,8 +158,10 @@ function ActivityList(props: {
       }
     },
   },
-  h('span', { className: 'dwt-dot', 'data-state': child.state }),
-  h('span', { className: 'dwt-child-title' }, child.title))));
+  h('span', { className: 'dwt-row-mark' },
+    child.state === 'ongoing' ? h(StateDot, { state: 'ongoing' }) : null),
+  h('span', { className: 'dwt-child-title' }, child.title),
+  h('span', { className: 'dwt-child-time' }, relativeTime(child.updatedAt, now, t)))));
 }
 
 function SessionRow(props: {
@@ -186,6 +210,16 @@ function SessionRow(props: {
     ? { text: t(row.pending === 'approval' ? 'pending.approval'
       : row.pending === 'plan-review' ? 'pending.planReview' : 'pending.question'), tone: 'warn' }
     : { text: relativeTime(row.updatedAt, now, t), tone: 'plain' };
+  /**
+   * The one leading mark a Session row earns: something waiting on you,
+   * something working — its own turn or a delegation it started — or a
+   * completion to look at. Every other row keeps the 14px cell empty, so the
+   * titles stay on one column without a colour that means two things.
+   */
+  const mark = row.blank ? undefined
+    : row.state === 'input' ? 'warning'
+      : row.state === 'running' ? 'ongoing'
+        : row.unread ? 'done' : undefined;
   return h('div', null,
     h('div', {
       className: 'dwt-row',
@@ -235,7 +269,7 @@ function SessionRow(props: {
         }
       },
     },
-    h('span', { className: 'dwt-row-mark' }, h('span', { className: 'dwt-dot', 'data-state': row.state })),
+    h('span', { className: 'dwt-row-mark' }, mark === undefined ? null : h(StateDot, { state: mark })),
     // The crawl moves the title's own box, so the clipping has to come from this
     // wrapper: it is the flex item and never moves, which keeps every painted
     // pixel inside the row.
@@ -250,7 +284,6 @@ function SessionRow(props: {
         titleRef.current = node;
       },
     }, row.blank ? t('row.newSession') : row.title)),
-    row.unread ? h('span', { className: 'dwt-unread', title: t('unread') }) : null,
     row.blank ? null : h('span', { className: 'dwt-trailing', 'data-tone': trailing.tone }, trailing.text),
     // The strip's clicks stay in the strip: neither the trigger nor a row.action
     // entry may reach the row's own click. The strip is hidden at rest, so the
@@ -286,7 +319,7 @@ function SessionRow(props: {
       hookContext: [menuOpen, setMenuOpen] as const,
     })),
     renderSlot(ROW_ACTION_SLOT, { sessionId: row.id, displayTitle: row.title }))),
-    row.children.length === 0 ? null : h(ActivityList, { children: row.children, openSession }));
+    row.children.length === 0 ? null : h(ActivityList, { children: row.children, openSession, now, t }));
 }
 
 /**
@@ -675,7 +708,7 @@ function SearchHitRow(props: {
     // because the greyed row already carries that meaning.
     h('span', { className: 'dwt-hit-slot' },
       openable && hit.state !== 'idle'
-        ? h('span', { className: 'dwt-dot', 'data-state': hit.state })
+        ? h(StateDot, { state: hit.state === 'input' ? 'warning' : 'ongoing' })
         : null),
     h('span', { className: 'dwt-hit-title' }, hit.title),
     openable ? null : h('span', { className: 'dwt-hit-actions' },
@@ -1008,6 +1041,16 @@ function WorkspaceTabs(props: Props): ReactElement {
     }
     return titles;
   }, [snapshot.items]);
+  /** The Workspace each Session is accounted to, for the hover card's own three lines. */
+  const workspaceBySession = useMemo(() => {
+    const byId = new Map<SessionId, WorkspaceView>();
+    for (const item of snapshot.items) {
+      for (const id of item.sessionIds) {
+        byId.set(id, item);
+      }
+    }
+    return byId;
+  }, [snapshot.items]);
   const current = useMemo(() => mainSessionId(list), [list]);
   const rows = useMemo(() => topRows(list, statuses, archived, current), [list, statuses, archived, current]);
   const nextGroups = useMemo(() => tab === 'workspaces'
@@ -1039,8 +1082,8 @@ function WorkspaceTabs(props: Props): ReactElement {
       heldTab.current = tab;
     }
   }, [locked, nextGroups, tab]);
-  const layoutKey = useMemo(() => JSON.stringify(groups.map(group => [group.key, group.rows.map(row => row.id)])), [groups]);
-  useEffect(() => { setHover(null); }, [layoutKey]);
+  const layout = useMemo(() => layoutKeys(groups), [groups]);
+  useEffect(() => { setHover(null); }, [layout.rows]);
   const attention = rows.some(row => row.state === 'input');
 
   const isOpen = (group: Group): boolean => view.groupExpansion[`${tab}:${group.key}`] ?? group.defaultOpen;
@@ -1222,6 +1265,9 @@ function WorkspaceTabs(props: Props): ReactElement {
           deleteWorkspace,
         }));
 
+  /** The Workspace of the hovered Session, whose facts the card prints. */
+  const hoveredWorkspace = hover === null ? undefined : workspaceBySession.get(hover.row.id);
+
   return h('div', { className: 'dwt-root' },
     h(Header, {
       tab,
@@ -1258,7 +1304,7 @@ function WorkspaceTabs(props: Props): ReactElement {
       }, t('dismiss'))),
     h(AnimatedList, {
       context: `${tab}:${wide}:${needle !== ''}:${JSON.stringify(view.groupExpansion)}`,
-      layout: layoutKey,
+      layout: layout.nested,
       dragging: dragging !== null || draggingGroup !== null,
     }, body),
     // The picking interaction fills our own hole; the trigger above only shows
@@ -1297,13 +1343,20 @@ function WorkspaceTabs(props: Props): ReactElement {
     },
     h('div', { className: 'dwt-card-title' }, hover.row.blank ? t('row.newSession') : hover.row.title),
     h('div', { className: 'dwt-card-meta' },
+      hoveredWorkspace === undefined ? null : `${hoveredWorkspace.title} · `,
       hover.row.pending !== undefined
         ? t(hover.row.pending === 'approval'
           ? 'pending.approval'
           : hover.row.pending === 'plan-review' ? 'pending.planReview' : 'pending.question')
         : t(hover.row.state === 'running' ? 'status.running' : 'status.idle'),
       ' · ',
-      relativeTime(hover.row.updatedAt, now, t))));
+      relativeTime(hover.row.updatedAt, now, t)),
+    // The shipped card's own three lines for a Workspace: title, directory, and
+    // the absolute creation instant. A Session row carries the Workspace it is
+    // accounted to, which is the only creation time the client holds.
+    hoveredWorkspace === undefined ? null : h('div', { className: 'dwt-card-path' }, hoveredWorkspace.path),
+    hoveredWorkspace === undefined ? null : h('div', { className: 'dwt-card-created' },
+      createdLabel(hoveredWorkspace.createdAt, t))));
 }
 
 /**
