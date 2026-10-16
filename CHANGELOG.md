@@ -8,6 +8,7 @@ This file is the global release index: every asset release appends one summary l
 - `dsh-appearance-plus@0.1.0` (2026-10-15) — first release of `@vamdawn/dsh-appearance-plus`, which supports custom interface fonts, code fonts, and background images → [Details](plugins/dsh-appearance-plus/CHANGELOG.md)
 - `dsh-astrolabe@0.1.0` (2026-10-16) — first release of `@vamdawn/dsh-astrolabe`, which provides a dual-axis workspace/status sidebar, search, directory picking, and session swap animations → [Details](plugins/dsh-astrolabe/CHANGELOG.md)
 - `dsh-astrolabe@0.2.0` (2026-10-16) — gives every Session mark one meaning, follows a running delegation into the working status, titles and times the nested subagent rows, adds the Workspace facts to the hover card, and ships Simplified Chinese README and CHANGELOG files → [Details](plugins/dsh-astrolabe/CHANGELOG.md)
+- `dsh-astrolabe@0.3.0` (2026-10-16) — marks the Working section with the host's still loading arc, so a section header no longer repeats the animated loader its rows carry → [Details](plugins/dsh-astrolabe/CHANGELOG.md)
 
 ## Repository milestones
 
