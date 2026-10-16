@@ -65,10 +65,9 @@ export const CSS = `
    Status sections keep their labels on one column. Marks are neutral except
    where the section's state has a colour of its own. */
 .dwt-group-mark { flex: none; width: 14px; height: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-secondary); }
+/* The Working mark is a line icon drawn in currentColor, so the section tint
+   reaches the glyph through the cell alone. */
 .dwt-group-mark[data-kind='running'] { color: var(--dsw-alias-state-success-primary); }
-/* StateDot paints its spinner in the platform's tertiary grey from its own
-   module class, so the section tint has to reach the glyph itself. */
-.dwt-group-mark[data-kind='running'] svg { color: var(--dsw-alias-state-success-primary); }
 .dwt-group-mark[data-kind='input'] { color: var(--dsw-alias-state-warn-primary); }
 /* The section menu card: display rows first, then the actions. */
 .dwt-menu-head { display: flex; align-items: center; gap: 6px; padding: 4px 8px 6px; color: var(--dsw-alias-label-primary); font-size: 13px; font-weight: 600; }

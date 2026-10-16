@@ -11,6 +11,9 @@ const primitives = new Proxy({}, { get: (_, name) => {
   if (name === 'Menu') return ({ anchor, open, children }) => React.createElement('div', null, anchor, open ? children : null);
   if (name === 'Tooltip') return ({ children }) => children;
   if (name === 'StateDot') return ({ state }) => React.createElement('span', { className: 'dwt-state-dot', 'data-state': state });
+  // Tag product icons with their export name: a mark is only meaningful if the
+  // test can tell which glyph it drew.
+  if (typeof name === 'string' && name.startsWith('Icon')) return props => React.createElement('span', { ...props, 'data-icon': name });
   return ({ children, ...props }) => React.createElement(name === 'Button' || name === 'MenuItemButton' ? 'button' : 'span', props, children);
 } });
 const summary = (id, updatedAt = 1) => ({ displayTitle: id, updatedAt, running: false, blank: false, retainedBy: {} });
@@ -175,6 +178,23 @@ test('a Session row marks only what needs attention, keeping the leading cell', 
   assert.deepEqual(findClass(renderer, 'dwt-state-dot').map(node => node.props['data-state']),
     ['ongoing', 'done', 'warning']);
   assert.equal(findClass(renderer, 'dwt-row-mark').length, 4);
+});
+
+test('the Working section draws a still loading arc, leaving the loader to the rows', async t => {
+  const { renderer } = await mount(t, {
+    useSessions: () => ({ ids: ['run'], phase: 'ready', byId: { run: { ...summary('run'), running: true } } }),
+    useWorkspaces: () => ({ items: [workspace('one', ['run'])], pinnedSessionIds: [], archivedSessionIds: [] }),
+  });
+  act(() => findClass(renderer, 'dwt-tab')[1].props.onClick());
+  const mark = findClass(renderer, 'dwt-group-mark').find(node => node.props['data-kind'] === 'running');
+  assert.ok(mark, 'the Working section carries a mark');
+  assert.deepEqual(mark.findAll(node => node.props['data-icon'] !== undefined).map(node => node.props['data-icon']),
+    ['IconLoadingOutlineRegular']);
+  // The section is a category, so it never re-uses the animated row loader.
+  assert.equal(mark.findAll(node => node.props.className === 'dwt-state-dot').length, 0);
+  const row = findClass(renderer, 'dwt-row-mark')[0];
+  assert.deepEqual(row.findAll(node => node.props.className === 'dwt-state-dot').map(node => node.props['data-state']),
+    ['ongoing']);
 });
 
 test('the hover card prints the Workspace the Session is accounted to', async t => {

@@ -48,7 +48,7 @@ dsh plugin --profile <profile> remove @vamdawn/dsh-astrolabe
 
 ## Usage
 
-- **Workspaces** groups sessions by registered Workspace, then Ungrouped; **Status** groups them by Needs input, Working, and Completed. Both tabs open with a **Pinned** section while anything is pinned, and a pinned session leaves the section it would otherwise sit in.
+- **Workspaces** groups sessions by registered Workspace, then Ungrouped; **Status** groups them by Needs input, Working, and Completed. Both tabs open with a **Pinned** section while anything is pinned, and a pinned session leaves the section it would otherwise sit in. Each status section carries its own state's mark; Working's arc stays still while its rows carry the animated loader.
 - Sections collapse, and Workspace menus show their section counts. Completed stays folded and reveals 20 more rows per press, unseen completions first.
 - Search matches titles and Workspace names immediately, then adds debounced conversation matches with snippets. It follows the host `session.search` binding (⌘K / Ctrl+K by default, including custom keys); the plugin registers no duplicate shortcut. Archived results restore from their row action.
 - A Session row carries a mark only where it needs attention: waiting on you, working — its own turn or a delegation it started — or a completed turn you have not opened. Blank and idle rows leave the leading cell empty.

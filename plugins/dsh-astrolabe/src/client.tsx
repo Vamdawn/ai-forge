@@ -7,7 +7,7 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 import {
   Button, IconCheckCircleFillRegular, IconCheckCircleOutlineRegular, IconCloseFillRegular,
   IconEditOutlineRegular, IconEllipsisOutlineRegular, IconFlatListOutlineRegular,
-  IconFolderCloseRegular, IconFolderOpenRegular,
+  IconFolderCloseRegular, IconFolderOpenRegular, IconLoadingOutlineRegular,
   IconNewChatOutlineRegular, IconPinFillRegular, IconPinOutlineRegular,
   IconProjectAddOutlineRegular, IconSearchOutlineRegular, IconTrashOutlineRegular,
   IconUnarchiveOutlineRegular, IconWarningOutlineRegular, Menu, MenuItemButton, StateDot, Tooltip,
@@ -349,10 +349,8 @@ function GroupMark({ group, open }: { readonly group: Group; readonly open: bool
     case 'input':
       return mark('input', h(IconWarningOutlineRegular, { size: 14 }));
     case 'running':
-      // The shipped "in progress" glyph: a 25% ring under a breathing arc that
-      // keeps rotating. Reusing the platform's own spinner means the section
-      // mark and the row dots below it read as one state instead of two.
-      return mark('running', h(StateDot, { state: 'ongoing' }));
+      // Still by design: the rows below carry the animated loader.
+      return mark('running', h(IconLoadingOutlineRegular, { size: 14 }));
     case 'idle':
       return mark('done', open
         ? h(IconCheckCircleFillRegular, { size: 14 })

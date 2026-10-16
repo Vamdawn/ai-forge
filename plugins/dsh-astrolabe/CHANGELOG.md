@@ -6,6 +6,10 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+### Changed
+
+- Mark the Working section with the host's own still loading arc instead of a second copy of the animated loader its rows carry, so a collapsed section no longer keeps spinning.
+
 ## [0.2.0] - 2026-10-16
 
 ### Added
