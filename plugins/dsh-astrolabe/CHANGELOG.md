@@ -4,6 +4,8 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-16
+
 ### Added
 
 - Experimental tabbed sidebar for DeepSeek Harness, grouping Sessions by Workspace or status (Needs input, Working, Completed), with a shared Pinned section and nested subagent Sessions.
