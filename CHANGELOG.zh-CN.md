@@ -9,6 +9,7 @@
 - `dsh-astrolabe@0.1.0` (2026-10-16) — 首次发布 `@vamdawn/dsh-astrolabe`，提供工作区/状态双轴侧栏、搜索、目录选择与会话换位动画 → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
 - `dsh-astrolabe@0.2.0` (2026-10-16) — 让会话行的每种标记只有一种含义、把正在运行的子代理归入进行中状态，为嵌套的 subagent 行补上委派标签与时间，悬停卡片补充 Workspace 信息，并随包发布简体中文 README 与 CHANGELOG → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
 - `dsh-astrolabe@0.3.0` (2026-10-16) — 进行中分区改用宿主那枚静止的加载弧，分区标题不再重复行内那枚会旋转的 loader → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
+- `dsh-astrolabe@0.4.0` (2026-10-17) — 每个分区只用一个折叠控件，标签承诺的是这一次按压会展开的行数，外观取自官方浏览器自己的溢出按钮；README 围绕安装与升级路径重写 → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
 
 ## Repository milestones
 

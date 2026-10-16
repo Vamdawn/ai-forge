@@ -6,6 +6,8 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-17
+
 ### Changed
 
 - Every section with rows to spare now carries one fold control instead of up to three: its label promises the rows that press will reveal, its last press takes the remainder whole, and only a fully revealed section offers to fold back. The label no longer counts what the section is still hiding — which promised more rows than one press delivered — and the control is drawn to match the shipped browser's own overflow button instead of as a centred button.

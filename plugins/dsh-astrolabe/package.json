@@ -1,7 +1,7 @@
 {
   "name": "@vamdawn/dsh-astrolabe",
-  "version": "0.3.0",
-  "description": "Astrolabe — tabbed left sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab",
+  "version": "0.4.0",
+  "description": "Astrolabe \u2014 tabbed left sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Vamdawn/ai-forge.git",
