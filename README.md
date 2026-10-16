@@ -1,79 +1,84 @@
 # AI Forge
 
-个人 Agent 能力资产 monorepo，提供可复用的 skills、prompts、rules、CLI 工具与应用插件。资产各自独立，版本化资产分别维护版本、变更记录与发布。
+English | [简体中文](README.zh-CN.md)
 
-## 目录总览
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-| 目录 | 内容 |
-|-----------|-------------|
-| `skills/` | 按需使用的 Agent 能力，以 `SKILL.md` 为入口 |
-| `prompts/` | 手动触发的一次性提示词模板 |
-| `rules/` | 每次会话常驻加载的规则片段与项目规则模板 |
-| `tools/` | 独立 CLI 工具，使用说明见所属 `README.md` |
-| `plugins/` | 宿主应用加载的插件，使用说明见所属 `README.md` |
-| `agents/` | 维护本仓库的 Agent Harness，职责与结构见 [Harness 说明](agents/README.md) |
+A personal monorepo of reusable agent capability assets: skills, prompts, rules, CLI tools, and host-application plugins. Every asset evolves on its own — version, changelog, and release are per asset, and the repository carries no global version.
 
-## 使用方式
+## Repository layout
 
-从下方索引选择所需资产，直接阅读使用入口。skill 连同所属目录的资源一起使用；工具与插件按各自 README 安装和运行。
+| Directory | Contents | Entry point |
+|-----------|----------|-------------|
+| `skills/` | Skills an agent loads on demand | `SKILL.md` |
+| `prompts/` | Prompt templates you trigger by hand | the `.md` file |
+| `rules/` | Rules loaded in every session, or whole-file rule templates | the `.md` file |
+| `tools/` | Standalone CLI tools | the asset's `README.md` |
+| `plugins/` | Plugins loaded by a host application | the asset's `README.md` |
+| `docs/` | Harness rules for this repository, one topic per file | `docs/asset-layout.md` |
+| `scripts/` | Checks and repository-only tooling | `scripts/verify-docs.py` |
 
-## 资产索引
+## Usage
+
+Pick an asset from the index below and open its entry point. Use a skill together with the resources in its directory; install and run a tool or plugin as its own README describes.
+
+## Asset index
 
 ### Skills
 
-- [ack-code-review](skills/ack-code-review/SKILL.md)：消费审查报告，逐条判断采纳并增量修复。
-- [agent-friendly-cli](skills/agent-friendly-cli/SKILL.md)：设计与审查供 Agent 调用的 CLI。
-- [content-summarizer](skills/content-summarizer/SKILL.md)：抓取和分析网页内容，保存为 Obsidian 笔记。
-- [e2e-find](skills/e2e-find/SKILL.md)：分析 Web 交互链路，生成或更新端到端用例规格。
-- [e2e-run](skills/e2e-run/SKILL.md)：运行已有端到端测试资产，保存证据并分析失败。
-- [git-commit](skills/git-commit/SKILL.md)：拆分变更并生成原子化 Git 提交。
-- [optimize-prompt](skills/optimize-prompt/SKILL.md)：将通用与编码提示词改写为可直接使用的指令。
-- [plan-executor](skills/plan-executor/SKILL.md)：通过多 Agent 执行结构化计划，落实测试与审查门禁。
-- [req-code-review](skills/req-code-review/SKILL.md)：结合方案与当前实现，发起多角色代码审查。
-- [retrospect-session](skills/retrospect-session/SKILL.md)：复盘会话，沉淀可复用规则并同步维护入口。
-- [review-context](skills/review-context/SKILL.md)：从上下文工程角度审查代码、文档与提示词。
-- [review-doc](skills/review-doc/SKILL.md)：审查文档质量，可对照参考标准提出改进。
-- [review-skill](skills/review-skill/SKILL.md)：检查 skill 元数据、指令与资源引用的规范性。
-- [semver-release](skills/semver-release/SKILL.md)：通用语义版本发布流程，支持整库与单资产模式。
-- [session-summary](skills/session-summary/SKILL.md)：按固定格式记录会话概要与逐轮明细。
+- [ack-code-review](skills/ack-code-review/SKILL.md) — consume a review report, decide each finding, and incrementally fix the ones you adopt.
+- [agent-friendly-cli](skills/agent-friendly-cli/SKILL.md) — design and review CLIs that agents call.
+- [content-summarizer](skills/content-summarizer/SKILL.md) — fetch and analyze web content, then save it as an Obsidian note.
+- [e2e-find](skills/e2e-find/SKILL.md) — analyze a web app's interaction paths, then generate or update end-to-end case specs.
+- [e2e-run](skills/e2e-run/SKILL.md) — run existing end-to-end test assets, save the evidence, and analyze failures.
+- [git-commit](skills/git-commit/SKILL.md) — split a change set into atomic Git commits.
+- [optimize-prompt](skills/optimize-prompt/SKILL.md) — rewrite general and coding prompts into directly usable instructions.
+- [plan-executor](skills/plan-executor/SKILL.md) — execute a structured plan across multiple agents, with test and review gates.
+- [req-code-review](skills/req-code-review/SKILL.md) — run a multi-role code review against a design and the current implementation.
+- [retrospect-session](skills/retrospect-session/SKILL.md) — review a session, distill reusable rules, and keep the entry points in sync.
+- [review-context](skills/review-context/SKILL.md) — review code, documents, and prompts from a context-engineering angle.
+- [review-doc](skills/review-doc/SKILL.md) — review a document's quality, optionally against a reference standard.
+- [review-skill](skills/review-skill/SKILL.md) — check a skill's metadata, instructions, and resource references against the spec.
+- [semver-release](skills/semver-release/SKILL.md) — semantic-version release flow, for the whole repository or for a single asset.
+- [session-summary](skills/session-summary/SKILL.md) — record a session summary and turn-by-turn detail in a fixed format.
 
 ### Prompts
 
-- [accept-skill-casebook](prompts/accept-skill-casebook.md)：分析 skill 使用反馈，提出优化建议。
-- [handoff-session](prompts/handoff-session.md)：生成供下一次会话使用的交接摘要。
-- [html-pr-review-artifact](prompts/html-pr-review-artifact.md)：生成包含 diff 与审查注释的 HTML 报告。
-- [interaction-design-review](prompts/interaction-design-review.md)：通过多角色并行审查交互设计。
-- [prd-implementation-plan](prompts/prd-implementation-plan.md)：将 PRD 转为包含测试步骤的可执行计划。
-- [product-roadmap-analysis](prompts/product-roadmap-analysis.md)：分析产品现状与机会，提出路线图建议。
-- [prompt-optimizer](prompts/prompt-optimizer.md)：通过迭代审查优化提示词。
-- [svpino-interview-to-spec](prompts/svpino-interview-to-spec.md)：通过逐轮访谈明确需求并形成规格。
-- [write-skill-casebook](prompts/write-skill-casebook.md)：记录 skill 失败案例、根因与修复建议。
+- [accept-skill-casebook](prompts/accept-skill-casebook.md) — analyze skill usage feedback and propose improvements.
+- [handoff-session](prompts/handoff-session.md) — produce a handoff summary for the next session.
+- [html-pr-review-artifact](prompts/html-pr-review-artifact.md) — generate an HTML report with the diff and review annotations.
+- [interaction-design-review](prompts/interaction-design-review.md) — review an interaction design through parallel multi-role passes.
+- [prd-implementation-plan](prompts/prd-implementation-plan.md) — turn a PRD into an executable plan with test steps.
+- [product-roadmap-analysis](prompts/product-roadmap-analysis.md) — analyze the product's current state and opportunities, then propose a roadmap.
+- [prompt-optimizer](prompts/prompt-optimizer.md) — improve a prompt through iterative review.
+- [svpino-interview-to-spec](prompts/svpino-interview-to-spec.md) — pin down requirements through a turn-by-turn interview, then write a spec.
+- [write-skill-casebook](prompts/write-skill-casebook.md) — record a skill failure, its root cause, and a fix proposal.
 
 ### Rules
 
-- [CLAUDE-From-Boris](rules/CLAUDE-From-Boris.md)：规划、验证与复盘等工作流规则。
-- [deepseek-harness-inspired-agents-md](rules/deepseek-harness-inspired-agents-md.md)：受 DeepSeek Harness 启发的项目 AGENTS.md 模板。
+- [CLAUDE-From-Boris](rules/CLAUDE-From-Boris.md) — workflow rules for planning, verification, and retrospectives.
+- [deepseek-harness-inspired-agents-md](rules/deepseek-harness-inspired-agents-md.md) — a project `AGENTS.md` template inspired by DeepSeek Harness.
 
 ### Tools
 
-- [claude-statusline](tools/claude-statusline/README.md)：展示 Claude Code 会话与用量信息的双行状态栏。
+- [claude-statusline](tools/claude-statusline/README.md) — a two-line status bar showing Claude Code session and usage information.
 
 ### Plugins
 
-- [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.md)：根据会话上下文为 DeepSeek Harness 会话生成名称。
-- [@vamdawn/dsh-appearance-plus](plugins/dsh-appearance-plus/README.md)：自定义 DeepSeek Harness 的界面字体、代码字体与背景图片。
-- [@vamdawn/dsh-astrolabe](plugins/dsh-astrolabe/README.md)：Astrolabe —— 接管 DeepSeek Harness 侧边栏会话区域的双轴标签页面板（工作区 / 状态分组），含会话搜索、置顶分组与行内会话动作。
+- [@vamdawn/dsh-appearance-plus](plugins/dsh-appearance-plus/README.md) — customize the DeepSeek Harness interface font, code font, and background image.
+- [@vamdawn/dsh-astrolabe](plugins/dsh-astrolabe/README.md) — a two-axis tabbed panel that replaces the session area of the DeepSeek Harness sidebar, with search, pinned groups, and row actions.
+- [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.md) — generate a DeepSeek Harness session name from the conversation context.
 
-## 版本与发布
+## Versioning and releases
 
-- skills、tools 与 plugins 各自独立版本化；prompts 与 rules 以 Git 历史记录变更。
-- 发布索引与仓库里程碑见根 [CHANGELOG.md](CHANGELOG.md)，资产的变更细节见其所属 CHANGELOG。
-- 本仓库没有全局版本号，维护约定见 [版本与发布规则](agents/rules/versioning-and-release.md)。
+- Skills, tools, and plugins are versioned independently and tagged `<asset-name>@X.Y.Z`; prompts and rules change through Git history.
+- [CHANGELOG.md](CHANGELOG.md) indexes every release; details live in the asset's own changelog.
+- The repository has no global version. The convention is in [versioning-and-release.md](docs/versioning-and-release.md).
 
-## 仓库维护
+## Repository maintenance
 
-维护入口为 [AGENTS.md](AGENTS.md)，Harness 说明见 [agents/README.md](agents/README.md)。资产分类、资源归属与文档职责统一维护在 [目录规范](agents/rules/asset-layout.md) 中。
+The maintenance entry point is [AGENTS.md](AGENTS.md); the rules it points to live in [docs/](docs/asset-layout.md) and the checks in [scripts/verify-docs.py](scripts/verify-docs.py). Asset classification, resource ownership, and documentation responsibilities live in [asset-layout.md](docs/asset-layout.md).
 
-## 许可
+## License
 
 [MIT](LICENSE)

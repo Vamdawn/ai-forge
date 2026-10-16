@@ -1,8 +1,19 @@
 # Changelog
 
+English | [简体中文](CHANGELOG.zh-CN.md)
+
 All notable changes to this asset are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+
+- Publish a Simplified Chinese README (`README.zh-CN.md`) next to the English one, and ship it in the package.
+- Publish a Simplified Chinese changelog (`CHANGELOG.zh-CN.md`) next to the English one, and ship it in the package.
+
+### Changed
+
+- Rewrite the README around install, usage, limitations, and development. The slot-contract implementation notes, the route trade-off analysis, the source map, and the dated verification narrative are no longer part of it.
 
 ## [0.1.0] - 2026-10-16
 
@@ -26,4 +37,4 @@ All notable changes to this asset are documented in this file. The format follow
 - Hover controls retain row height and timestamp alignment. Reordering dismisses outdated hover cards, and interrupted animations leave no interactive visual clones.
 - Workspace grouping indexes Session rows and reuses projections instead of repeatedly scanning all Sessions.
 
-See [README.md](README.md#current-limitations) for known limitations and live-validation scope.
+See [README.md](README.md#limitations) for known limitations.

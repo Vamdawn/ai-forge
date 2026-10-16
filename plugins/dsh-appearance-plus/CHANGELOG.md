@@ -1,6 +1,17 @@
 # Changelog
 
+English | [简体中文](CHANGELOG.zh-CN.md)
+
 ## [Unreleased]
+
+### Added
+
+- Publish a Simplified Chinese README (`README.zh-CN.md`) next to the English one, and ship it in the package.
+- Publish a Simplified Chinese changelog (`CHANGELOG.zh-CN.md`) next to the English one, and ship it in the package.
+
+### Changed
+
+- Rewrite the README around install, usage, configuration, limitations, and development; the dated validation record is no longer part of it.
 
 ## [0.1.0] - 2026-10-15
 

@@ -1,10 +1,17 @@
 # Changelog
 
+English | [简体中文](CHANGELOG.zh-CN.md)
+
 ## [Unreleased]
+
+### Added
+
+- Publish a Simplified Chinese README (`README.zh-CN.md`) next to the English one, and ship it in the package.
+- Publish a Simplified Chinese changelog (`CHANGELOG.zh-CN.md`) next to the English one, and ship it in the package.
 
 ### Changed
 
-- Make the npm publishing guide reusable for subsequent versions by reading the approved manifest version and linking to the repository release rules. Mark past validation records as historical so they are distinct from the checks required for a new release.
+- Rewrite the README around install, usage, limitations, and development. The npm publishing procedure and the dated validation records are no longer part of it; `package.json` keeps the publish-time checks.
 
 ## [0.1.0] - 2026-10-13
 

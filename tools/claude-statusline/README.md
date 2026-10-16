@@ -1,10 +1,12 @@
 # Claude Statusline
 
-Claude Code 双行状态栏。可执行文件为 [statusline.sh](statusline.sh)，变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+English | [简体中文](README.zh-CN.md)
 
-## 使用
+A two-line status bar for Claude Code showing session and usage information. The executable is [statusline.sh](statusline.sh).
 
-需要 Bash、jq、curl 和 Git。从 ai-forge 仓库根目录复制脚本：
+## Install
+
+Requires Bash, `jq`, `curl`, and Git. Copy the script from an ai-forge checkout:
 
 ```bash
 mkdir -p ~/.claude/scripts
@@ -12,7 +14,7 @@ cp tools/claude-statusline/statusline.sh ~/.claude/scripts/statusline.sh
 chmod +x ~/.claude/scripts/statusline.sh
 ```
 
-将以下字段合并到 `~/.claude/settings.json`，保留已有配置：
+Merge these fields into `~/.claude/settings.json`, keeping your existing settings:
 
 ```json
 {
@@ -23,8 +25,9 @@ chmod +x ~/.claude/scripts/statusline.sh
 }
 ```
 
-配置方式见 [Claude Code 官方状态栏文档](https://code.claude.com/docs/en/statusline)。
+Claude Code documents the field in its [status line reference](https://code.claude.com/docs/en/statusline). A configuration that still calls the old repository path `scripts/statusline.sh` needs the new path; an installation already copied to `~/.claude/scripts/statusline.sh` needs no change.
 
-## 路径迁移
+## Links
 
-仓库中的脚本由 `scripts/statusline.sh` 迁至 `tools/claude-statusline/statusline.sh`，内容与执行权限保持不变。直接调用旧仓库路径的配置需要更新为新路径；已复制到 `~/.claude/scripts/statusline.sh` 的安装仍使用原位置。
+- [CHANGELOG.md](CHANGELOG.md) — user-visible changes to this tool.
+- [versioning-and-release.md](../../docs/versioning-and-release.md) — how this tool is versioned and released.

@@ -1,9 +1,11 @@
 # Changelog
 
-本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 格式，记录 `semver-release` skill 的用户可见变更。
+English | [简体中文](CHANGELOG.zh-CN.md)
+
+This file follows the [Keep a Changelog](https://keepachangelog.com/) format and records user-visible changes to the `semver-release` skill.
 
 ## [Unreleased]
 
 ### Added
 
-- 新增 monorepo 资产模式：以单个资产为发布单位，支持 `<asset-name>@X.Y.Z` tag、按资产路径限定 commit 分析范围、资产目录内版本文件探测，并在发版时向根 CHANGELOG 的发布索引追加条目。原有整库发布行为不变，作为默认模式保留。
+- Added the monorepo asset mode: a single asset is the release unit, supporting `<asset-name>@X.Y.Z` tags, commit analysis scoped by asset path, version file detection inside the asset directory, and appending an entry to the root CHANGELOG's release index at release time. The previous whole-repository release behavior is unchanged and is kept as the default mode.

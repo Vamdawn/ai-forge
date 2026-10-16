@@ -1,7 +1,9 @@
 # Changelog
 
+English | [简体中文](CHANGELOG.zh-CN.md)
+
 ## [Unreleased]
 
 ### Changed
 
-- 从仓库根 `scripts/` 迁入独立工具目录 `tools/claude-statusline/`，使用说明和变更记录随工具维护。脚本内容保持不变；直接引用旧仓库路径的配置需要更新。
+- Moved from `scripts/` at the repository root into a standalone tool directory, `tools/claude-statusline/`, with the usage documentation and changelog maintained alongside the tool. The script content is unchanged; configurations that reference the old repository path need updating.
