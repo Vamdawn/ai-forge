@@ -7,6 +7,7 @@
 - `dsh-rename-session@0.1.0` (2026-10-13) — 首次发布 `@vamdawn/dsh-rename-session`，支持根据会话上下文生成名称与中英文界面 → [详情](plugins/dsh-rename-session/CHANGELOG.zh-CN.md)
 - `dsh-appearance-plus@0.1.0` (2026-10-15) — 首次发布 `@vamdawn/dsh-appearance-plus`，支持自定义界面字体、代码字体与背景图片 → [详情](plugins/dsh-appearance-plus/CHANGELOG.zh-CN.md)
 - `dsh-astrolabe@0.1.0` (2026-10-16) — 首次发布 `@vamdawn/dsh-astrolabe`，提供工作区/状态双轴侧栏、搜索、目录选择与会话换位动画 → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
+- `dsh-astrolabe@0.2.0` (2026-10-16) — 让会话行的每种标记只有一种含义、把正在运行的子代理归入进行中状态，为嵌套的 subagent 行补上委派标签与时间，悬停卡片补充 Workspace 信息，并随包发布简体中文 README 与 CHANGELOG → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
 
 ## Repository milestones
 

@@ -7,6 +7,7 @@ This file is the global release index: every asset release appends one summary l
 - `dsh-rename-session@0.1.0` (2026-10-13) — first release of `@vamdawn/dsh-rename-session`, which generates session names from the conversation context and works with both Chinese and English interfaces → [Details](plugins/dsh-rename-session/CHANGELOG.md)
 - `dsh-appearance-plus@0.1.0` (2026-10-15) — first release of `@vamdawn/dsh-appearance-plus`, which supports custom interface fonts, code fonts, and background images → [Details](plugins/dsh-appearance-plus/CHANGELOG.md)
 - `dsh-astrolabe@0.1.0` (2026-10-16) — first release of `@vamdawn/dsh-astrolabe`, which provides a dual-axis workspace/status sidebar, search, directory picking, and session swap animations → [Details](plugins/dsh-astrolabe/CHANGELOG.md)
+- `dsh-astrolabe@0.2.0` (2026-10-16) — gives every Session mark one meaning, follows a running delegation into the working status, titles and times the nested subagent rows, adds the Workspace facts to the hover card, and ships Simplified Chinese README and CHANGELOG files → [Details](plugins/dsh-astrolabe/CHANGELOG.md)
 
 ## Repository milestones
 

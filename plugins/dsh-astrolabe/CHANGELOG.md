@@ -6,6 +6,8 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-16
+
 ### Added
 
 - Publish a Simplified Chinese README (`README.zh-CN.md`) next to the English one, and ship it in the package.
