@@ -62,6 +62,7 @@
 
 - [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.md)：根据会话上下文为 DeepSeek Harness 会话生成名称。
 - [@vamdawn/dsh-appearance-plus](plugins/dsh-appearance-plus/README.md)：自定义 DeepSeek Harness 的界面字体、代码字体与背景图片。
+- [@vamdawn/dsh-astrolabe](plugins/dsh-astrolabe/README.md)：Astrolabe —— 接管 DeepSeek Harness 侧边栏会话区域的双轴标签页面板（工作区 / 状态分组），含会话搜索、置顶分组与行内会话动作。
 
 ## 版本与发布
 

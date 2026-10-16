@@ -1,0 +1,97 @@
+{
+  "name": "@vamdawn/dsh-astrolabe",
+  "version": "0.1.0",
+  "description": "Astrolabe — tabbed left sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vamdawn/ai-forge.git",
+    "directory": "plugins/dsh-astrolabe"
+  },
+  "homepage": "https://github.com/Vamdawn/ai-forge/tree/main/plugins/dsh-astrolabe#readme",
+  "bugs": {
+    "url": "https://github.com/Vamdawn/ai-forge/issues"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "plugin",
+    "astrolabe",
+    "sidebar",
+    "workspace",
+    "session"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./client": "./dist/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "cordis.patch.yml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.host.json && tsc -p tsconfig.client.json",
+    "build": "node build.mjs",
+    "prepare": "npm run build",
+    "pretest": "npm run build",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.4"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "~4.0.4",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-workspace-controller": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-locale": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-shortcuts": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-store": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-layout": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-workspace": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+    "@types/node": "^24.19.2",
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.28.2",
+    "react": "^18.3.1",
+    "react-test-renderer": "^18.3.1",
+    "typescript": "^7.0.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-primitives",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-shortcuts",
+        "@deepseek-ai/dsh-client-store",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-api-workspace-controller"
+      ]
+    }
+  },
+  "license": "MIT"
+}

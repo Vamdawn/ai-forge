@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "lib": ["ES2023", "DOM", "DOM.Iterable"], "types": ["react"] },
+  "include": ["src/client.tsx", "src/contract.ts", "src/locales.ts", "src/mirror.ts", "src/store.ts", "src/model.ts", "src/styles.ts"]
+}
