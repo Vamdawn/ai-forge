@@ -4,7 +4,7 @@ export type LocaleKey =
   | 'group.needsInput' | 'group.working' | 'group.completed' | 'group.pinned'
   | 'ungrouped' | 'empty' | 'emptyHint' | 'loading'
   | 'pending.approval' | 'pending.planReview' | 'pending.question'
-  | 'showEarlier' | 'showMore' | 'showLess' | 'unread' | 'row.menu' | 'row.newSession'
+  | 'showMore' | 'showLess' | 'unread' | 'row.menu' | 'row.newSession'
   | 'status.running' | 'status.idle'
   | 'search.open' | 'search.placeholder' | 'search.empty' | 'search.archived'
   | 'search.results' | 'search.pending' | 'search.hasMore' | 'search.unarchive'
@@ -30,8 +30,7 @@ export const DICTIONARIES = {
     'pending.approval': '等待批准',
     'pending.planReview': '计划待审',
     'pending.question': '等待回答',
-    showEarlier: '显示更早的',
-    showMore: '显示更多',
+    showMore: '再显示 {n} 个会话',
     showLess: '收起',
     unread: '未查看',
     'row.menu': '会话操作',
@@ -79,8 +78,7 @@ export const DICTIONARIES = {
     'pending.approval': 'Waiting for approval',
     'pending.planReview': 'Plan awaiting review',
     'pending.question': 'Waiting for answer',
-    showEarlier: 'Show earlier',
-    showMore: 'Show more',
+    showMore: 'Show {n} more sessions',
     showLess: 'Show less',
     unread: 'Unseen',
     'row.menu': 'Session actions',

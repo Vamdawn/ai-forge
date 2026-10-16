@@ -357,3 +357,136 @@ test('an idle transition during dragging cannot remove a quota-exempt target', a
   await act(async () => visible()[5].props.onDragEnd());
   assert.equal(visible().length, 5);
 });
+
+/** Records the interpolation, so a fold label can be read back with its count. */
+const counting = (key, params) => params?.n === undefined ? key : `${key}(${params.n})`;
+
+/** `count` idle Sessions in one Workspace, newest first. */
+const idleWorkspace = count => {
+  const ids = Array.from({ length: count }, (_, index) => `s${index}`);
+  return {
+    t: counting,
+    useSessions: () => ({ ids, byId: Object.fromEntries(ids.map((id, index) => [id, summary(id, 100 - index)])), phase: 'ready' }),
+    useWorkspaces: () => ({ items: [workspace('one', ids)], pinnedSessionIds: [], archivedSessionIds: [] }),
+    useStore: () => ({ orderBy: 'updated', sessionOrder: {}, groupExpansion: { 'workspaces:one': true, 'status:idle': true } }),
+  };
+};
+
+/** `count` completed Sessions in the Status tab, with its Completed section open. */
+const completedStatus = count => {
+  const ids = Array.from({ length: count }, (_, index) => `s${index}`);
+  return {
+    t: counting,
+    useSessions: () => ({ ids, byId: Object.fromEntries(ids.map((id, index) => [id, summary(id, 100 - index)])), phase: 'ready' }),
+    useWorkspaces: () => ({ items: [], pinnedSessionIds: [], archivedSessionIds: [] }),
+    useStore: () => ({ orderBy: 'updated', sessionOrder: {}, groupExpansion: { 'status:idle': true } }),
+  };
+};
+
+/** Switch the browser to the Status tab. */
+const openStatusTab = async renderer => act(async () => renderer.root
+  .findAll(node => node.props.className === 'dwt-tab' && node.children.join('') === 'tab.status')[0].props.onClick());
+
+const foldLabels = renderer => findClass(renderer, 'dwt-more').map(node => node.children.join(''));
+const foldPress = async renderer => act(async () => findClass(renderer, 'dwt-more')[0].props.onClick());
+
+test('the fold control offers one direction at a time', async t => {
+  const { renderer } = await mount(t, idleWorkspace(12));
+  const button = () => findClass(renderer, 'dwt-more');
+  assert.equal(findClass(renderer, 'dwt-row').length, 5);
+  assert.deepEqual(foldLabels(renderer), ['showMore(5)']);
+  assert.equal(button()[0].props['aria-expanded'], false);
+  // The shipped control is not one of the host Button's variants, so the fold
+  // carries its own appearance and none of the Button classes.
+  assert.equal(button()[0].props.className, 'dwt-more');
+  assert.deepEqual(button()[0].props.size, undefined);
+
+  await foldPress(renderer);
+  assert.equal(findClass(renderer, 'dwt-row').length, 10);
+  assert.deepEqual(foldLabels(renderer), ['showMore(2)']);
+
+  await foldPress(renderer);
+  assert.equal(findClass(renderer, 'dwt-row').length, 12);
+  assert.deepEqual(foldLabels(renderer), ['showLess']);
+  assert.equal(button()[0].props['aria-expanded'], true);
+
+  await foldPress(renderer);
+  assert.equal(findClass(renderer, 'dwt-row').length, 5);
+  assert.deepEqual(foldLabels(renderer), ['showMore(5)']);
+});
+
+test('the fold label promises exactly the rows its press reveals', async t => {
+  const { renderer } = await mount(t, completedStatus(79));
+  await openStatusTab(renderer);
+  const promised = [];
+  let shown = findClass(renderer, 'dwt-row').length;
+  assert.equal(shown, 20);
+  while (foldLabels(renderer)[0] !== 'showLess') {
+    const promise = Number(/^showMore\((\d+)\)$/.exec(foldLabels(renderer)[0])[1]);
+    await foldPress(renderer);
+    const next = findClass(renderer, 'dwt-row').length;
+    assert.equal(next - shown, promise, `label promised ${promise}, the press revealed ${next - shown}`);
+    promised.push(promise);
+    shown = next;
+  }
+  assert.deepEqual(promised, [20, 20, 19]);
+  assert.equal(shown, 79);
+});
+
+test('a remainder that fits in one step is taken whole', async t => {
+  const { renderer } = await mount(t, idleWorkspace(7));
+  assert.deepEqual(foldLabels(renderer), ['showMore(2)']);
+  await foldPress(renderer);
+  assert.equal(findClass(renderer, 'dwt-row').length, 7);
+  assert.deepEqual(foldLabels(renderer), ['showLess']);
+});
+
+test('the Completed fold shares the control and can be folded back', async t => {
+  const { renderer } = await mount(t, completedStatus(25));
+  await openStatusTab(renderer);
+  assert.equal(findClass(renderer, 'dwt-row').length, 20);
+  assert.deepEqual(foldLabels(renderer), ['showMore(5)']);
+  await foldPress(renderer);
+  assert.equal(findClass(renderer, 'dwt-row').length, 25);
+  assert.deepEqual(foldLabels(renderer), ['showLess']);
+  await foldPress(renderer);
+  assert.equal(findClass(renderer, 'dwt-row').length, 20);
+});
+
+test('a section whose rows all fit carries no fold control', async t => {
+  const { renderer } = await mount(t, idleWorkspace(5));
+  assert.equal(findClass(renderer, 'dwt-row').length, 5);
+  assert.deepEqual(foldLabels(renderer), []);
+});
+
+// A deliberate divergence from the shipped browser, which resets the fold when a
+// Workspace is closed and reopened. Nothing else pins it, and it is exactly what
+// the next refactor of the fold state would quietly undo.
+test('reopening a section keeps the rows its fold had already revealed', async t => {
+  let groupExpansion = { 'workspaces:one': true };
+  const { renderer, update } = await mount(t, {
+    ...idleWorkspace(12),
+    useStore: () => ({ orderBy: 'updated', sessionOrder: {}, groupExpansion }),
+  });
+  assert.equal(findClass(renderer, 'dwt-row').length, 5);
+  await foldPress(renderer);
+  assert.equal(findClass(renderer, 'dwt-row').length, 10);
+
+  groupExpansion = { 'workspaces:one': false };
+  await update();
+  assert.equal(findClass(renderer, 'dwt-row').length, 0);
+
+  groupExpansion = { 'workspaces:one': true };
+  await update();
+  assert.equal(findClass(renderer, 'dwt-row').length, 10);
+  assert.deepEqual(foldLabels(renderer), ['showMore(2)']);
+});
+
+// The fold replaced the host Button, and Button.module.css is what declared
+// `box-sizing: border-box` on it. Without the declaration this rule's 100% width
+// and its 39px of horizontal padding add up instead of overlapping, and the
+// control paints 39px past the column it is aligned to.
+test('the fold control sizes its own border box', () => {
+  const css = /var CSS = `([\s\S]*?)`;/.exec(source)[1];
+  assert.match(/\.dwt-more \{([^}]*)\}/.exec(css)[1], /box-sizing: border-box;/);
+});

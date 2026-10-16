@@ -72,12 +72,12 @@ export interface Group {
   readonly title: string;
   readonly defaultOpen: boolean;
   readonly rows: readonly Row[];
-  /** Offer "Show earlier" for a long section instead of rendering everything. */
+  /** Fold a long section behind the one reveal control instead of rendering everything. */
   readonly revealable?: boolean;
   readonly unreadCount?: number;
   /** Whether its rows accept a drag reorder. The Pinned and Status sections do not. */
   readonly draggable: boolean;
-  /** Whether the idle-session quota and its Show more/less apply. */
+  /** Whether idle Sessions fold behind the reveal control, outside its quota. */
   readonly quota: boolean;
   /** The Host Workspace this section stands for; absent on Pinned, Ungrouped, and Status sections. */
   readonly workspaceId?: WorkspaceId;

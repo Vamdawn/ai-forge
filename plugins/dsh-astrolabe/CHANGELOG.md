@@ -6,6 +6,11 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+### Changed
+
+- Every section with rows to spare now carries one fold control instead of up to three: its label promises the rows that press will reveal, its last press takes the remainder whole, and only a fully revealed section offers to fold back. The label no longer counts what the section is still hiding — which promised more rows than one press delivered — and the control is drawn to match the shipped browser's own overflow button instead of as a centred button.
+- The README documents the upgrade path it was missing: a `0.x` version range does not cross the minor, so moving onto a newer release takes an explicit `dsh plugin --profile <profile> add`. Its status line also no longer claims an older version than the package.
+
 ## [0.3.0] - 2026-10-16
 
 ### Changed

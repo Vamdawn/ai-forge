@@ -39,12 +39,12 @@ export const inject = ['slots', 'locale', 'uiWorkspace', 'workspaces', 'sessions
 
 const NS = 'astrolabe' as const;
 const STYLE_ID = 'dsh-astrolabe-style';
-/** Completed rows revealed per "Show earlier" press. */
+/** Completed rows the status sections fold to, and the step each press adds. */
 const REVEAL_STEP = 20;
 /**
- * Idle Sessions one Workspace section shows before "Show more". Running
- * Sessions and the selected blank New Session row stay visible without using
- * this quota, matching the shipped browser.
+ * Idle Sessions one Workspace section folds to, and the step each press adds.
+ * Running Sessions and the selected blank New Session row stay visible without
+ * using this quota, matching the shipped browser.
  */
 const IDLE_QUOTA = 5;
 /** Pause between the latest keystroke and a Host content-search request. */
@@ -384,18 +384,23 @@ function Section(props: {
   const workspacePath = group.path;
   const [revealed, setRevealed] = useState(REVEAL_STEP);
   const [quota, setQuota] = useState(IDLE_QUOTA);
-  // Two independent folds: the Status sections reveal in fixed steps, while a
-  // Workspace section keeps running rows and the New Session row outside its
-  // idle quota and preserves the section's own order.
+  // One fold per section, on the shipped browser's contract: a Workspace keeps
+  // running rows and the New Session row outside its idle quota and preserves
+  // the section's own order, while the Status sections slice their own ordered
+  // list. Either way the single control below reads the fold, so the two never
+  // disagree about how much is left.
   const idleRows = group.quota ? group.rows.filter(row => !row.blank && row.state === 'idle') : [];
-  const idleShown = Math.min(quota, idleRows.length);
-  const idleHidden = idleRows.length - idleShown;
+  const foldStep = group.revealable === true ? REVEAL_STEP : IDLE_QUOTA;
+  const foldTotal = group.revealable === true ? group.rows.length : idleRows.length;
+  const limit = group.revealable === true ? revealed : quota;
+  const folded = Math.min(limit, foldTotal);
+  const foldHidden = foldTotal - folded;
   let rows = group.rows;
   if (group.revealable === true) {
-    rows = rows.slice(0, revealed);
+    rows = rows.slice(0, folded);
   }
   if (group.quota) {
-    const allowed = new Set<SessionId>(idleRows.slice(0, idleShown).map(row => row.id));
+    const allowed = new Set<SessionId>(idleRows.slice(0, folded).map(row => row.id));
     rows = group.rows.filter(row => row.blank || row.state !== 'idle' || allowed.has(row.id));
   }
   const visibleRows = useRef(rows);
@@ -404,7 +409,6 @@ function Section(props: {
     rows = visibleRows.current.flatMap(row => latest.has(row.id) ? [latest.get(row.id)!] : []);
   }
   useLayoutEffect(() => { if (!holdLayout) visibleRows.current = rows; }, [holdLayout, rows]);
-  const hidden = group.rows.length - rows.length;
   const title = group.title === '' ? t('ungrouped') : group.title;
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState('');
@@ -468,6 +472,19 @@ function Section(props: {
         setBusy(false);
         setError(reason instanceof Error ? reason.message : String(reason));
       });
+  };
+
+  // The fold's one press. A half-revealed section steps once more, a section
+  // whose remainder fits in one step takes all of it, and a fully revealed one
+  // goes back to the rows it opened with — so the control never shows an
+  // expanding and a collapsing action at the same time.
+  const pressFold = (): void => {
+    const next = foldHidden === 0 ? foldStep : foldHidden <= foldStep ? Infinity : limit + foldStep;
+    if (group.revealable === true) {
+      setRevealed(next);
+    } else {
+      setQuota(next);
+    }
   };
 
   return h('section', { className: 'dwt-group', 'data-motion-group': group.key },
@@ -630,35 +647,14 @@ function Section(props: {
       onHover,
       onInteraction,
     })) : null,
-    open && group.quota && idleHidden > 0
-      ? h(Button, {
+    open && (group.revealable === true || group.quota === true) && foldTotal > foldStep
+      ? h('button', {
         className: 'dwt-more',
-        size: 'sm',
-        variant: 'ghost',
-        onClick: () => {
-          setQuota(value => value + IDLE_QUOTA);
-        },
-      }, t('showMore'))
-      : null,
-    open && group.quota && quota > IDLE_QUOTA
-      ? h(Button, {
-        className: 'dwt-more',
-        size: 'sm',
-        variant: 'ghost',
-        onClick: () => {
-          setQuota(IDLE_QUOTA);
-        },
-      }, t('showLess'))
-      : null,
-    open && group.revealable === true && hidden > 0
-      ? h(Button, {
-        className: 'dwt-more',
-        size: 'sm',
-        variant: 'ghost',
-        onClick: () => {
-          setRevealed(value => value + REVEAL_STEP);
-        },
-      }, t('showEarlier'))
+        type: 'button',
+        'data-motion-id': `more:${group.key}`,
+        'aria-expanded': foldHidden === 0,
+        onClick: pressFold,
+      }, foldHidden === 0 ? t('showLess') : t('showMore', { n: Math.min(foldHidden, foldStep) }))
       : null);
 }
 

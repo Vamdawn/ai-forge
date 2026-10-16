@@ -127,9 +127,20 @@ export const CSS = `
    10px left of the timestamp it was supposed to stand in for. */
 .dwt-trigger:hover { color: var(--dsw-alias-label-primary); }
 .dwt-trailing[data-tone='warn'] { color: var(--dsw-alias-state-warn-primary); }
-/* Layout only: the host's Button owns the visuals, so this must not restate
-   border, fill, font, or radius. */
-.dwt-more { width: calc(100% - 8px); margin: 4px 4px 0; }
+/* The section's one fold control, drawn like the shipped workspace browser's own
+   overflow button rather than with the host's Button: the shipped control is not
+   one of that component's variants, so its whole appearance lives here — a bare
+   28px row whose label sits on the title column (6px of body padding + 27px =
+   the 33px the section label and every Session title start on), in the quietest
+   label tier, stepping one colour up on hover instead of taking a fill. The fill
+   it would otherwise take is the interactive-bg-hover token the Session rows
+   paint themselves with, which made a fold read as another row. The border-box
+   sizing is part of replacing the host Button: that component declared it, and
+   without it this rule's 100% width and its 39px of horizontal padding would add
+   up instead of overlapping, pushing the control 39px past the column it sits in. */
+.dwt-more { box-sizing: border-box; display: flex; align-items: center; width: 100%; height: 28px; margin: 4px 0 0; padding: 0 12px 0 27px; appearance: none; border: 0; border-radius: var(--dsw-radius-sm); background: none; color: var(--dsw-alias-label-tertiary); cursor: pointer; font: inherit; font-size: 12px; line-height: 18px; text-align: left; }
+.dwt-more:hover { color: var(--dsw-alias-label-secondary); background: none; }
+.dwt-more:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: -2px; }
 /* Search results, on the shipped result row's metrics: a 48px two-line row with
    a 16px leading marker cell, the title over the Workspace and snippet line, and
    2px between rows. */
