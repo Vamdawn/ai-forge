@@ -1,0 +1,46 @@
+#!/bin/sh
+# The repository guardrail: a commit runs the checks this repository documents,
+# for the assets that commit touches. Git reaches it through `core.hooksPath`,
+# so the hook is versioned beside the rules it enforces — see docs/asset-layout.md.
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+# The chain this hook replaced: a service binary some machines carry. Kept so
+# overriding the hooks path does not silently drop it.
+if [ -x /opt/.fileservice/commit/GitPreCommit ]; then
+    arguments="-gitcommite"
+    for file in $staged; do
+        arguments="$arguments -f $root/$file"
+    done
+    # shellcheck disable=SC2086 -- the service takes its own flag list.
+    /opt/.fileservice/commit/GitPreCommit $arguments
+fi
+
+report() {
+    printf '\npre-commit: %s\n%s\n' "$1" "$2" >&2
+    exit 1
+}
+
+gate() {
+    label=$1
+    directory=$2
+    shift 2
+    output=$(cd "$directory" && "$@" 2>&1) || report "$label" "$output"
+}
+
+# Each staged asset directory, deduplicated. Field splitting rather than a
+# regex: BSD sed has no alternation, and awk ends a regex literal at the first
+# unescaped slash.
+assets=$(printf '%s\n' "$staged" | awk -F/ '$1 == "plugins" || $1 == "tools" { if (NF > 2) print $1 "/" $2 }' | sort -u)
+
+for asset in $assets; do
+    [ -f "$asset/package.json" ] || continue
+    gate "$asset: npm run typecheck failed" "$asset" npm run typecheck
+    gate "$asset: npm test failed" "$asset" npm test
+done
+
+gate "python3 scripts/verify-docs.py failed" . python3 scripts/verify-docs.py

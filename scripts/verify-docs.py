@@ -42,6 +42,9 @@ BROKEN_NAMES = {
     "changelog.zh.md", "changelog_cn.md", "changelog-zh_cn.md",
 }
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+FENCE_RE = re.compile(r"^\s*```")
+HEADING_RE = re.compile(r"^(#+)\s")
+LIST_RE = re.compile(r"^- ")
 # Code spans hold examples (`[English](README.md)`), not links to follow.
 CODE_SPAN_RE = re.compile(r"``.+?``|`[^`]*`")
 
@@ -69,6 +72,85 @@ def walk(root: Path):
         dirnames[:] = sorted(name for name in dirnames if name not in SKIP_DIRS)
         for name in sorted(filenames):
             yield Path(dirpath) / name
+
+
+def fenced_blocks(lines: list[str]) -> list[str]:
+    """The body of every fenced code block, in document order."""
+    blocks: list[str] = []
+    current: list[str] | None = None
+    for line in lines:
+        if FENCE_RE.match(line):
+            if current is None:
+                current = []
+            else:
+                blocks.append("\n".join(current))
+                current = None
+        elif current is not None:
+            current.append(line)
+    return blocks
+
+
+def commands_only(block: str) -> list[str]:
+    """A block reduced to its commands.
+
+    A translation may rewrite a code block's comments, so the text from a `#`
+    at line start or after whitespace is dropped; what precedes it is the
+    command, and a line that is nothing but a comment disappears.
+    """
+    kept: list[str] = []
+    for line in block.split("\n"):
+        command = re.split(r"(?:^|\s)#", line, maxsplit=1)[0].rstrip()
+        if command:
+            kept.append(command)
+    return kept
+
+
+def heading_levels(lines: list[str]) -> list[int]:
+    """The level of every heading, in document order."""
+    return [len(match.group(1)) for match in (HEADING_RE.match(line) for line in lines) if match]
+
+
+def section_list_counts(lines: list[str]) -> list[int]:
+    """Top-level `- ` entries per heading section, counted outside code blocks."""
+    counts: list[int] = []
+    inside = False
+    count: int | None = None
+    for line in lines:
+        if FENCE_RE.match(line):
+            inside = not inside
+            continue
+        if inside:
+            continue
+        if HEADING_RE.match(line):
+            if count is not None:
+                counts.append(count)
+            count = 0
+        elif count is not None and LIST_RE.match(line):
+            count += 1
+    if count is not None:
+        counts.append(count)
+    return counts
+
+
+def check_pair_structure(english: Path, chinese: Path) -> None:
+    """Both sides carry the same shape: headings, list entries, and code.
+
+    Only the *shape* is compared. Heading text, list prose, and code comments
+    are meant to differ, so equivalence of meaning stays a reading task.
+    """
+    left, right = read(english), read(chinese)
+    if heading_levels(left) != heading_levels(right):
+        fail(f"{english}: the pair's heading levels differ: {heading_levels(left)} vs {heading_levels(right)}")
+    counts = section_list_counts(left), section_list_counts(right)
+    if counts[0] != counts[1]:
+        fail(f"{english}: the pair's list entries per section differ: {counts[0]} vs {counts[1]}")
+    left_blocks, right_blocks = fenced_blocks(left), fenced_blocks(right)
+    if len(left_blocks) != len(right_blocks):
+        fail(f"{english}: the pair carries {len(left_blocks)} code blocks against {len(right_blocks)}")
+        return
+    for number, (one, other) in enumerate(zip(left_blocks, right_blocks), start=1):
+        if commands_only(one) != commands_only(other):
+            fail(f"{english}: code block {number} differs beyond its comments: {commands_only(one)} vs {commands_only(other)}")
 
 
 def relative_links(lines: list[str]) -> list[tuple[int, str]]:
@@ -122,6 +204,7 @@ def check_pairs(root: Path) -> None:
             expected = switcher(stem, language)
             if first_content_line(read(side)) != expected:
                 fail(f"{side.relative_to(root)}: the language switcher `{expected}` belongs directly under the H1")
+        check_pair_structure(english, chinese)
 
 
 def check_links(root: Path, path: Path, lines: list[str], is_chinese: bool) -> None:

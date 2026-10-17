@@ -13,6 +13,7 @@
 
 ## Repository milestones
 
+- 2026-10-17: 提交由版本化的 pre-commit 钩子把关（经 `core.hooksPath` 接入）：对暂存区涉及的资产跑 typecheck 与测试，再跑文档校验；`verify-docs.py` 现在还会要求双语对具有相同的标题层级、各分节列表条目数与代码块——比对的是命令，翻译可以改写的注释除外。
 - 2026-10-16: 发版规则新增 Publishing 一节：npm 的双因素 web 认证需要交互式终端，因此 `scripts/npm-publish-pty.py` 在伪终端下运行 `npm publish` 并把认证链接写到人能打开的文件里；该节还记录了 registry 的传播延迟、发布产物核对，以及 `0.x` caret 所需的 profile 重装步骤。
 - 2026-10-16: 每份 README 与 CHANGELOG 都补齐中文对照，文档体系统一遵循 [documentation-standard.md](docs/documentation-standard.md)；插件 README 精简为用户向内容；`AGENTS.md` 与规则按 DeepSeek Harness 模板改写为英文，`agents/` 层拆解为 `docs/`（规则）与 `scripts/`（校验）；`scripts/verify-docs.py` 做基础校验，`scripts/verify-docs.spec.py` 覆盖这些校验。
 - 2026-10-13: 统一 skills、prompts、rules、tools、plugins 五类资产的目录口径，将归属与文档职责集中到 `agents/rules/asset-layout.md`；补齐插件版本约定，资产索引增加用途与直接入口，Harness 说明区分现有目录与按需扩展。

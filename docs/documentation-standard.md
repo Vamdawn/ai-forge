@@ -7,7 +7,7 @@ Read when: writing or restructuring a `README.md` or `CHANGELOG.md`; adding an a
 1. Keep every README and CHANGELOG as a language pair: `README.md` / `CHANGELOG.md` in English and `README.zh-CN.md` / `CHANGELOG.zh-CN.md` in Simplified Chinese. Both sides carry the same headings in the same order and the same number of list entries, and they change in one commit.
    - Put the switcher directly under the H1: the English side reads `English | [简体中文](README.zh-CN.md)`, the Chinese side `[English](README.md) | 简体中文`; use the same shape for CHANGELOGs.
    - Keep identifiers, paths, commands, config keys, package names, versions, dates, and link targets untranslated, and point a link at the same-language counterpart when the target has one.
-   - Review: the checker confirms the pair, the switcher, and the links only; holding both sides to the same headings, entries, and code blocks stays a reading task.
+   - Review: the checker confirms the pair, the switcher, the links, and both sides' heading levels, list entries per section, and code blocks; whether the two sides say the same thing stays a reading task.
 2. Fix the suffix at `.zh-CN.md`. Mixed forms such as `README.zh.md`, `README_CN.md`, or `Readme.md` are errors.
    - Check: `python3 scripts/verify-docs.py` verifies pairing, switcher placement, the fixed suffix, and link locale.
 3. Order an asset README by the sections below and omit the ones that do not apply.

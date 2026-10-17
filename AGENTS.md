@@ -24,7 +24,7 @@ Harness rules live in `docs/*.md`, and Conventions lists which one to read befor
 cd tools/<name>   && npm ci --ignore-scripts && npm run typecheck && npm test
 cd plugins/<name> && npm ci --ignore-scripts && npm run typecheck && npm test
 
-python3 scripts/verify-docs.py        # README/CHANGELOG pairs, links, budgets, indexes
+python3 scripts/verify-docs.py        # pairs, pair shape, links, budgets, indexes
 python3 scripts/verify-docs.spec.py   # self-test: every basic check fires
 git tag -l '<name>@*'                 # release history of one asset
 ```

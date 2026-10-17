@@ -40,6 +40,7 @@ Read when: adding, deleting, renaming, or moving an asset; changing a documentat
 
 ## Checks
 
-- `python3 scripts/verify-docs.py` — asset index coverage, rule index coverage, rule file trigger and budget, and relative links across `AGENTS.md`, `docs/`, and the paired documents.
+- `python3 scripts/verify-docs.py` — asset index coverage, rule index coverage, rule file trigger and budget, relative links across `AGENTS.md`, `docs/`, and the paired documents, and each pair's heading levels, list entries per section, and code blocks.
 - `python3 scripts/verify-docs.spec.py` — self-test: every basic check fires, and the repository itself passes.
+- `git config core.hooksPath scripts/hooks` — installs the pre-commit guardrail, which runs the two checks above plus each staged asset's `typecheck` and `test`.
 - Assets keep their own resources: no shared top-level resource directory exists.
