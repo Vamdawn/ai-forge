@@ -25,58 +25,58 @@ export function mountMcp(
       jsonSchema: { input: () => schema, output: () => schema },
     },
   };
-  const handler = toNodeHandler(
-    createMcpHandler(
-      () => {
-        const server = new McpServer({ name: "noticeflow", version: "0.1.0" });
-        server.registerTool(
-          "submit_notification",
-          {
-            description: `Push a prepared notification to external group robots. Accepted means durably queued, not delivered. Repeated calls create duplicate notifications. Topics: ${topics.join(", ")}.`,
-            inputSchema: businessSchema,
-            annotations: {
-              readOnlyHint: false,
-              destructiveHint: false,
-              idempotentHint: false,
-              openWorldHint: true,
-            },
+  const mcpHandler = createMcpHandler(
+    () => {
+      const server = new McpServer({ name: "noticeflow", version: "0.1.0" });
+      server.registerTool(
+        "submit_notification",
+        {
+          description: `Push a prepared notification to external group robots. Accepted means durably queued, not delivered. Repeated calls create duplicate notifications. Topics: ${topics.join(", ")}.`,
+          inputSchema: businessSchema,
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: false,
+            openWorldHint: true,
           },
-          (input, ctx) => {
-            try {
-              const result = submit(ctx.http!.authInfo!.clientId, input);
+        },
+        (input, ctx) => {
+          try {
+            const result = submit(ctx.http!.authInfo!.clientId, input);
+            return {
+              structuredContent: result,
+              content: [
+                { type: "text" as const, text: JSON.stringify(result) },
+              ],
+            };
+          } catch (error) {
+            if (error instanceof SubmitError)
               return {
-                structuredContent: result,
+                isError: true,
                 content: [
-                  { type: "text" as const, text: JSON.stringify(result) },
+                  {
+                    type: "text" as const,
+                    text: JSON.stringify({
+                      error: error.code,
+                      retryable: error.retryable,
+                    }),
+                  },
                 ],
               };
-            } catch (error) {
-              if (error instanceof SubmitError)
-                return {
-                  isError: true,
-                  content: [
-                    {
-                      type: "text" as const,
-                      text: JSON.stringify({
-                        error: error.code,
-                        retryable: error.retryable,
-                      }),
-                    },
-                  ],
-                };
-              throw new ProtocolError(
-                ProtocolErrorCode.InternalError,
-                "SERVER_ERROR",
-              );
-            }
-          },
-        );
-        return server;
-      },
-      { legacy: "stateless" },
-    ),
+            throw new ProtocolError(
+              ProtocolErrorCode.InternalError,
+              "SERVER_ERROR",
+            );
+          }
+        },
+      );
+      return server;
+    },
+    { legacy: "stateless" },
   );
+  const handler = toNodeHandler(mcpHandler);
   app.all("/mcp", express.json({ limit: "64kb" }), (req, res) => {
     void handler(req, res, req.body);
   });
+  return () => mcpHandler.close();
 }

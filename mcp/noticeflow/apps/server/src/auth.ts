@@ -11,6 +11,10 @@ import {
   OAuthErrorCode,
   type AuthInfo,
 } from "@modelcontextprotocol/server";
+import {
+  mcpAuthMetadataRouter,
+  requireBearerAuth,
+} from "@modelcontextprotocol/express";
 import type { Config } from "./config.js";
 import type { Store } from "./store.js";
 import { verifyPassword } from "./crypto.js";
@@ -32,6 +36,24 @@ export function createAuthorization(
 ) {
   const issuer = config.server.publicBaseUrl;
   const resource = `${issuer}/mcp`;
+  const routes = {
+    authorization: "/auth",
+    token: "/token",
+    revocation: "/token/revocation",
+  };
+  const metadata = {
+    issuer,
+    authorization_endpoint: `${issuer}${routes.authorization}`,
+    token_endpoint: `${issuer}${routes.token}`,
+    revocation_endpoint: `${issuer}${routes.revocation}`,
+    response_types_supported: ["code"] satisfies Configuration["responseTypes"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
+    scopes_supported: [SCOPE],
+    code_challenge_methods_supported: ["S256"],
+    token_endpoint_auth_methods_supported: ["none", "private_key_jwt"] satisfies
+      Configuration["clientAuthMethods"],
+    client_id_metadata_document_supported: true,
+  };
   const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
   const provider = new Provider(issuer, {
     adapter: (model: string) => store.adapter(model),
@@ -51,9 +73,10 @@ export function createAuthorization(
       long: { secure: true, httpOnly: true, sameSite: "lax" },
     },
     clients: [],
-    scopes: [SCOPE],
-    responseTypes: ["code"],
-    clientAuthMethods: ["none", "private_key_jwt"],
+    routes,
+    scopes: metadata.scopes_supported,
+    responseTypes: metadata.response_types_supported,
+    clientAuthMethods: metadata.token_endpoint_auth_methods_supported,
     pkce: { required: () => true },
     ttl: {
       AccessToken: 900,
@@ -116,7 +139,7 @@ export function createAuthorization(
           token.clientId === client.clientId,
       },
       clientIdMetadataDocument: {
-        enabled: true,
+        enabled: metadata.client_id_metadata_document_supported,
         ack: "draft-02",
         allowFetch: (_ctx, id) => config.auth.allowedClientIds.includes(id),
         allowClient: (_ctx, client) =>
@@ -169,7 +192,7 @@ export function createAuthorization(
   // Only reachable behind the configured proxy, which must replace forwarding headers.
   provider.use(async (ctx, next) => {
     const params = ctx.query;
-    if (ctx.path === "/auth") {
+    if (ctx.path === routes.authorization) {
       const redirect =
         typeof params.redirect_uri === "string"
           ? URL.parse(params.redirect_uri)
@@ -191,6 +214,31 @@ export function createAuthorization(
     await next();
   });
   const failures = new Map<string, { times: number[]; inFlight: number }>();
+  function protectMcp(app: Express) {
+    app.use(
+      mcpAuthMetadataRouter({
+        resourceServerUrl: new URL(resource),
+        scopesSupported: metadata.scopes_supported,
+        oauthMetadata: metadata,
+      }),
+    );
+    app.use("/mcp", (req, res, next) => {
+      if (req.headers.origin && req.headers.origin !== issuer) {
+        res.status(403).json({ error: "FORBIDDEN_ORIGIN" });
+        return;
+      }
+      next();
+    });
+    app.all(
+      "/mcp",
+      requireBearerAuth({
+        verifier: { verifyAccessToken },
+        requiredScopes: metadata.scopes_supported,
+        expectedResource: new URL(resource),
+        resourceMetadataUrl: `${issuer}/.well-known/oauth-protected-resource/mcp`,
+      }),
+    );
+  }
   function mount(app: Express) {
     app.get("/interaction/:uid", async (req, res, next) => {
       try {
@@ -299,6 +347,7 @@ export function createAuthorization(
         }
       },
     );
+    app.use(provider.callback());
   }
   async function verifyAccessToken(raw: string): Promise<AuthInfo> {
     const token = await provider.AccessToken.find(raw);
@@ -323,5 +372,5 @@ export function createAuthorization(
       resource: new URL(resource),
     };
   }
-  return { provider, mount, verifyAccessToken };
+  return { protectMcp, mount };
 }

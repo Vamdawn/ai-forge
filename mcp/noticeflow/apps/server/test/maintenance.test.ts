@@ -315,10 +315,17 @@ test("backups keep the latest seven only after success and reject corrupt or wro
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
+import { request as requestHttp } from "node:http";
 import { stringify } from "yaml";
 import { setTimeout as delay } from "node:timers/promises";
-test("serve starts one instance, reports health and stops cleanly", async (t) => {
-  const service = await fixture();
+import {
+  Client,
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
+test("serve drains OAuth requests and gracefully closes MCP subscriptions on SIGTERM", async (t) => {
+  const service = await fixture({
+    providerFetch: async () => Response.json(claudeMetadata),
+  });
   t.after(() => service.dispose());
   const reservation = createServer().listen(0, "127.0.0.1");
   await new Promise<void>((resolve) => reservation.once("listening", resolve));
@@ -351,10 +358,71 @@ test("serve starts one instance, reports health and stops cleanly", async (t) =>
   }
   assert.ok(healthy, errors);
   await assert.rejects(cli(service.configPath, "serve"));
+  const { code } = await authorize(service.request);
+  const tokens = await (await redeem(service.request, code)).json();
+  const client = new Client(
+    { name: "shutdown-probe", version: "1.0.0" },
+    { versionNegotiation: { mode: { pin: "2026-07-28" } } },
+  );
+  t.after(() => client.close());
+  await client.connect(
+    new StreamableHTTPClientTransport(
+      new URL(`http://127.0.0.1:${address.port}/mcp`),
+      {
+        requestInit: {
+          headers: { authorization: `Bearer ${tokens.access_token}` },
+        },
+      },
+    ),
+  );
+  const subscription = await client.listen({ toolsListChanged: true });
+  const login = await service.request(authPath());
+  const cookies = login.headers.getSetCookie().map((value) => value.split(";")[0]);
+  const page = await service.request(login.headers.get("location")!, {
+    headers: { cookie: cookies.join("; ") },
+  });
+  cookies.push(...page.headers.getSetCookie().map((value) => value.split(";")[0]));
+  const html = await page.text();
+  const csrf = html.match(/name="csrf" value="([^"]+)"/)![1];
+  const action = html.match(/action="([^"]+)"/)![1];
+  const form = new URLSearchParams({
+    csrf,
+    password: "test-admin-password",
+    approve: "yes",
+  }).toString();
+  const pendingLogin = requestHttp(`http://127.0.0.1:${address.port}${action}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      "content-length": Buffer.byteLength(form),
+      cookie: cookies.join("; "),
+      expect: "100-continue",
+    },
+  });
+  t.after(() => pendingLogin.destroy());
+  const loginStatus = new Promise<number | undefined>((resolve, reject) => {
+    pendingLogin.once("error", reject);
+    pendingLogin.once("response", (response) => {
+      response.resume();
+      response.once("end", () => resolve(response.statusCode));
+    });
+  });
+  const requestAccepted = new Promise<void>((resolve) =>
+    pendingLogin.once("continue", resolve),
+  );
+  pendingLogin.flushHeaders();
+  await requestAccepted;
   const exit = new Promise<number | null>((resolve) =>
     child.once("exit", resolve),
   );
   child.kill("SIGTERM");
+  const subscriptionClosed = await Promise.race([
+    subscription.closed,
+    delay(2000, "still-open", { ref: false }),
+  ]);
+  pendingLogin.end(form);
+  assert.equal(await loginStatus, 303);
+  assert.equal(subscriptionClosed, "graceful");
   assert.equal(await exit, 0, errors);
 });
 

@@ -4,15 +4,22 @@ import Database from "better-sqlite3";
 import { chmodSync, closeSync, existsSync, mkdirSync, openSync } from "node:fs";
 import { dirname } from "node:path";
 import { flockSync } from "fs-ext";
-import { type AdapterPayload } from "oidc-provider";
 import type {
   DeliveryPlan,
   NotificationInput,
   SendOutcome,
 } from "./channel.js";
-import { Vault, type PasswordHash, hashPassword } from "./crypto.js";
+import { Vault } from "./crypto.js";
+import { AuthorizationStore } from "./storage/authorization.js";
+export {
+  validateDatabase,
+  readCooldowns,
+  prepareRestoredDatabase,
+  verifyRestoredDatabase,
+} from "./storage/recovery.js";
 export class Store {
   private db!: Database.Database;
+  private authorization: AuthorizationStore;
   private lock: number;
   private closed = false;
   constructor(
@@ -46,160 +53,21 @@ export class Store {
         this.db
           .prepare("INSERT INTO key_check VALUES (1, ?)")
           .run(vault.encrypt("noticeflow-v1", "key_check", "1", "cipher"));
+      this.authorization = new AuthorizationStore(this.db, vault, this.now);
     } catch (error) {
       this.db!?.close();
       closeSync(this.lock);
       throw error;
     }
   }
-  async initializeAdmin(initialPassword?: string) {
-    if (this.password()) return Boolean(initialPassword);
-    if (!initialPassword) throw new Error("INITIAL_PASSWORD_REQUIRED");
-    const password = await hashPassword(initialPassword);
-    this.db
-      .prepare("INSERT OR IGNORE INTO admin VALUES (1, ?, ?, ?, ?)")
-      .run(
-        password.hash,
-        password.salt,
-        JSON.stringify({ N: 16384, r: 8, p: 1, keylen: 64 }),
-        this.now(),
-      );
-    return false;
+  initializeAdmin(initialPassword?: string) {
+    return this.authorization.initializeAdmin(initialPassword);
   }
-  password(): PasswordHash | undefined {
-    return this.db
-      .prepare("SELECT password_hash AS hash, salt FROM admin WHERE id=1")
-      .get() as PasswordHash | undefined;
+  password() {
+    return this.authorization.password();
   }
   adapter(model: string) {
-    const digest = (id: string) => this.vault.oauthDigest(id);
-    const decode = (
-      row:
-        | { id_digest: string; payload_cipher: string; consumed: number | null }
-        | undefined,
-    ) => {
-      if (!row) return undefined;
-      const payload = this.vault.decrypt<AdapterPayload>(
-        row.payload_cipher,
-        "oauth_artifacts",
-        `${model}:${row.id_digest}`,
-        "payload",
-      );
-      if (row.consumed) payload.consumed = row.consumed;
-      return payload;
-    };
-    const find = (column: string, id: string) =>
-      decode(
-        this.db
-          .prepare(
-            `SELECT * FROM oauth_artifacts WHERE model=? AND ${column}=? AND expires_at>?`,
-          )
-          .get(model, digest(id), this.now()) as Parameters<typeof decode>[0],
-      );
-    return {
-      find: async (id: string) => find("id_digest", id),
-      findByUid: async (id: string) => find("uid_digest", id),
-      findByUserCode: async (id: string) => find("user_code_digest", id),
-      upsert: async (
-        id: string,
-        payload: AdapterPayload,
-        expiresIn: number,
-      ) => {
-        this.db
-          .transaction(() => {
-            let expires = this.now() + expiresIn * 1000;
-            const key = digest(id);
-            if (
-              (model === "RefreshToken" || model === "AccessToken") &&
-              typeof payload.grantId === "string"
-            ) {
-              const grantKey = digest(payload.grantId);
-              const row = this.db
-                .prepare(
-                  "SELECT * FROM oauth_artifacts WHERE model='Grant' AND id_digest=? AND expires_at>?",
-                )
-                .get(grantKey, this.now()) as
-                | { payload_cipher: string; expires_at: number }
-                | undefined;
-              if (!row) throw new Error("INVALID_GRANT");
-              const grant = this.vault.decrypt<AdapterPayload>(
-                row.payload_cipher,
-                "oauth_artifacts",
-                `Grant:${grantKey}`,
-                "payload",
-              );
-              const deadline = Math.max(row.expires_at, expires);
-              grant.exp = Math.ceil(deadline / 1000);
-              this.db
-                .prepare(
-                  "UPDATE oauth_artifacts SET payload_cipher=?, expires_at=? WHERE model='Grant' AND id_digest=?",
-                )
-                .run(
-                  this.vault.encrypt(
-                    grant,
-                    "oauth_artifacts",
-                    `Grant:${grantKey}`,
-                    "payload",
-                  ),
-                  deadline,
-                  grantKey,
-                );
-            }
-            if (model === "Grant") {
-              const old = this.db
-                .prepare(
-                  "SELECT expires_at FROM oauth_artifacts WHERE model='Grant' AND id_digest=?",
-                )
-                .get(key) as { expires_at: number } | undefined;
-              expires = Math.max(expires, old?.expires_at ?? 0);
-              payload = { ...payload, exp: Math.ceil(expires / 1000) };
-            }
-            this.db
-              .prepare(
-                `INSERT INTO oauth_artifacts VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(model,id_digest) DO UPDATE SET payload_cipher=excluded.payload_cipher, expires_at=excluded.expires_at, grant_digest=excluded.grant_digest, uid_digest=excluded.uid_digest, user_code_digest=excluded.user_code_digest`,
-              )
-              .run(
-                model,
-                key,
-                this.vault.encrypt(
-                  payload,
-                  "oauth_artifacts",
-                  `${model}:${key}`,
-                  "payload",
-                ),
-                expires,
-                payload.grantId ? digest(payload.grantId) : null,
-                payload.uid ? digest(payload.uid) : null,
-                payload.userCode ? digest(payload.userCode) : null,
-                payload.consumed ?? null,
-              );
-          })
-          .immediate();
-      },
-      consume: async (id: string) => {
-        if (
-          !this.db
-            .prepare(
-              "UPDATE oauth_artifacts SET consumed=? WHERE model=? AND id_digest=? AND consumed IS NULL AND expires_at>?",
-            )
-            .run(Math.floor(this.now() / 1000), model, digest(id), this.now())
-            .changes
-        )
-          throw new Error("ALREADY_CONSUMED");
-      },
-      destroy: async (id: string) => {
-        this.db
-          .prepare("DELETE FROM oauth_artifacts WHERE model=? AND id_digest=?")
-          .run(model, digest(id));
-      },
-      revokeByGrantId: async (id: string) => {
-        this.db
-          .prepare(
-            "DELETE FROM oauth_artifacts WHERE grant_digest=? OR (model='Grant' AND id_digest=?)",
-          )
-          .run(digest(id), digest(id));
-      },
-    };
+    return this.authorization.adapter(model);
   }
   accept(
     id: string,
@@ -457,19 +325,8 @@ export class Store {
       })
       .immediate();
   }
-  async resetPassword(value: string) {
-    if (!value || !this.password()) throw new Error("INVALID_PASSWORD");
-    const password = await hashPassword(value);
-    this.db
-      .transaction(() => {
-        this.db
-          .prepare(
-            "UPDATE admin SET password_hash=?, salt=?, updated_at=? WHERE id=1",
-          )
-          .run(password.hash, password.salt, this.now());
-        this.db.prepare("DELETE FROM oauth_artifacts").run();
-      })
-      .immediate();
+  resetPassword(value: string) {
+    return this.authorization.resetPassword(value);
   }
   retryTask(id: string, now: number) {
     return this.db
@@ -561,92 +418,4 @@ export interface Lease {
   leaseId: string;
   destinationDigest: string;
   plan: DeliveryPlan;
-}
-
-export function validateDatabase(path: string, vault: Vault) {
-  const db = new Database(path, { fileMustExist: true, readonly: true });
-  try {
-    const integrity = db.pragma("integrity_check") as {
-      integrity_check: string;
-    }[];
-    if (integrity.length !== 1 || integrity[0].integrity_check !== "ok")
-      throw new Error("INVALID_DATABASE");
-    const check = db
-      .prepare("SELECT cipher FROM key_check WHERE id=1")
-      .get() as { cipher: string } | undefined;
-    if (
-      !check ||
-      vault.decrypt(check.cipher, "key_check", "1", "cipher") !==
-        "noticeflow-v1"
-    )
-      throw new Error("WRONG_DATA_KEY");
-  } finally {
-    db.close();
-  }
-}
-
-export function readCooldowns(
-  path: string,
-  now: number,
-): { destination_digest: string; blocked_until: number }[] {
-  const db = new Database(path, { readonly: true, fileMustExist: true });
-  try {
-    return db
-      .prepare(
-        "SELECT destination_digest, blocked_until FROM destination_cooldowns WHERE blocked_until>?",
-      )
-      .all(now) as { destination_digest: string; blocked_until: number }[];
-  } finally {
-    db.close();
-  }
-}
-export function prepareRestoredDatabase(
-  path: string,
-  vault: Vault,
-  restoreId: string,
-  cooldowns: ReturnType<typeof readCooldowns> = [],
-) {
-  validateDatabase(path, vault);
-  const db = new Database(path, { fileMustExist: true });
-  try {
-    db.pragma("synchronous = FULL");
-    db.transaction(() => {
-      db.prepare("DELETE FROM oauth_artifacts").run();
-      for (const [name, value] of [
-        ["restore_pause", "true"],
-        ["restore_id", restoreId],
-      ])
-        db.prepare(
-          "INSERT INTO maintenance_state VALUES (?,?) ON CONFLICT(name) DO UPDATE SET value=excluded.value",
-        ).run(name, value);
-      for (const cooldown of cooldowns)
-        db.prepare(
-          "INSERT INTO destination_cooldowns VALUES (?,?) ON CONFLICT(destination_digest) DO UPDATE SET blocked_until=MAX(blocked_until,excluded.blocked_until)",
-        ).run(cooldown.destination_digest, cooldown.blocked_until);
-    }).immediate();
-    db.pragma("wal_checkpoint(TRUNCATE)");
-  } finally {
-    db.close();
-  }
-  validateDatabase(path, vault);
-}
-export function verifyRestoredDatabase(
-  path: string,
-  vault: Vault,
-  restoreId: string,
-) {
-  validateDatabase(path, vault);
-  const db = new Database(path, { readonly: true, fileMustExist: true });
-  try {
-    const row = db
-      .prepare("SELECT value FROM maintenance_state WHERE name='restore_id'")
-      .get() as { value: string } | undefined;
-    const count = db
-      .prepare("SELECT COUNT(*) AS count FROM oauth_artifacts")
-      .get() as { count: number };
-    if (row?.value !== restoreId || count.count !== 0)
-      throw new Error("RESTORE_VERIFICATION_FAILED");
-  } finally {
-    db.close();
-  }
 }

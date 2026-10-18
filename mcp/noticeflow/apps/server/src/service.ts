@@ -1,10 +1,6 @@
 import express from "express";
 import { accessSync, constants, mkdirSync } from "node:fs";
 import { type Configuration } from "oidc-provider";
-import {
-  mcpAuthMetadataRouter,
-  requireBearerAuth,
-} from "@modelcontextprotocol/express";
 import { loadConfig } from "./config.js";
 import { Vault } from "./crypto.js";
 import { Store } from "./store.js";
@@ -14,7 +10,7 @@ import { log, type Logger } from "./log.js";
 import { mountMcp } from "./http.js";
 import { createSubmit } from "./submit.js";
 import { createWecom } from "./wecom.js";
-import { createAuthorization, SCOPE } from "./auth.js";
+import { createAuthorization } from "./auth.js";
 export interface ServiceOptions {
   providerFetch?: Configuration["fetch"];
   now?: () => number;
@@ -49,7 +45,6 @@ export async function createService(
       options.logger,
     );
     const issuer = config.server.publicBaseUrl;
-    const resource = new URL(`${issuer}/mcp`);
     const authorization = createAuthorization(
       config,
       store,
@@ -79,43 +74,9 @@ export async function createService(
         });
       }
     });
-    app.use(
-      mcpAuthMetadataRouter({
-        resourceServerUrl: resource,
-        scopesSupported: [SCOPE],
-        oauthMetadata: {
-          issuer,
-          authorization_endpoint: `${issuer}/auth`,
-          token_endpoint: `${issuer}/token`,
-          revocation_endpoint: `${issuer}/token/revocation`,
-          response_types_supported: ["code"],
-          grant_types_supported: ["authorization_code", "refresh_token"],
-          scopes_supported: [SCOPE],
-          code_challenge_methods_supported: ["S256"],
-          token_endpoint_auth_methods_supported: ["none", "private_key_jwt"],
-          client_id_metadata_document_supported: true,
-        },
-      }),
-    );
-    app.use("/mcp", (req, res, next) => {
-      if (req.headers.origin && req.headers.origin !== issuer) {
-        res.status(403).json({ error: "FORBIDDEN_ORIGIN" });
-        return;
-      }
-      next();
-    });
-    app.all(
-      "/mcp",
-      requireBearerAuth({
-        verifier: authorization,
-        requiredScopes: [SCOPE],
-        expectedResource: resource,
-        resourceMetadataUrl: `${issuer}/.well-known/oauth-protected-resource/mcp`,
-      }),
-    );
-    mountMcp(app, submit, Object.keys(config.topics));
+    authorization.protectMcp(app);
+    const closeMcp = mountMcp(app, submit, Object.keys(config.topics));
     authorization.mount(app);
-    app.use(authorization.provider.callback());
     app.use(
       (
         _error: unknown,
@@ -126,15 +87,28 @@ export async function createService(
         res.status(500).json({ error: "SERVER_ERROR" });
       },
     );
+    let stopping: Promise<void> | undefined;
+    // HTTP listeners must drain before close() releases storage.
+    function stop() {
+      stopping ??= (async () => {
+        await Promise.all([closeMcp(), worker.stop()]);
+      })();
+      return stopping;
+    }
+    let closing: Promise<void> | undefined;
     return {
       app,
       store,
       config,
       submit,
       worker,
-      async close() {
-        await worker.stop();
-        store.close();
+      stop,
+      close() {
+        closing ??= (async () => {
+          await stop();
+          store.close();
+        })();
+        return closing;
       },
     };
   } catch (error) {

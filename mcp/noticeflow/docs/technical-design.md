@@ -44,8 +44,12 @@ Express HTTP 进程
 | `submitNotification` | `submit(input) -> Accepted | SubmitError` | 输入校验、Topic 路由、渠道预处理、容量校验、加密与原子入库。 |
 | `Channel` | `prepare(input,target) -> DeliveryPlan`；`send(plan) -> SendOutcome` | 渠道能力校验、目标快照、最终消息格式、HTTP 调用和渠道错误分类。初版只有 WeCom Adapter。 |
 | `DeliveryWorker` | `start()`、`stop()` | 领取租约、限速预留、超时、重试、过期租约恢复及终态更新。 |
-| `Store` | 领域操作及 OAuth 持久化操作 | SQL、事务、迁移、保留期清理和在线备份；不暴露通用 SQL 给其他模块。 |
-| `Authorization` | `verifyAccessToken(raw) -> AuthInfo` | `oidc-provider`、SQLite Adapter、管理员登录与令牌撤销。 |
+| `Store` | 领域操作及 OAuth 持久化操作 | 持有 SQLite 连接、锁和事务；管理员/OAuth 持久化与离线恢复校验在内部文件中实现，不暴露通用 SQL 给其他模块。 |
+| `Authorization` | `protectMcp(app)`、`mount(app)` | 集中维护 OAuth 路由、公开元数据、Scope、Origin 与 Bearer 校验、Provider 和管理员登录；前者在 MCP 路由前挂载，后者在 MCP 路由后挂载。 |
+
+`Store` 的管理员与 OAuth 操作委托给 `storage/authorization.ts`，复用同一连接、数据密钥和时钟；密码更新与授权撤销仍在同一事务内完成。`storage/recovery.ts` 承担原有离线校验与恢复准备，`Store` 保留现有导出供维护命令使用，数据库格式不变。
+
+`http.ts` 挂载 MCP 路由并返回 handler 的关闭函数。`service.stop()` 关闭 MCP handler 并等待 Worker 停止，保留 Store 供在途 HTTP 请求使用；`service.close()` 等待停止完成后关闭 Store。停止与关闭分别复用各自的 Promise。收到退出信号后，`serve.ts` 停止接收新 HTTP 连接，并行等待 `service.stop()`、HTTP 请求排空与维护调度停止，最后关闭 Store，保留原有的 12 秒 HTTP 强制断连期限。MCP 订阅流通过 handler 的关闭流程正常结束，在途 OAuth 登录可继续完成。
 
 `Channel.prepare` 不执行外部请求。它返回含渠道类型、目的地和已排版消息的不可变计划；接收时加密保存该计划，后续部署变更不会改变已接收任务的投递内容。新增渠道时注册一个新 Adapter、扩充 YAML 的渠道配置解析和验收用例，不修改 MCP 工具字段。当前只有一个渠道，但这一接口是产品明确要求的扩展点；其他模块不再按渠道拆出空泛的接口层。
 
@@ -65,17 +69,22 @@ mcp/noticeflow/
 │   ├── Dockerfile
 │   ├── src/
 │   │   ├── main.ts                 # serve 与维护命令分派
+│   │   ├── service.ts              # 依赖组装与统一关闭
+│   │   ├── serve.ts                # HTTP 监听、维护调度与退出信号
 │   │   ├── config.ts               # YAML 加载、验证与冻结
-│   │   ├── http.ts                 # Express、MCP 路由与元数据
-│   │   ├── auth.ts                 # OAuth Provider、登录与令牌校验
+│   │   ├── http.ts                 # MCP 工具注册、HTTP 挂载与 handler 关闭
+│   │   ├── auth.ts                 # OAuth 契约、鉴权中间件与登录
 │   │   ├── submit.ts               # 唯一 MCP 工具的业务入口
 │   │   ├── channel.ts              # Channel 接口与注册
 │   │   ├── wecom.ts                # 企业微信 Adapter
 │   │   ├── worker.ts               # 租约、限速、重试
-│   │   ├── store.ts                # SQLite 事务与 OAuth Adapter
+│   │   ├── store.ts                # SQLite 连接、事务与存储门面
+│   │   ├── storage/
+│   │   │   ├── authorization.ts    # 共享连接的管理员与 OAuth 持久化
+│   │   │   └── recovery.ts         # 离线数据库校验与恢复准备
 │   │   ├── crypto.ts               # 加密、HMAC、密码哈希
 │   │   ├── maintenance.ts          # 服务端维护命令
-│   │   └── migrations/            # 有序 SQL 迁移
+│   │   └── migrations.ts           # 有序 SQL 迁移
 │   └── test/                       # 模块测试
 └── tests/e2e/                       # 标准 MCP Client 和容器验收
 ```

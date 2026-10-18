@@ -24,10 +24,18 @@ test("MCP advertises its OAuth resource and challenges unauthenticated callers",
   const discovery = await (
     await service.request("/.well-known/oauth-authorization-server")
   ).json();
-  assert.equal(discovery.issuer, "https://notice.example.com");
-  assert.equal(discovery.token_endpoint, "https://notice.example.com/token");
-  assert.equal(discovery.registration_endpoint, undefined);
-  assert.deepEqual(discovery.code_challenge_methods_supported, ["S256"]);
+  assert.deepEqual(discovery, {
+    issuer: "https://notice.example.com",
+    authorization_endpoint: "https://notice.example.com/auth",
+    token_endpoint: "https://notice.example.com/token",
+    revocation_endpoint: "https://notice.example.com/token/revocation",
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
+    scopes_supported: ["notification:submit"],
+    code_challenge_methods_supported: ["S256"],
+    token_endpoint_auth_methods_supported: ["none", "private_key_jwt"],
+    client_id_metadata_document_supported: true,
+  });
 });
 
 import { authorize, redeem, claudeMetadata } from "./oauth-client.js";
@@ -282,6 +290,45 @@ import {
   Client,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
+import { setTimeout as delay } from "node:timers/promises";
+
+test("service shutdown gracefully closes active MCP subscriptions", async (t) => {
+  const service = await fixture({
+    providerFetch: async () => Response.json(claudeMetadata),
+  });
+  const client = new Client(
+    { name: "shutdown-probe", version: "1.0.0" },
+    { versionNegotiation: { mode: { pin: "2026-07-28" } } },
+  );
+  t.after(async () => {
+    await client.close();
+    await service.dispose();
+  });
+  const { code } = await authorize(service.request);
+  const tokens = await (await redeem(service.request, code)).json();
+  await client.connect(
+    new StreamableHTTPClientTransport(
+      new URL(`${service.base}/mcp`),
+      {
+        requestInit: {
+          headers: { authorization: `Bearer ${tokens.access_token}` },
+        },
+      },
+    ),
+  );
+  const subscription = await client.listen({ toolsListChanged: true });
+  assert.deepEqual(subscription.honoredFilter, { toolsListChanged: true });
+  await service.close();
+  assert.equal(
+    await Promise.race([
+      subscription.closed,
+      delay(2000, "still-open", { ref: false }),
+    ]),
+    "graceful",
+  );
+  await service.close();
+});
+
 for (const mode of ["legacy", { pin: "2026-07-28" }] as const) {
   test(`standard MCP Client discovers and calls the notification tool (${JSON.stringify(mode)})`, async (t) => {
     const service = await fixture({

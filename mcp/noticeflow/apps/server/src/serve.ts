@@ -41,7 +41,7 @@ export async function serve(configPath: string, config: Config) {
           new Promise<void>((resolve, reject) =>
             server.close((error) => (error ? reject(error) : resolve())),
           ),
-          service.worker.stop(),
+          service.stop(),
           stopMaintenance(),
         ]);
       } finally {
