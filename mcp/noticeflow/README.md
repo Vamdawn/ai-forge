@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-Noticeflow is an experimental remote MCP notification server for Node.js 24. Existing MCP hosts submit prepared notifications over Streamable HTTP and OAuth; a durable SQLite queue routes them to configured WeCom group robots. Local automated checks cover both MCP protocol eras and OAuth flows. Real Claude Code, ChatGPT, WeCom, and container acceptance remain pending.
+Noticeflow is an experimental remote MCP notification server for Node.js 24. Existing MCP hosts submit prepared notifications over Streamable HTTP and OAuth; a durable SQLite queue routes them to configured WeCom group robots. Local automated checks cover both MCP protocol eras and OAuth flows. The Linux/arm64 Docker image has passed build, startup, runtime-configured healthcheck, and persistent restart checks. Real Claude Code, ChatGPT, and WeCom acceptance remain pending.
 
 ## Install
 
@@ -67,7 +67,7 @@ Nginx must replace forwarded host, scheme, and source-IP headers and keep the co
 - At most 1000 unfinished deliveries, four concurrent sends, 120 tool calls per client per rolling minute, and 20 starts per Webhook per rolling minute. Conservative reservations can reduce throughput. Retries and manual requeues share persistent quotas and cooldowns.
 - Retryable failures have four recorded attempts with 1/5/15 minute backoff. Interrupted attempts can repeat without consuming that budget. Terminal deliveries are retained 90 days; unfinished deliveries are retained until terminal.
 - Daily and manual online backups share a seven-file retention limit; failures preserve existing copies. Restore requires an exclusive lock, preserves the old main/WAL/SHM files, revokes authorization, and pauses sends for 60 seconds. An interrupted restore blocks startup; rerun restore to continue. Retain its preserved directory until recovery is verified, then remove the whole directory when no restore marker references it.
-- Public HTTPS host interoperability, a controlled real WeCom send, image execution, and capacity-dependent maintenance latency still need deployment acceptance. Local fixtures do not establish these results.
+- Public HTTPS host interoperability, a controlled real WeCom send, other image platforms, and capacity-dependent maintenance latency still need deployment acceptance. Local fixtures do not establish these results.
 
 ## Development
 

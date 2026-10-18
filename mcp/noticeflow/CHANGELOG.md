@@ -6,12 +6,14 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 
 ### Added
 
-- Added the experimental Node.js 24 server with OAuth/CIMD, the notification MCP tool, encrypted SQLite fanout, quota-aware delivery, offline password reset, backup/recovery commands, and a Docker build. Automated public-boundary tests cover local protocol, authorization, delivery, and recovery behavior; real hosts, WeCom, and image execution still require deployment acceptance.
+- Added the experimental Node.js 24 server with OAuth/CIMD, the notification MCP tool, encrypted SQLite fanout, quota-aware delivery, offline password reset, backup/recovery commands, and a Docker build. Automated public-boundary tests cover local protocol, authorization, delivery, and recovery behavior; real hosts and WeCom still require deployment acceptance.
 - Defined the initial server-first MCP product boundary and notification model before implementation; existing hosts use their own MCP clients.
 - Added the initial technical design for authorization, durable delivery, encrypted storage, operations, and acceptance checks so implementation can proceed against a concrete design.
 - Added an architecture review identifying OAuth callback, database recovery, and delivery scheduling gaps before implementation, with primary sources and acceptance cases.
 
 ### Changed
+
+- Verified the Linux/arm64 Docker image builds and starts as a non-root user, passes runtime-configured healthchecks, and restarts with its existing database after removing the initial password. Other image platforms and real host/channel acceptance remain unverified.
 
 - Aligned the product and technical designs on retry accounting, task time filters, log fields, per-client rate limits, and rolling refresh-token expiry so the implementation follows one contract.
 
