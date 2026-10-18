@@ -214,6 +214,8 @@ export class Store {
               "UPDATE deliveries SET status='processing', lease_id=?, lease_until=? WHERE id=?",
             )
             .run(leaseId, now + 30000, row.id);
+          // Count even a send near lease expiry for a full rolling minute:
+          // the reservation lasts for the 30-second lease plus 60 seconds.
           this.db
             .prepare(
               "INSERT INTO send_slots (lease_id,delivery_id,destination_digest,reserved_at,hold_until) VALUES (?,?,?,?,?)",
@@ -263,6 +265,8 @@ export class Store {
           slot.hold_until <= now ||
           blocked > now
         ) {
+          // Reservations expire independently of task state; rejected sends and
+          // retries follow the same conservative quota accounting across restarts.
           this.db
             .prepare(
               "UPDATE deliveries SET status='waiting_retry', next_attempt_at=?, lease_id=NULL, lease_until=NULL WHERE id=? AND lease_id=?",
@@ -280,6 +284,8 @@ export class Store {
   finish(lease: Lease, outcome: SendOutcome, now: number) {
     return this.db
       .transaction(() => {
+        // A stale lease can still observe destination-wide throttling. Extend
+        // that cooldown before checking ownership, but never overwrite a newer lease's result.
         if (outcome.cooldownUntil !== undefined)
           this.db
             .prepare(

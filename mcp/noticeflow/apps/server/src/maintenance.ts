@@ -148,6 +148,8 @@ export function restoreBackup(config: Config, vault: Vault, backup: string) {
       saveMarker(markerPath, marker);
     }
     if (marker.stage === "prepared") {
+      // Preserve and sync the untouched main/WAL/SHM set before opening the old
+      // database for cooldown recovery: SQLite may checkpoint or remove its WAL.
       mkdirSync(marker.preservedDirectory, { recursive: true, mode: 0o700 });
       for (const suffix of marker.files) {
         const copy = join(marker.preservedDirectory, basename(path) + suffix);
@@ -174,6 +176,8 @@ export function restoreBackup(config: Config, vault: Vault, backup: string) {
       saveMarker(markerPath, marker);
     }
     if (marker.stage === "ready") {
+      // The durable ready marker allows restart after the rename but before the
+      // installed marker. The restore ID distinguishes installation from rollback.
       if (existsSync(marker.temporary)) {
         verifyRestoredDatabase(marker.temporary, vault, marker.id);
         removeDatabaseFiles(path);

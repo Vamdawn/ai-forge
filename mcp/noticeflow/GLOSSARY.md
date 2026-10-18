@@ -1,22 +1,28 @@
-# Noticeflow 术语表
+# Noticeflow
 
-本术语表描述 Noticeflow 通知投递领域中的概念，不定义实现方式。
+The notification delivery domain in Noticeflow. These terms describe domain concepts, not implementation choices.
 
-## 术语
+## Language
 
-**通知（Notification）**：一次由调用方提交、带有 Topic、标题和内容的投递请求。内容相同的两次提交是两条不同的通知。
+**Notification**:
+A delivery request submitted by a caller with a Topic, title, and content. Two submissions with identical content are distinct Notifications.
 
-**Topic**：通知所属的精确匹配路由键，决定该通知应投递到哪些 Target。
-_避免使用_：模糊分类、订阅条件
+**Topic**:
+An exact-match routing key that determines the Targets for a Notification.
+_Avoid_: Fuzzy category, subscription condition
 
-**Target**：配置中一个具体的投递目的地及其渠道类型；通知被接收时，目标集合即被确定。
-_避免使用_：Topic、Channel
+**Target**:
+A configured delivery destination with an associated Channel. The Target set for a Notification is fixed when it is Accepted.
+_Avoid_: Topic, Channel
 
-**Channel**：实现某类推送方式的服务端组件；初版只有企业微信机器人 Webhook，后续可增加其他渠道。
-_避免使用_：Target、MCP client
+**Channel**:
+A delivery mechanism associated with a Target.
+_Avoid_: Target, MCP client
 
-**投递任务（Delivery）**：一条通知发往一个 Target 的独立投递记录，具有自己的处理结果。
-_避免使用_：通知
+**Delivery**:
+An independent record of one Notification being delivered to one Target, with its own processing outcome.
+_Avoid_: Notification
 
-**接收（Accepted）**：通知及其全部投递任务已持久化，服务端承诺后续处理；它不表示渠道已成功送达。
-_避免使用_：已发送、已送达
+**Accepted**:
+The state in which a Notification and all its Deliveries are durably recorded and committed to subsequent processing. It does not indicate successful delivery through a Channel.
+_Avoid_: Sent, delivered

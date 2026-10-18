@@ -85,6 +85,8 @@ export class AuthorizationStore {
                 "payload",
               );
               const deadline = Math.max(row.expires_at, expires);
+              // Provider validation reads payload.exp, while adapter lookup uses
+              // expires_at; both must cover every token issued under this Grant.
               grant.exp = Math.ceil(deadline / 1000);
               this.db
                 .prepare(
@@ -107,6 +109,7 @@ export class AuthorizationStore {
                   "SELECT expires_at FROM oauth_artifacts WHERE model='Grant' AND id_digest=?",
                 )
                 .get(key) as { expires_at: number } | undefined;
+              // A later Grant save must not undo the extension from token issuance.
               expires = Math.max(expires, old?.expires_at ?? 0);
               payload = { ...payload, exp: Math.ceil(expires / 1000) };
             }
