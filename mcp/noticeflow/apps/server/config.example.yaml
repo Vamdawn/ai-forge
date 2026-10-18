@@ -1,0 +1,20 @@
+server:
+  publicBaseUrl: https://notice.example.com
+  listen: 0.0.0.0:3000
+auth:
+  # Remove this field after the administrator has been initialized.
+  initialAdminPassword: REPLACE_OUTSIDE_REPOSITORY
+  allowedClientIds:
+    - https://claude.ai/oauth/claude-code-client-metadata
+    - https://chatgpt.com/oauth/client.json
+storage:
+  sqlitePath: /data/noticeflow.sqlite
+  encryptionKeyFile: /run/noticeflow/data-key
+  backupDir: /backup
+targets:
+  operations:
+    channel: wecom-webhook
+    webhookUrl: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=REPLACE_OUTSIDE_REPOSITORY
+topics:
+  build-failure:
+    targets: [operations]

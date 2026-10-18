@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-个人 Agent 能力资产 monorepo：提供可复用的 skills、prompts、rules、CLI 工具与宿主应用插件。每个资产独立演进——版本、变更记录与发布都以单个资产为单位，仓库没有全局版本号。
+个人 Agent 能力资产 monorepo：提供可复用的 skills、prompts、rules、CLI 工具、宿主应用插件与 MCP 产品。每个资产独立演进——版本、变更记录与发布都以单个资产为单位，仓库没有全局版本号。
 
 ## 仓库结构
 
@@ -15,12 +15,13 @@
 | `rules/` | 每次会话常驻加载的规则片段或整文件模板 | 对应 `.md` 文件 |
 | `tools/` | 独立 CLI 工具 | 所属资产的 `README.md` |
 | `plugins/` | 宿主应用加载的插件 | 所属资产的 `README.md` |
+| `mcp/` | MCP 产品及其相关组件 | 所属资产的 `README.md` |
 | `docs/` | 维护本仓库的规则，一个主题一个文件 | `docs/asset-layout.md` |
 | `scripts/` | 校验脚本与仅服务本仓库的工具 | `scripts/verify-docs.py` |
 
 ## 使用方式
 
-从下方索引选择所需资产，打开对应入口。skill 连同所属目录的资源一起使用；工具与插件按各自 README 安装和运行。
+从下方索引选择所需资产，打开对应入口。skill 连同所属目录的资源一起使用；工具、插件与 MCP 产品按各自 README 了解状态和用法。
 
 ## 资产索引
 
@@ -69,9 +70,13 @@
 - [@vamdawn/dsh-astrolabe](plugins/dsh-astrolabe/README.zh-CN.md)：接管 DeepSeek Harness 侧边栏会话区域的双轴标签页面板，含搜索、置顶分组与行内会话动作。
 - [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.zh-CN.md)：根据会话上下文生成 DeepSeek Harness 会话名称。
 
+### MCP 产品
+
+- [noticeflow](mcp/noticeflow/README.zh-CN.md)：实验性远程 MCP 通知服务，支持持久投递和 OAuth。
+
 ## 版本与发布
 
-- skills、tools 与 plugins 各自独立版本化，tag 格式为 `<asset-name>@X.Y.Z`；prompts 与 rules 以 Git 历史记录变更。
+- skills、tools、plugins 与 MCP 产品各自独立版本化，tag 格式为 `<asset-name>@X.Y.Z`；prompts 与 rules 以 Git 历史记录变更。
 - [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) 索引每次发布，变更细节见资产自己的 CHANGELOG。
 - 仓库没有全局版本号，约定见[版本与发布规则](docs/versioning-and-release.md)。
 

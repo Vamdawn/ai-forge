@@ -1,0 +1,40 @@
+{
+  "name": "@vamdawn/noticeflow-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "start": "node dist/main.js",
+    "pretest": "npm rebuild better-sqlite3 fs-ext esbuild"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/express": "2.0.2",
+    "@modelcontextprotocol/node": "2.1.1",
+    "@modelcontextprotocol/server": "2.3.1",
+    "better-sqlite3": "13.0.3",
+    "express": "5.3.0",
+    "fs-ext": "2.1.1",
+    "oidc-provider": "9.12.2",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5",
+    "yaml": "2.9.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/express": "5.0.6",
+    "@types/fs-ext": "2.0.3",
+    "@types/node": "24.19.2",
+    "@types/oidc-provider": "9.12.1",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

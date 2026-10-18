@@ -1,6 +1,6 @@
 # AGENTS.md
 
-ai-forge is a personal monorepo of agent capability assets — skills, prompts, rules, CLI tools, and host-application plugins. Assets are Markdown-first; tools and plugins are Node.js 24 + TypeScript. Each asset is independent: version, changelog, and release are per asset, and there is no repository-wide version.
+ai-forge is a personal monorepo of agent capability assets — skills, prompts, rules, CLI tools, host-application plugins, and MCP products. Assets are Markdown-first; tools, plugins, and MCP products use Node.js 24 + TypeScript. Each asset is independent: version, changelog, and release are per asset, and there is no repository-wide version.
 
 ## Repository layout
 
@@ -10,6 +10,7 @@ prompts/*.md       Manually triggered one-off prompts; single files; not version
 rules/*.md         Rules loaded every session, or whole-file rule templates; not versioned
 tools/<name>/      Standalone CLI tools distributed to users; entry point README.md; versioned
 plugins/<name>/    Plugins loaded by a host application; entry point README.md; versioned
+mcp/<name>/        MCP products; entry point README.md; versioned
 docs/              Harness rules for this repository, one topic per file
 scripts/           Checks and repository-only tooling
 .claude/ .agents/  Runtime adapters and tool configuration; hold no project knowledge
@@ -38,6 +39,6 @@ git tag -l '<name>@*'                 # release history of one asset
 - **Asset layout.** Read [asset-layout.md](docs/asset-layout.md) before adding, deleting, renaming, or moving an asset, changing a documentation entry point, or editing a rule file.
 - **Markdown assets.** Read [markdown-assets.md](docs/markdown-assets.md) before editing frontmatter-bearing Markdown or a file under `prompts/`; frontmatter and body are separate regions, and scope words such as "keep only" mean the narrowest reading.
 - **README and CHANGELOG.** Read [documentation-standard.md](docs/documentation-standard.md) before writing or restructuring either (sections, length budgets, the bilingual pair).
-- **Versioned assets and releases.** Read [versioning-and-release.md](docs/versioning-and-release.md) before changing `skills/<name>/`, `tools/<name>/`, or `plugins/<name>/`, or preparing a release (semver meaning, CHANGELOG entries, tags).
+- **Versioned assets and releases.** Read [versioning-and-release.md](docs/versioning-and-release.md) before changing `skills/<name>/`, `tools/<name>/`, `plugins/<name>/`, or `mcp/<name>/`, or preparing a release (semver meaning, CHANGELOG entries, tags).
 - **Keep this list current.** Adding or removing a file in `docs/` requires a bullet here, and this file stays under 200 lines; `python3 scripts/verify-docs.py` verifies both.
 - **Finish with evidence.** Turn the task into a checkable goal and prove it holds: for a behavior change, write the failing test first and make it pass; for a documentation change, run the documentation check.

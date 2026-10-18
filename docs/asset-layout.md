@@ -12,6 +12,7 @@ Read when: adding, deleting, renaming, or moving an asset; changing a documentat
    | `rules/*.md` | Rule loaded every session, or a whole-file template | Does it apply to every session of a consuming project? |
    | `tools/<name>/` | Standalone CLI tool | Does it ship an executable of its own? |
    | `plugins/<name>/` | Plugin a host application loads | Is it loaded by a host at runtime? |
+   | `mcp/<name>/` | MCP-first product, including its server, product documentation, and independently needed client application | Is MCP the product's integration contract? |
    | `docs/` | Harness rule for this repository, one topic per file | Does it govern how the repository is maintained? |
    | `scripts/` | Check or tool that only maintains this repository | Does it serve repository maintenance rather than a consumer? |
    | `.claude/`, `.agents/` | Runtime adapters and tool configuration | Is it tool runtime state? |
@@ -30,17 +31,18 @@ Read when: adding, deleting, renaming, or moving an asset; changing a documentat
 | root `AGENTS.md` | Always-loaded conventions and the trigger for each rule |
 | `docs/*.md` | Rule source of truth, one topic per file |
 | `scripts/*` | Checks that only maintain this repository |
-| asset `SKILL.md` / `README.md` | That asset's usage |
+| asset `SKILL.md` / `README.md` | That asset's usage and status |
 | asset `CHANGELOG.md` (+ `.zh-CN.md`) | That asset's user-visible changes |
 | root `CHANGELOG.md` (+ `.zh-CN.md`) | Release index, repository milestones, history |
 
 - Keep entry documents short and link to the source of truth; each rule lives in exactly one file.
-- Adding, removing, or renaming an asset updates the root README index with one line per asset: link `SKILL.md` for a skill, `README.md` for a tool or plugin.
+- Adding, removing, or renaming an asset updates the root README index with one line per asset: link `SKILL.md` for a skill, `README.md` for a tool, plugin, or MCP product.
 - Adding or removing a file in `docs/` updates the matching bullet in `AGENTS.md`, and rule files open with a `Read when:` line, stay under 60 lines, and keep no change log of their own.
 
 ## Checks
 
-- `python3 scripts/verify-docs.py` — asset index coverage, rule index coverage, rule file trigger and budget, relative links across `AGENTS.md`, `docs/`, and the paired documents, and each pair's heading levels, list entries per section, and code blocks.
+- `python3 scripts/verify-docs.py` — asset index coverage, rule index coverage, rule file trigger and budget, relative links across `AGENTS.md`, root and MCP product `docs/`, and the paired documents, and each pair's heading levels, list entries per section, and code blocks.
 - `python3 scripts/verify-docs.spec.py` — self-test: every basic check fires, and the repository itself passes.
 - `git config core.hooksPath scripts/hooks` — installs the pre-commit guardrail, which runs the two checks above plus each staged asset's `typecheck` and `test`.
+- `python3 scripts/test-pre-commit.py` — isolated Git commits verify MCP app gates, failing checks, and existing tool/plugin gates.
 - Assets keep their own resources: no shared top-level resource directory exists.

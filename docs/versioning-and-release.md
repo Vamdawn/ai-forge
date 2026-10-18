@@ -1,12 +1,12 @@
 # Versioning and Release
 
-Read when: changing `skills/<name>/`, `tools/<name>/`, or `plugins/<name>/`; cutting or publishing a version.
+Read when: changing `skills/<name>/`, `tools/<name>/`, `plugins/<name>/`, or `mcp/<name>/`; cutting or publishing a version.
 
 ## Rules
 
 1. Version each asset on its own semver line and tag it `<asset-name>@X.Y.Z` (annotated), where the asset name is the directory name. An ecosystem package name may carry a scope, so the directory `dsh-rename-session` corresponds to the tag `dsh-rename-session@X.Y.Z` and the npm package `@vamdawn/dsh-rename-session`.
    - Check: `git tag -l '<name>@*'` lists that asset's complete version history.
-2. Read semver for a skill as behavior, not as a code signature: MAJOR when the trigger, the input contract, or the output format changes incompatibly, or when a sub-capability is removed; MINOR for a new sub-capability or new `references/` and `scripts/`; PATCH for bug fixes, wording, and reference revisions. Tools and plugins follow standard semver with their compatibility surface — a tool's CLI flags, output format, and exit codes; a plugin's host compatibility, configuration, and public exports.
+2. Read semver for a skill as behavior, not as a code signature: MAJOR when the trigger, the input contract, or the output format changes incompatibly, or when a sub-capability is removed; MINOR for a new sub-capability or new `references/` and `scripts/`; PATCH for bug fixes, wording, and reference revisions. Tools, plugins, and MCP products follow standard semver with their compatibility surface — a tool's CLI flags, output format, and exit codes; a plugin's host compatibility, configuration, and public exports; an MCP product's advertised tool contract and any separately shipped CLI interface.
    - For a plugin, a user-visible addition or behavior change that leaves that surface intact is MINOR: the narrow surface decides what is breaking, not what is noticeable. PATCH stays for defects, wording, and documentation-only releases.
 3. Write a user-visible change to a versioned asset into the `[Unreleased]` section of both `CHANGELOG.md` and `CHANGELOG.zh-CN.md` in the same commit; internal refactors, typos, and harness edits are exempt. Create the pair with the change when the asset has no CHANGELOG yet.
    - Rationale: a change record is most accurate when the change happens, and rebuilding it from `git log` at release time loses the intent.

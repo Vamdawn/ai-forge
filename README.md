@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A personal monorepo of reusable agent capability assets: skills, prompts, rules, CLI tools, and host-application plugins. Every asset evolves on its own — version, changelog, and release are per asset, and the repository carries no global version.
+A personal monorepo of reusable agent capability assets: skills, prompts, rules, CLI tools, host-application plugins, and MCP products. Every asset evolves on its own — version, changelog, and release are per asset, and the repository carries no global version.
 
 ## Repository layout
 
@@ -15,12 +15,13 @@ A personal monorepo of reusable agent capability assets: skills, prompts, rules,
 | `rules/` | Rules loaded in every session, or whole-file rule templates | the `.md` file |
 | `tools/` | Standalone CLI tools | the asset's `README.md` |
 | `plugins/` | Plugins loaded by a host application | the asset's `README.md` |
+| `mcp/` | MCP products and their related components | the asset's `README.md` |
 | `docs/` | Harness rules for this repository, one topic per file | `docs/asset-layout.md` |
 | `scripts/` | Checks and repository-only tooling | `scripts/verify-docs.py` |
 
 ## Usage
 
-Pick an asset from the index below and open its entry point. Use a skill together with the resources in its directory; install and run a tool or plugin as its own README describes.
+Pick an asset from the index below and open its entry point. Use a skill together with the resources in its directory; follow each tool, plugin, or MCP product's README for its status and usage.
 
 ## Asset index
 
@@ -69,9 +70,13 @@ Pick an asset from the index below and open its entry point. Use a skill togethe
 - [@vamdawn/dsh-astrolabe](plugins/dsh-astrolabe/README.md) — a two-axis tabbed panel that replaces the session area of the DeepSeek Harness sidebar, with search, pinned groups, and row actions.
 - [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.md) — generate a DeepSeek Harness session name from the conversation context.
 
+### MCP products
+
+- [noticeflow](mcp/noticeflow/README.md) — experimental remote MCP notification service with durable delivery and OAuth.
+
 ## Versioning and releases
 
-- Skills, tools, and plugins are versioned independently and tagged `<asset-name>@X.Y.Z`; prompts and rules change through Git history.
+- Skills, tools, plugins, and MCP products are versioned independently and tagged `<asset-name>@X.Y.Z`; prompts and rules change through Git history.
 - [CHANGELOG.md](CHANGELOG.md) indexes every release; details live in the asset's own changelog.
 - The repository has no global version. The convention is in [versioning-and-release.md](docs/versioning-and-release.md).
 

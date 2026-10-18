@@ -35,12 +35,27 @@ gate() {
 # Each staged asset directory, deduplicated. Field splitting rather than a
 # regex: BSD sed has no alternation, and awk ends a regex literal at the first
 # unescaped slash.
-assets=$(printf '%s\n' "$staged" | awk -F/ '$1 == "plugins" || $1 == "tools" { if (NF > 2) print $1 "/" $2 }' | sort -u)
+assets=$(printf '%s\n' "$staged" | awk -F/ '$1 == "plugins" || $1 == "tools" || $1 == "mcp" { if (NF > 2) print $1 "/" $2 }' | sort -u)
+
+check_package() {
+    [ -f "$1/package.json" ] || return 0
+    gate "$1: npm run typecheck failed" "$1" npm run typecheck
+    gate "$1: npm test failed" "$1" npm test
+}
 
 for asset in $assets; do
-    [ -f "$asset/package.json" ] || continue
-    gate "$asset: npm run typecheck failed" "$asset" npm run typecheck
-    gate "$asset: npm test failed" "$asset" npm test
+    check_package "$asset"
+    case "$asset" in
+        mcp/*)
+            for app in "$asset"/apps/*; do
+                check_package "$app"
+            done
+            ;;
+    esac
 done
 
 gate "python3 scripts/verify-docs.py failed" . python3 scripts/verify-docs.py
+
+if [ -f scripts/test-pre-commit.py ]; then
+    gate "python3 scripts/test-pre-commit.py failed" . python3 scripts/test-pre-commit.py
+fi

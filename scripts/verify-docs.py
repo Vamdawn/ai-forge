@@ -33,7 +33,7 @@ PAIRED_NAMES = {f"{stem}.md" for stem in STEMS} | {f"{stem}{ZH_SUFFIX}" for stem
 # Rule files: everything in docs/ that is not a paired document.
 RULE_GLOBS = ["docs/*.md"]
 # Documents whose relative links are checked, beyond the paired documents.
-LINK_CHECKED_GLOBS = ["AGENTS.md", "docs/*.md"]
+LINK_CHECKED_GLOBS = ["AGENTS.md", "docs/*.md", "mcp/*/docs/*.md"]
 
 SKIP_DIRS = {".git", "node_modules", "dist", "tmp", ".claude", ".agents", ".venv", "__pycache__"}
 # Non-canonical spellings of the paired document names.
@@ -235,7 +235,7 @@ def check_index(root: Path) -> None:
     assets: list[str] = []
     for skill in sorted((root / "skills").glob("*/SKILL.md")):
         assets.append(f"skills/{skill.parent.name}/SKILL.md")
-    for pattern in ("prompts/*.md", "rules/*.md", "tools/*/README.md", "plugins/*/README.md"):
+    for pattern in ("prompts/*.md", "rules/*.md", "tools/*/README.md", "plugins/*/README.md", "mcp/*/README.md"):
         assets.extend(sorted(str(path.relative_to(root)) for path in root.glob(pattern)))
     for index in ("README.md", f"README{ZH_SUFFIX}"):
         path = root / index

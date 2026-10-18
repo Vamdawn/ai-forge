@@ -128,6 +128,11 @@ class LinkTest(DocCheckTest):
         self.edit("docs/markdown-assets.md", "(asset-layout.md)", "(asset-layout-gone.md)")
         self.assertReports("link target does not exist")
 
+    def test_broken_link_in_mcp_product_docs_is_reported(self) -> None:
+        self.edit("mcp/noticeflow/docs/product-design.md", "(research-mcp-project-layout.md)",
+                  "(research-mcp-project-layout-gone.md)")
+        self.assertReports("link target does not exist")
+
     def test_broken_link_in_agents_is_reported(self) -> None:
         self.edit("AGENTS.md", "(docs/asset-layout.md)", "(docs/asset-layout-gone.md)")
         self.assertReports("link target does not exist")
@@ -147,6 +152,10 @@ class IndexAndBudgetTest(DocCheckTest):
     def test_unindexed_asset_is_reported(self) -> None:
         self.edit("README.md", "- [git-commit](skills/git-commit/SKILL.md) — ", "- git-commit — ")
         self.assertReports("asset is not indexed")
+
+    def test_unindexed_mcp_product_is_reported(self) -> None:
+        self.edit("README.md", "- [noticeflow](mcp/noticeflow/README.md) — ", "- noticeflow — ")
+        self.assertReports("asset is not indexed: mcp/noticeflow/README.md")
 
     def test_budget_applies_to_a_readme_anywhere(self) -> None:
         body = "\n".join(f"- line {index}" for index in range(130))
