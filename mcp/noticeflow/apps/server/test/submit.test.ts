@@ -182,6 +182,28 @@ test("startup normalizes equivalent Webhooks and rejects unsafe configuration", 
   }
 });
 
+test("startup rejects ambiguous public URL spellings and non-path URL components", async (t) => {
+  const service = await fixture();
+  t.after(() => service.dispose());
+  for (const publicBaseUrl of [
+    "https://notice.example.com/noticeflow/",
+    "https://notice.example.com/noticeflow?query=1",
+    "https://notice.example.com/noticeflow?",
+    "https://notice.example.com/noticeflow#fragment",
+    "https://notice.example.com/noticeflow//other",
+    "https://notice.example.com/noticeflow/../other",
+    "https://notice.example.com/noticeflow/%2Fother",
+  ]) {
+    service.config.server.publicBaseUrl = publicBaseUrl;
+    writeFileSync(service.configPath, stringify(service.config));
+    await assert.rejects(
+      createService(service.configPath),
+      /INVALID_CONFIG/,
+      publicBaseUrl,
+    );
+  }
+});
+
 test("startup refuses a database from a newer schema version", async (t) => {
   const service = await fixture();
   t.after(() => service.dispose());

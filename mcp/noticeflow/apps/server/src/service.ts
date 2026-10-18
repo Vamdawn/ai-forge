@@ -75,7 +75,12 @@ export async function createService(
       }
     });
     authorization.protectMcp(app);
-    const closeMcp = mountMcp(app, submit, Object.keys(config.topics));
+    const closeMcp = mountMcp(
+      app,
+      submit,
+      Object.keys(config.topics),
+      authorization.mcpPath,
+    );
     authorization.mount(app);
     app.use(
       (

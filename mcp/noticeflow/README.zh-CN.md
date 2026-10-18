@@ -29,7 +29,7 @@ docker run --rm --name noticeflow \
   noticeflow:local
 ```
 
-让 Host 的通用 MCP Client 连接 `https://<public-host>/mcp`，完成管理员 OAuth 授权，再以 `topic`、`title`、`content` 调用 `submit_notification`。`accepted` 表示全部扇出任务已提交，投递异步进行，重复调用会创建不同通知。初版只暴露该工具，使用官方 SDK 同时处理 2025 无状态握手和 2026-07-28 协议。
+让 Host 的通用 MCP Client 连接 `${publicBaseUrl}/mcp`，完成管理员 OAuth 授权，再以 `topic`、`title`、`content` 调用 `submit_notification`。`accepted` 表示全部扇出任务已提交，投递异步进行，重复调用会创建不同通知。初版只暴露该工具，使用官方 SDK 同时处理 2025 无状态握手和 2026-07-28 协议。
 
 同一镜像支持维护命令。所有命令须使用相同挂载和 `--config /run/noticeflow/config.yaml`；查询、重试及在线备份可通过 `docker exec` 执行。密码重置和恢复前先停服，再使用相同挂载运行临时容器；密码重置还需 `-it`。
 
@@ -54,11 +54,11 @@ umask 077
 openssl rand -base64 32 > /srv/noticeflow/data-key
 ```
 
-配置不含路径或尾随斜线的 HTTPS Origin、内部监听地址、精确的 HTTPS CIMD URL 白名单、绝对存储路径、Target 和 Topic。示例包含 Claude Code 与 ChatGPT 官方 CIMD URL。接入 Codex 时须添加登录时显示的完整 CIMD URL，其中可能包含按服务生成的回调 ID。Webhook 只接受官方企业微信 HTTPS 端点及唯一非空 `key` 参数。未知字段、重复 YAML 键、缺失 Target 及无效端点会阻止启动。修改配置后须重启；已接收任务保留原消息和目的地。
+配置不含查询、片段或尾随斜线的 HTTPS 基础 URL，例如 `https://noticeflow.example.com/noticeflow`，以及内部监听地址、精确的 HTTPS CIMD URL 白名单、绝对存储路径、Target 和 Topic。可选基础路径使用字母、数字、`.`、`_`、`~`、`-` 构成的非空段，拒绝编码或规范化后改变的路径别名；原有仅 Origin 的配置仍然可用。更改基础 URL 后，Host 须为新的 MCP 资源重新授权。示例包含 Claude Code 与 ChatGPT 官方 CIMD URL。接入 Codex 时须添加登录时显示的完整 CIMD URL，其中可能包含按服务生成的回调 ID。Webhook 只接受官方企业微信 HTTPS 端点及唯一非空 `key` 参数。未知字段、重复 YAML 键、缺失 Target 及无效端点会阻止启动。修改配置后须重启；已接收任务保留原消息和目的地。
 
 首次初始化后删除 `auth.initialAdminPassword`。密钥与数据库备份分开保存；丢失密钥将无法恢复通知内容及授权。密钥和 YAML 只允许服务用户读取。备份包含密文记录和密码哈希，也须限制卷权限。
 
-Nginx 必须覆盖转发 Host、协议和来源 IP 头，并限制其他客户端直接访问容器端口。转发 `/mcp`、`/.well-known/*`、`/auth`、`/token`、`/token/revocation`、`/interaction/*`、`/jwks` 及 Provider 授权恢复路径。将该 Origin 的路径转发给服务并限制公开 `/healthz`，可避免遗漏 Provider 路由。`/healthz` 返回进程、数据库和 Worker 状态，不含凭据。
+Nginx 必须覆盖转发 Host、协议和来源 IP 头，并限制其他客户端直接访问容器端口。保留原路径转发所配置的基础路径及其 MCP、OAuth、交互和 Provider 授权恢复路由。使用 `/noticeflow` 时，还须精确转发域名根部的 `/.well-known/oauth-protected-resource/noticeflow/mcp` 和 `/.well-known/oauth-authorization-server/noticeflow`；不要将现有站点整个 `/` 转发给 Noticeflow。容器根路径 `/healthz` 保持私有。`/healthz` 返回进程、数据库和 Worker 状态，不含凭据。
 
 ## Limitations
 

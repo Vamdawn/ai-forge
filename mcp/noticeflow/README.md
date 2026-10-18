@@ -29,7 +29,7 @@ docker run --rm --name noticeflow \
   noticeflow:local
 ```
 
-Connect the host's generic MCP client to `https://<public-host>/mcp`, complete administrator OAuth consent, and call `submit_notification` with `topic`, `title`, and `content`. `accepted` means the complete fanout is committed; delivery is asynchronous and repeated calls create distinct notifications. Only this tool is exposed. The server accepts both 2025 stateless handshakes and the 2026-07-28 protocol through the official SDK.
+Connect the host's generic MCP client to `${publicBaseUrl}/mcp`, complete administrator OAuth consent, and call `submit_notification` with `topic`, `title`, and `content`. `accepted` means the complete fanout is committed; delivery is asynchronous and repeated calls create distinct notifications. Only this tool is exposed. The server accepts both 2025 stateless handshakes and the 2026-07-28 protocol through the official SDK.
 
 The same image supports maintenance commands. Every command requires the same mounts and `--config /run/noticeflow/config.yaml`; use `docker exec` for queries, retries, and online backups. Stop the service before password reset or restore and run a temporary container with the same mounts; password reset also needs `-it`.
 
@@ -54,11 +54,11 @@ umask 077
 openssl rand -base64 32 > /srv/noticeflow/data-key
 ```
 
-Set an HTTPS origin without a path or trailing slash, the internal listener, exact allowed HTTPS CIMD URLs, absolute storage paths, targets, and topics. The example includes the official Claude Code and ChatGPT CIMD URLs. For Codex, add the exact CIMD URL shown during login; it can include a server-specific callback ID. Only official WeCom HTTPS Webhook URLs with one nonempty `key` parameter are accepted. Unknown fields, duplicate YAML keys, missing targets, and invalid endpoints fail startup. Restart to load configuration changes; accepted deliveries keep their original message and destination.
+Set an HTTPS base URL without a query, fragment, or trailing slash, such as `https://noticeflow.example.com/noticeflow`, plus the internal listener, exact allowed HTTPS CIMD URLs, absolute storage paths, targets, and topics. An optional base path uses nonempty segments of letters, digits, `.`, `_`, `~`, or `-`; encoded or normalized path aliases are rejected. Origin-only configurations still work. Changing the base URL requires hosts to authorize again for the new MCP resource. The example includes the official Claude Code and ChatGPT CIMD URLs. For Codex, add the exact CIMD URL shown during login; it can include a server-specific callback ID. Only official WeCom HTTPS Webhook URLs with one nonempty `key` parameter are accepted. Unknown fields, duplicate YAML keys, missing targets, and invalid endpoints fail startup. Restart to load configuration changes; accepted deliveries keep their original message and destination.
 
 Remove `auth.initialAdminPassword` after first initialization. Preserve the key separately from database backups; losing it makes stored notifications and authorization unrecoverable. Keep the key and YAML readable only by the service user. Backups contain encrypted records and password hashes, so restrict their volume permissions too.
 
-Nginx must replace forwarded host, scheme, and source-IP headers and keep the container port inaccessible to other clients. Forward `/mcp`, `/.well-known/*`, `/auth`, `/token`, `/token/revocation`, `/interaction/*`, `/jwks`, and provider authorization-resume paths. Forwarding the origin's paths to the server while keeping `/healthz` private avoids missing provider routes. `/healthz` reports process, database, and worker state without credentials.
+Nginx must replace forwarded host, scheme, and source-IP headers and keep the container port inaccessible to other clients. Preserve request paths when forwarding the configured base path and its MCP, OAuth, interaction, and provider resume routes. For `/noticeflow`, also forward the exact root paths `/.well-known/oauth-protected-resource/noticeflow/mcp` and `/.well-known/oauth-authorization-server/noticeflow`; do not send the existing site's entire `/` to Noticeflow. Keep `/healthz` private at the container root. `/healthz` reports process, database, and worker state without credentials.
 
 ## Limitations
 

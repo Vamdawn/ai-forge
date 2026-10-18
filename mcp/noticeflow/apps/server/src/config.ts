@@ -20,7 +20,15 @@ const httpsUrl = z.string().refine((value) => {
 });
 const schema = z.strictObject({
   server: z.strictObject({
-    publicBaseUrl: httpsUrl.refine((value) => new URL(value).origin === value),
+    publicBaseUrl: httpsUrl.refine((value) => {
+      const url = new URL(value);
+      const path = url.pathname === "/" ? "" : url.pathname;
+      // One canonical spelling keeps the issuer, resource and cookie paths aligned.
+      return (
+        value === `${url.origin}${path}` &&
+        /^(?:\/[A-Za-z0-9._~-]+)*$/.test(path)
+      );
+    }),
     listen: z
       .string()
       .regex(/^(?:\[[0-9a-fA-F:]+\]|[^:\s/]+):[0-9]+$/)

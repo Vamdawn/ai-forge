@@ -2,6 +2,71 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fixture } from "./fixture.js";
 
+test("subpath deployment publishes scoped MCP and OAuth discovery without claiming root routes", async (t) => {
+  const service = await fixture(
+    {},
+    undefined,
+    "https://noticeflow.example.com/noticeflow",
+  );
+  t.after(() => service.dispose());
+  const response = await service.request("/noticeflow/mcp", {
+    method: "POST",
+    headers: { origin: "https://noticeflow.example.com" },
+    body: "{}",
+  });
+  assert.equal(response.status, 401);
+  assert.match(
+    response.headers.get("www-authenticate")!,
+    /resource_metadata="https:\/\/noticeflow.example.com\/\.well-known\/oauth-protected-resource\/noticeflow\/mcp"/,
+  );
+  const resource = await (
+    await service.request(
+      "/.well-known/oauth-protected-resource/noticeflow/mcp",
+    )
+  ).json();
+  assert.equal(resource.resource, "https://noticeflow.example.com/noticeflow/mcp");
+  assert.deepEqual(resource.authorization_servers, [
+    "https://noticeflow.example.com/noticeflow",
+  ]);
+  const metadata = await (
+    await service.request("/.well-known/oauth-authorization-server/noticeflow")
+  ).json();
+  assert.equal(metadata.issuer, "https://noticeflow.example.com/noticeflow");
+  assert.equal(
+    metadata.authorization_endpoint,
+    "https://noticeflow.example.com/noticeflow/auth",
+  );
+  assert.equal(
+    metadata.token_endpoint,
+    "https://noticeflow.example.com/noticeflow/token",
+  );
+  assert.equal(
+    metadata.revocation_endpoint,
+    "https://noticeflow.example.com/noticeflow/token/revocation",
+  );
+  for (const path of [
+    "/",
+    "/mcp",
+    "/auth",
+    "/token",
+    "/interaction/other",
+    "/noticeflow-other/mcp",
+    "/.well-known/oauth-authorization-server",
+  ]) {
+    assert.equal((await service.request(path)).status, 404, path);
+  }
+  assert.equal(
+    (
+      await service.request("/noticeflow/mcp", {
+        method: "POST",
+        headers: { origin: "https://foreign.example" },
+        body: "{}",
+      })
+    ).status,
+    403,
+  );
+});
+
 test("MCP advertises its OAuth resource and challenges unauthenticated callers", async (t) => {
   const service = await fixture();
   t.after(() => service.dispose());
@@ -291,6 +356,131 @@ import {
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
 import { setTimeout as delay } from "node:timers/promises";
+
+for (const mode of ["legacy", { pin: "2026-07-28" }] as const) {
+  test(`subpath OAuth scopes cookies and supports MCP, refresh and revocation (${JSON.stringify(mode)})`, async (t) => {
+    const baseUrl = "https://noticeflow.example.com/noticeflow";
+    const service = await fixture(
+      {
+        providerFetch: async () => Response.json(claudeMetadata),
+      },
+      undefined,
+      baseUrl,
+    );
+    const client = new Client(
+      { name: "subpath-probe", version: "1.0.0" },
+      { versionNegotiation: { mode } },
+    );
+    t.after(async () => {
+      await client.close();
+      await service.dispose();
+    });
+    const cookies: string[] = [];
+    const request: typeof service.request = async (path, init) => {
+      const response = await service.request(path, init);
+      cookies.push(...response.headers.getSetCookie());
+      const location = response.headers.get("location");
+      if (location && !location.startsWith("http://localhost:49152/callback")) {
+        assert.ok(
+          new URL(location, baseUrl).pathname.startsWith("/noticeflow/"),
+          location,
+        );
+      }
+      if (
+        response.status === 200 &&
+        response.headers.get("content-type")?.includes("text/html")
+      ) {
+        assert.match(
+          await response.clone().text(),
+          /action="\/noticeflow\/interaction\//,
+        );
+      }
+      return response;
+    };
+    const { code } = await authorize(request, {}, baseUrl);
+    const tokenResponse = await redeem(request, code, {}, baseUrl);
+    assert.equal(tokenResponse.status, 200);
+    const tokens = await tokenResponse.json();
+    for (const resource of [
+      "https://noticeflow.example.com/mcp",
+      "https://noticeflow.example.com/other/mcp",
+    ]) {
+      assert.equal(
+        (await service.request(authPath({ resource }, baseUrl))).status,
+        400,
+      );
+    }
+    assert.ok(
+      cookies.some((cookie) =>
+        /noticeflow_csrf=.*; Path=\/noticeflow\/interaction\//i.test(cookie),
+      ),
+    );
+    for (const cookie of cookies) {
+      assert.match(cookie, /; path=\/noticeflow(?:\/[^;]*)?(?:;|$)/i);
+    }
+    const oidc = await (
+      await service.request("/noticeflow/.well-known/openid-configuration")
+    ).json();
+    assert.equal(oidc.issuer, baseUrl);
+    assert.equal(oidc.jwks_uri, "https://noticeflow.example.com/noticeflow/jwks");
+    await client.connect(
+      new StreamableHTTPClientTransport(
+        new URL(`${service.base}/noticeflow/mcp`),
+        {
+          requestInit: {
+            headers: { authorization: `Bearer ${tokens.access_token}` },
+          },
+        },
+      ),
+    );
+    assert.deepEqual(
+      (await client.listTools()).tools.map((tool) => tool.name),
+      ["submit_notification"],
+    );
+    const result = await client.callTool({
+      name: "submit_notification",
+      arguments: { topic: "build", title: "subpath", content: "body" },
+    });
+    const output = result.structuredContent;
+    assert.ok(output && typeof output === "object" && "status" in output);
+    assert.equal(output.status, "accepted");
+    const refreshed = await service.request("/noticeflow/token", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: claudeMetadata.client_id,
+        refresh_token: tokens.refresh_token,
+        resource: "https://noticeflow.example.com/noticeflow/mcp",
+      }),
+    });
+    assert.equal(refreshed.status, 200);
+    const rotated = await refreshed.json();
+    assert.equal(
+      (
+        await service.request("/noticeflow/token/revocation", {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: claudeMetadata.client_id,
+            token: rotated.access_token,
+          }),
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await service.request("/noticeflow/mcp", {
+          method: "POST",
+          headers: { authorization: `Bearer ${rotated.access_token}` },
+          body: "{}",
+        })
+      ).status,
+      401,
+    );
+  });
+}
 
 test("service shutdown gracefully closes active MCP subscriptions", async (t) => {
   const service = await fixture({

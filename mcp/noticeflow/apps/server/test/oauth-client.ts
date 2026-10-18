@@ -24,15 +24,19 @@ export const chatgptMetadata = {
 export type Requester = (path: string, init?: RequestInit) => Promise<Response>;
 export const verifier =
   "noticeflow-test-pkce-verifier-abcdefghijklmnopqrstuvwxyz123456789";
-export function authPath(overrides: Record<string, string> = {}) {
+export function authPath(
+  overrides: Record<string, string> = {},
+  publicBaseUrl = "https://notice.example.com",
+) {
+  const basePath = new URL(publicBaseUrl).pathname.replace(/\/$/, "");
   return (
-    "/auth?" +
+    `${basePath}/auth?` +
     new URLSearchParams({
       client_id: CLAUDE,
       response_type: "code",
       redirect_uri: "http://localhost:49152/callback",
       scope: "notification:submit",
-      resource: "https://notice.example.com/mcp",
+      resource: `${publicBaseUrl}/mcp`,
       state: "test-state",
       code_challenge: createHash("sha256").update(verifier).digest("base64url"),
       code_challenge_method: "S256",
@@ -43,6 +47,7 @@ export function authPath(overrides: Record<string, string> = {}) {
 export async function authorize(
   request: Requester,
   overrides: Record<string, string> = {},
+  publicBaseUrl = "https://notice.example.com",
 ) {
   const cookies = new Map<string, string>();
   const send: Requester = async (path, init = {}) => {
@@ -56,7 +61,7 @@ export async function authorize(
     }
     return response;
   };
-  let response = await send(authPath(overrides));
+  let response = await send(authPath(overrides, publicBaseUrl));
   for (let i = 0; i < 10; i++) {
     const location = response.headers.get("location");
     if (
@@ -71,7 +76,7 @@ export async function authorize(
       return { code, cookies };
     }
     if (location) {
-      const url = new URL(location, "https://notice.example.com");
+      const url = new URL(location, publicBaseUrl);
       response = await send(url.pathname + url.search);
     } else {
       const html = await response.text();
@@ -97,8 +102,10 @@ export function redeem(
   request: Requester,
   code: string,
   overrides: Record<string, string> = {},
+  publicBaseUrl = "https://notice.example.com",
 ) {
-  return request("/token", {
+  const basePath = new URL(publicBaseUrl).pathname.replace(/\/$/, "");
+  return request(`${basePath}/token`, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -107,7 +114,7 @@ export function redeem(
       code,
       code_verifier: verifier,
       redirect_uri: "http://localhost:49152/callback",
-      resource: "https://notice.example.com/mcp",
+      resource: `${publicBaseUrl}/mcp`,
       ...overrides,
     }),
   });

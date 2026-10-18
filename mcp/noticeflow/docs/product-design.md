@@ -26,7 +26,7 @@ Noticeflow 把一条已准备好的通知通过 MCP 提交给服务端，再按 
 
 ## 端点与授权边界
 
-Nginx 负责公网 HTTPS 终止及请求转发，不在本项目实现；Noticeflow 进程只监听内部 HTTP。外部完整 MCP 地址为 `https://<域名>/mcp`，实际域名由部署配置指定。进程中的 MCP 资源服务器校验每个请求的 Bearer 令牌及 `notification:submit` 权限；未授权请求通过 `401` 和 `WWW-Authenticate` 指向受保护资源元数据。按 [MCP 授权规范](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization)，客户端据此发现同一进程内置的 OAuth 2.1 授权服务器，再进行授权码加 PKCE 登录。对外还需转发 `/.well-known/oauth-protected-resource/mcp`、`/.well-known/oauth-authorization-server` 与授权、令牌等 HTTP 路径；不能只转发 `/mcp`。
+Nginx 负责公网 HTTPS 终止及请求转发，不在本项目实现；Noticeflow 进程只监听内部 HTTP。外部完整 MCP 地址为 `${publicBaseUrl}/mcp`，基础 URL 可为 HTTPS Origin，也可包含 `/noticeflow` 等部署路径，实际域名和路径由部署配置指定。进程中的 MCP 资源服务器校验每个请求的 Bearer 令牌及 `notification:submit` 权限；未授权请求通过 `401` 和 `WWW-Authenticate` 指向受保护资源元数据。按 [MCP 授权规范](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization)，客户端据此发现同一进程内置的 OAuth 2.1 授权服务器，再进行授权码加 PKCE 登录。对外还需转发授权、令牌等基础路径下的 HTTP 路由，以及按 RFC 9728/8414 将基础路径放在 well-known 后缀之后的发现地址；例如 `/noticeflow` 对应域名根部的 `/.well-known/oauth-protected-resource/noticeflow/mcp` 和 `/.well-known/oauth-authorization-server/noticeflow`。不能只转发 MCP 工具路径。
 
 单进程同时承担 MCP 资源服务器、内置 OAuth 授权服务器和投递任务处理。外部 HTTPS 基址作为显式配置，用于生成 issuer、资源标识、元数据和回调地址，不能从未经验证的代理请求头推断。授权服务器发布发现元数据，校验 OAuth Client 身份及回调地址，签发只针对本 MCP 资源的访问令牌。MCP SDK 负责协议与资源端鉴权辅助；[SDK 不负责签发令牌](https://github.com/modelcontextprotocol/typescript-sdk/blob/v2.3.1/docs/serving/authorization.md)，令牌签发能力需在本次服务端开发中实现或集成合适的库。
 
@@ -147,7 +147,7 @@ mcp/noticeflow/
 └── tests/e2e/                   # 标准 MCP Client 调用与投递链路验收
 ```
 
-`apps/server` 是初版唯一运行交付物：一个常驻进程、一个容器镜像，同时处理 MCP HTTP 请求、内置 OAuth 授权和 SQLite 投递任务，并持有 SQLite 数据卷。维护命令使用同一镜像临时运行。MCP 工具入口固定为 `/mcp`；Host 配置包含 `/mcp` 的完整外部 HTTPS URL。`tests/e2e` 使用标准 MCP Client SDK 验证互操作性，不发布为产品客户端。镜像仓库和版本发布节奏尚未确定。初版不建立 `apps/client`、`apps/cli`、`packages/client` 或 `packages/shared`。
+`apps/server` 是初版唯一运行交付物：一个常驻进程、一个容器镜像，同时处理 MCP HTTP 请求、内置 OAuth 授权和 SQLite 投递任务，并持有 SQLite 数据卷。维护命令使用同一镜像临时运行。MCP 工具入口为基础路径下的 `/mcp`；Host 配置 `${publicBaseUrl}/mcp` 的完整外部 HTTPS URL。`tests/e2e` 使用标准 MCP Client SDK 验证互操作性，不发布为产品客户端。镜像仓库和版本发布节奏尚未确定。初版不建立 `apps/client`、`apps/cli`、`packages/client` 或 `packages/shared`。
 
 本仓库根 `docs/` 只放仓库维护规则，Noticeflow 的产品设计及后续产品文档留在 `mcp/noticeflow/docs/`；服务端渠道组件留在 `apps/server` 内，不属于根 `plugins/`。
 

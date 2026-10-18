@@ -14,6 +14,7 @@ export function mountMcp(
   app: Express,
   submit: ReturnType<typeof createSubmit>,
   topics: string[],
+  path: string,
 ) {
   const schema = z.toJSONSchema(inputSchema, { unrepresentable: "any" });
   // Business validation runs after per-client accounting and returns stable tool errors.
@@ -75,7 +76,7 @@ export function mountMcp(
     { legacy: "stateless" },
   );
   const handler = toNodeHandler(mcpHandler);
-  app.all("/mcp", express.json({ limit: "64kb" }), (req, res) => {
+  app.all(path, express.json({ limit: "64kb" }), (req, res) => {
     void handler(req, res, req.body);
   });
   return () => mcpHandler.close();

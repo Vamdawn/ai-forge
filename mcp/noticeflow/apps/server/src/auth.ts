@@ -35,7 +35,13 @@ export function createAuthorization(
   providerFetch?: Configuration["fetch"],
 ) {
   const issuer = config.server.publicBaseUrl;
+  const origin = new URL(issuer).origin;
+  const basePath = new URL(issuer).pathname.replace(/\/$/, "");
+  const mcpPath = `${basePath}/mcp`;
   const resource = `${issuer}/mcp`;
+  // RFC 9728/8414 insert well-known before the resource/issuer path, not after it.
+  const resourceMetadataPath = `/.well-known/oauth-protected-resource${mcpPath}`;
+  const authorizationMetadataPath = `/.well-known/oauth-authorization-server${basePath}`;
   const routes = {
     authorization: "/auth",
     token: "/token",
@@ -70,7 +76,12 @@ export function createAuthorization(
     cookies: {
       keys: [store.vault.cookieKey],
       short: { secure: true, httpOnly: true, sameSite: "lax" },
-      long: { secure: true, httpOnly: true, sameSite: "lax" },
+      long: {
+        secure: true,
+        httpOnly: true,
+        sameSite: "lax",
+        path: basePath || "/",
+      },
     },
     clients: [],
     routes,
@@ -97,7 +108,7 @@ export function createAuthorization(
         ? { accountId: id, claims: () => ({ sub: id }) }
         : undefined,
     interactions: {
-      url: (_ctx, interaction) => `/interaction/${interaction.uid}`,
+      url: (_ctx, interaction) => `${basePath}/interaction/${interaction.uid}`,
     },
     extraClientMetadata: {
       properties: ["noticeflow_policy"],
@@ -215,32 +226,48 @@ export function createAuthorization(
   });
   const failures = new Map<string, { times: number[]; inFlight: number }>();
   function protectMcp(app: Express) {
-    app.use(
-      mcpAuthMetadataRouter({
-        resourceServerUrl: new URL(resource),
-        scopesSupported: metadata.scopes_supported,
-        oauthMetadata: metadata,
-      }),
-    );
-    app.use("/mcp", (req, res, next) => {
-      if (req.headers.origin && req.headers.origin !== issuer) {
+    const metadataRouter = mcpAuthMetadataRouter({
+      resourceServerUrl: new URL(resource),
+      scopesSupported: metadata.scopes_supported,
+      oauthMetadata: metadata,
+    });
+    app.use((req, res, next) => {
+      // Keep discovery scoped on a shared origin. The SDK only mounts AS
+      // metadata at the root well-known path, so adapt the RFC 8414 suffix.
+      if (
+        basePath &&
+        req.path !== resourceMetadataPath &&
+        req.path !== authorizationMetadataPath
+      )
+        return next();
+      const requestUrl = req.url;
+      if (basePath && req.path === authorizationMetadataPath)
+        req.url = `/.well-known/oauth-authorization-server${req.url.slice(authorizationMetadataPath.length)}`;
+      metadataRouter(req, res, (error) => {
+        req.url = requestUrl;
+        next(error);
+      });
+    });
+    app.use(mcpPath, (req, res, next) => {
+      if (req.headers.origin && req.headers.origin !== origin) {
         res.status(403).json({ error: "FORBIDDEN_ORIGIN" });
         return;
       }
       next();
     });
     app.all(
-      "/mcp",
+      mcpPath,
       requireBearerAuth({
         verifier: { verifyAccessToken },
         requiredScopes: metadata.scopes_supported,
         expectedResource: new URL(resource),
-        resourceMetadataUrl: `${issuer}/.well-known/oauth-protected-resource/mcp`,
+        resourceMetadataUrl: `${origin}${resourceMetadataPath}`,
       }),
     );
   }
   function mount(app: Express) {
-    app.get("/interaction/:uid", async (req, res, next) => {
+    const router = express.Router();
+    router.get("/interaction/:uid", async (req, res, next) => {
       try {
         const details = await provider.interactionDetails(req, res);
         const client = await provider.Client.find(
@@ -254,7 +281,7 @@ export function createAuthorization(
           secure: true,
           httpOnly: true,
           sameSite: "lax",
-          path: `/interaction/${details.uid}`,
+          path: `${basePath}/interaction/${details.uid}`,
         });
         res.set(
           "Content-Security-Policy",
@@ -262,13 +289,13 @@ export function createAuthorization(
         );
         res.set("Cache-Control", "no-store");
         res.send(
-          `<html><head><title>Noticeflow</title></head><body><h1>Noticeflow 授权</h1><p>${escape(client?.clientName ?? details.params.client_id)}</p><p>${escape(details.params.redirect_uri)}</p><p>${SCOPE}：允许向配置的群机器人发送通知。</p><form method="post" action="/interaction/${escape(details.uid)}"><input type="hidden" name="csrf" value="${csrf}">${details.prompt.name === "login" ? '<label>管理员密码<input name="password" type="password" required autocomplete="current-password"></label>' : ""}<button name="approve" value="yes">登录并授权</button></form></body></html>`,
+          `<html><head><title>Noticeflow</title></head><body><h1>Noticeflow 授权</h1><p>${escape(client?.clientName ?? details.params.client_id)}</p><p>${escape(details.params.redirect_uri)}</p><p>${SCOPE}：允许向配置的群机器人发送通知。</p><form method="post" action="${basePath}/interaction/${escape(details.uid)}"><input type="hidden" name="csrf" value="${csrf}">${details.prompt.name === "login" ? '<label>管理员密码<input name="password" type="password" required autocomplete="current-password"></label>' : ""}<button name="approve" value="yes">登录并授权</button></form></body></html>`,
         );
       } catch (error) {
         next(error);
       }
     });
-    app.post(
+    router.post(
       "/interaction/:uid",
       express.urlencoded({ extended: false, limit: "4kb" }),
       async (req, res, next) => {
@@ -347,7 +374,8 @@ export function createAuthorization(
         }
       },
     );
-    app.use(provider.callback());
+    router.use(provider.callback());
+    app.use(basePath || "/", router);
   }
   async function verifyAccessToken(raw: string): Promise<AuthInfo> {
     const token = await provider.AccessToken.find(raw);
@@ -372,5 +400,5 @@ export function createAuthorization(
       resource: new URL(resource),
     };
   }
-  return { protectMcp, mount };
+  return { protectMcp, mount, mcpPath };
 }

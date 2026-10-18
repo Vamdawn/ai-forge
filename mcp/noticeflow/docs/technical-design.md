@@ -45,7 +45,7 @@ Express HTTP 进程
 | `Channel` | `prepare(input,target) -> DeliveryPlan`；`send(plan) -> SendOutcome` | 渠道能力校验、目标快照、最终消息格式、HTTP 调用和渠道错误分类。初版只有 WeCom Adapter。 |
 | `DeliveryWorker` | `start()`、`stop()` | 领取租约、限速预留、超时、重试、过期租约恢复及终态更新。 |
 | `Store` | 领域操作及 OAuth 持久化操作 | 持有 SQLite 连接、锁和事务；管理员/OAuth 持久化与离线恢复校验在内部文件中实现，不暴露通用 SQL 给其他模块。 |
-| `Authorization` | `protectMcp(app)`、`mount(app)` | 集中维护 OAuth 路由、公开元数据、Scope、Origin 与 Bearer 校验、Provider 和管理员登录；前者在 MCP 路由前挂载，后者在 MCP 路由后挂载。 |
+| `Authorization` | `protectMcp(app)`、`mount(app)`、`mcpPath` | 集中维护 OAuth 路由、公开元数据、Scope、Origin 与 Bearer 校验、Provider 和管理员登录；前者在 MCP 路由前挂载，后者在 MCP 路由后挂载。 |
 
 `Store` 的管理员与 OAuth 操作委托给 `storage/authorization.ts`，复用同一连接、数据密钥和时钟；密码更新与授权撤销仍在同一事务内完成。`storage/recovery.ts` 承担原有离线校验与恢复准备，`Store` 保留现有导出供维护命令使用，数据库格式不变。
 
@@ -93,9 +93,12 @@ mcp/noticeflow/
 
 ## HTTP、MCP 与工具结果
 
-`publicBaseUrl` 必须是无路径、无尾随斜线的 HTTPS Origin。MCP 资源 URI 固定为 `${publicBaseUrl}/mcp`，OAuth `issuer` 为 `publicBaseUrl`。外部需要转发 `/mcp`、`/.well-known/oauth-protected-resource/mcp`、`/.well-known/oauth-authorization-server`、`/auth`、`/token` 和登录交互路径；实际由授权服务器发布的其他必需路径也应可达。Nginx 配置不在本仓库实现。
+`publicBaseUrl` 是无用户名、查询、片段或尾随斜线的规范 HTTPS 基础 URL，可包含由非空 unreserved 字符段组成的路径。原有 HTTPS Origin 配置保持兼容；例如 `https://noticeflow.example.com/noticeflow` 产生基础路径 `/noticeflow`，MCP 资源 URI 为 `${publicBaseUrl}/mcp`，OAuth `issuer` 为 `publicBaseUrl`。MCP、授权、令牌及交互路由使用该基础路径；`Authorization` 导出的 `mcpPath` 供 MCP handler 复用。OIDC Provider 按基础路径挂载，登录表单、跳转及会话 Cookie 均限定到该路径；健康检查仍为容器根部 `/healthz`。更改基础 URL 后 Host 须重新授权，旧资源令牌不能用于新的 MCP 资源。
 
-按照 [2026-07-28 Streamable HTTP 规范](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)，`/mcp` 接受逐请求 POST；每个请求带协议版本与请求元数据，不依赖 MCP Session ID、GET SSE 或持久连接状态。HTTP `Origin` 存在时只接受与 `publicBaseUrl` 相同的 Origin，否则返回 403；目标 Host 的实际 Origin 行为须由接入探针确认。无授权时返回带 `resource_metadata` 和 `scope="notification:submit"` 的 Bearer 挑战。官方 SDK 负责 JSON-RPC、版本协商和工具发现，服务端代码不自行解析 MCP 帧。目标 Host 若仍使用旧版握手，需在兼容性探针中确认 SDK 的双版本行为；不能以自行忽略协议头的方式兼容。
+
+发现地址遵循 [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html#section-3) 和 [RFC 8414](https://www.rfc-editor.org/rfc/rfc8414.html#section-3)，把 well-known 后缀插在域名和基础路径之间。`/noticeflow` 的规范发现地址为 `/.well-known/oauth-protected-resource/noticeflow/mcp` 及 `/.well-known/oauth-authorization-server/noticeflow`；`Authorization` 适配 SDK 的根部 AS 元数据路由，同时限制为本部署的精确发现路径，不接管共享站点的根部发现地址。OIDC discovery 仍位于 `/noticeflow/.well-known/openid-configuration`。代理须原样转发基础路径与这两个精确根部发现地址，保留原站点其他路由。以下路由表以无基础路径部署为例；Nginx 配置不在仓库运行代码中实现。
+
+按照 [2026-07-28 Streamable HTTP 规范](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)，`/mcp` 接受逐请求 POST；每个请求带协议版本与请求元数据，不依赖 MCP Session ID、GET SSE 或持久连接状态。HTTP `Origin` 存在时只接受与 `new URL(publicBaseUrl).origin` 相同的 Origin，否则返回 403；目标 Host 的实际 Origin 行为须由接入探针确认。无授权时返回带 `resource_metadata` 和 `scope="notification:submit"` 的 Bearer 挑战。官方 SDK 负责 JSON-RPC、版本协商和工具发现，服务端代码不自行解析 MCP 帧。目标 Host 若仍使用旧版握手，需在兼容性探针中确认 SDK 的双版本行为；不能以自行忽略协议头的方式兼容。
 
 `tools/list` 只公开 `submit_notification`，描述应明确它会向外部群机器人推送、`accepted` 仅表示持久接收、重复调用会产生重复通知。工具声明为有外部副作用且非幂等。输入是对象，三个非空字符串必填，拒绝额外字段；`topic` 精确匹配配置键，`title` 不允许换行。`content` 经 Markdown 校验后形成每个渠道的发送计划。服务端按已验证的 Client ID 对该工具实施每滚动 60 秒最多 120 次调用的进程内限流，业务校验失败的调用也计入；它保护接收入口，重启后计数重置，投递的每 Webhook 限速则持久化。
 
@@ -187,7 +190,7 @@ WeCom Adapter 发 `markdown_v2` 请求，只有 HTTP 2xx 且 JSON `errcode === 0
 
 | 字段 | 启动校验 |
 | --- | --- |
-| `server.publicBaseUrl` | 必填 HTTPS Origin，无用户名、查询、片段、路径或尾随斜线；决定 `issuer` 和 MCP 资源 URI。 |
+| `server.publicBaseUrl` | 必填规范 HTTPS 基础 URL，可带基础路径，无用户名、查询、片段或尾随斜线；路径各段仅含字母、数字、`.`、`_`、`~`、`-`，拒绝空段、百分号编码及规范化后改变的拼写。决定 `issuer` 和 MCP 资源 URI。 |
 | `server.listen` | 必填 `host:port`，只用于容器内 HTTP；不作为对外 URL 来源。 |
 | `auth.initialAdminPassword` | 仅首次建库必填且非空；管理员已存在时忽略，并提示从 YAML 删除。 |
 | `auth.allowedClientIds` | 非空、无重复的完整 HTTPS CIMD URL 列表；只允许这些 Client ID。 |

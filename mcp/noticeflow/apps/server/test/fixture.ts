@@ -11,12 +11,13 @@ export const CHATGPT = "https://chatgpt.com/oauth/client.json";
 export async function fixture(
   options: ServiceOptions = {},
   allowedClientIds = [CLAUDE, CHATGPT],
+  publicBaseUrl = "https://notice.example.com",
 ) {
   const directory = mkdtempSync(join(tmpdir(), "noticeflow-"));
   const configPath = join(directory, "config.yaml");
   const config: Config = {
     server: {
-      publicBaseUrl: "https://notice.example.com",
+      publicBaseUrl,
       listen: "127.0.0.1:3000",
     },
     auth: {

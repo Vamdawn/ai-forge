@@ -6,6 +6,7 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 
 ### Added
 
+- Added optional subpath deployment through `server.publicBaseUrl`, including scoped MCP/OAuth discovery, login redirects, cookies, and token audiences. Existing root deployments keep their URLs, allowing Noticeflow to share an HTTPS site without taking over its root routes.
 - Added the experimental Node.js 24 server with OAuth/CIMD, the notification MCP tool, encrypted SQLite fanout, quota-aware delivery, offline password reset, backup/recovery commands, and a Docker build. Automated public-boundary tests cover local protocol, authorization, delivery, and recovery behavior; real hosts and WeCom still require deployment acceptance.
 - Defined the initial server-first MCP product boundary and notification model before implementation; existing hosts use their own MCP clients.
 - Added the initial technical design for authorization, durable delivery, encrypted storage, operations, and acceptance checks so implementation can proceed against a concrete design.
