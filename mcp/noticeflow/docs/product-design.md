@@ -1,6 +1,6 @@
 # Noticeflow 初版产品方案
 
-状态：初版产品方案已确认，首版服务端实现及本地自动化验证已加入仓库。Linux/arm64 容器已通过构建、启动、运行时配置的健康检查及持久卷重启验证。公网部署、两个真实 Host、真实企业微信及容量下维护延迟验收仍待完成；本文的完成门槛尚未全部满足。
+状态：初版产品方案已确认，首版服务端实现及本地自动化验证已加入仓库。Linux/arm64 容器已通过构建、启动、运行时配置的健康检查及持久卷重启验证。Codex CLI 0.155.1 已在禁用投递的条件下通过本地 HTTPS OAuth 和真实 Agent 提交通知验收。公网部署、原定两个真实 Host、真实企业微信及容量下维护延迟验收仍待完成；本文的完成门槛尚未全部满足。
 
 ## 背景与目标
 
@@ -30,9 +30,9 @@ Nginx 负责公网 HTTPS 终止及请求转发，不在本项目实现；Noticef
 
 单进程同时承担 MCP 资源服务器、内置 OAuth 授权服务器和投递任务处理。外部 HTTPS 基址作为显式配置，用于生成 issuer、资源标识、元数据和回调地址，不能从未经验证的代理请求头推断。授权服务器发布发现元数据，校验 OAuth Client 身份及回调地址，签发只针对本 MCP 资源的访问令牌。MCP SDK 负责协议与资源端鉴权辅助；[SDK 不负责签发令牌](https://github.com/modelcontextprotocol/typescript-sdk/blob/v2.3.1/docs/serving/authorization.md)，令牌签发能力需在本次服务端开发中实现或集成合适的库。
 
-初版只有一个管理员账号，不开放注册。首次部署从服务端 YAML 配置读取管理员初始密码，服务端将密码哈希保存到 SQLite；初始化后不再用 YAML 中的初始密码覆盖数据库，部署人员应删除该字段。用户在 Noticeflow 的网页授权页输入密码并同意 `notification:submit` 权限。管理员通过同一镜像内的服务端维护命令重置密码；重置时撤销已有登录会话与 OAuth 令牌，不提供邮件找回。授权服务器优先使用 [Client ID Metadata Documents（CIMD）](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration)识别 Claude Code 和 ChatGPT：仅接受服务端配置白名单中的 Client ID，获取并验证对应 HTTPS 元数据及回调地址；初版不开放动态客户端注册（DCR）。
+初版只有一个管理员账号，不开放注册。首次部署从服务端 YAML 配置读取管理员初始密码，服务端将密码哈希保存到 SQLite；初始化后不再用 YAML 中的初始密码覆盖数据库，部署人员应删除该字段。用户在 Noticeflow 的网页授权页输入密码并同意 `notification:submit` 权限。管理员通过同一镜像内的服务端维护命令重置密码；重置时撤销已有登录会话与 OAuth 令牌，不提供邮件找回。授权服务器优先使用 [Client ID Metadata Documents（CIMD）](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration)识别 Claude Code、ChatGPT 和 Codex：仅接受服务端配置白名单中的 Client ID，获取并验证对应 HTTPS 元数据及回调地址；初版不开放动态客户端注册（DCR）。
 
-HTTPS 回调与元数据精确匹配；已确认身份的原生客户端使用 HTTP loopback 回调时，仅允许端口变化，协议、主机、路径和查询仍须匹配元数据中的同一条地址。按 [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252#section-7.3)支持 loopback IP 的动态端口；Claude Code 官方 Client ID 还允许其元数据明确列出的 `localhost` 回调使用动态端口，以适配[默认随机端口行为](https://code.claude.com/docs/en/mcp#configure-a-fixed-oauth-callback-port)。不能把 `localhost`、`127.0.0.1` 或其他主机相互替换，也不做 URI 前缀匹配。授权码兑换时仍须提交与该次授权请求完全相同、包含实际端口的回调地址。Provider 对原生客户端的识别及受限适配必须由接入探针验证，不能仅凭 Client ID 在白名单内就放宽任意回调。
+HTTPS 回调与元数据精确匹配；已确认身份的原生客户端使用 HTTP loopback 回调时，仅允许端口变化，协议、主机、路径和查询仍须匹配元数据中的同一条地址。按 [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252#section-7.3)支持 loopback IP 的动态端口；Claude Code 官方 Client ID，以及 `https://chatgpt.com/oauth/codex/client.json` 或 `https://chatgpt.com/oauth/codex/<callback-id>/client.json` 形式的官方 Codex Client ID，还允许其原生元数据明确列出的 `localhost` 回调使用动态端口。所有身份仍须精确列入白名单；这兼容 Claude Code 的[默认随机端口行为](https://code.claude.com/docs/en/mcp#configure-a-fixed-oauth-callback-port)。不能把 `localhost`、`127.0.0.1` 或其他主机相互替换，也不做 URI 前缀匹配。授权码兑换时仍须提交与该次授权请求完全相同、包含实际端口的回调地址。Provider 对原生客户端的识别及受限适配必须由接入探针验证，不能仅凭 Client ID 在白名单内就放宽任意回调。
 
 授权码流程使用 PKCE `S256`。管理员同意 `notification:submit` 后，授权码兑换同时签发 15 分钟有效的访问令牌与 30 天有效的刷新令牌，不要求额外的 `offline_access` scope。刷新令牌每次使用时轮换，新令牌从该次轮换起有效 30 天；对应 Grant 的有效期同步延长，不能早于本次签发令牌的最晚过期时间。浏览器登录会话结束不撤销这项持续授权；连续 30 天未刷新则过期，Host 需重新引导用户登录，不能仅凭仍存在的 Grant 恢复过期令牌。失效、撤销及登录会话状态保存在 SQLite。服务端持久化令牌校验材料而非明文令牌；每次 MCP 请求校验令牌有效期、资源受众与权限。授权记录与投递记录可存于同一 SQLite 数据卷，但分表管理；密钥和令牌不得写入日志。
 

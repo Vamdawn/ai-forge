@@ -8,7 +8,10 @@ import { createService, type ServiceOptions } from "../src/service.js";
 
 export const CLAUDE = "https://claude.ai/oauth/claude-code-client-metadata";
 export const CHATGPT = "https://chatgpt.com/oauth/client.json";
-export async function fixture(options: ServiceOptions = {}) {
+export async function fixture(
+  options: ServiceOptions = {},
+  allowedClientIds = [CLAUDE, CHATGPT],
+) {
   const directory = mkdtempSync(join(tmpdir(), "noticeflow-"));
   const configPath = join(directory, "config.yaml");
   const config: Config = {
@@ -18,7 +21,7 @@ export async function fixture(options: ServiceOptions = {}) {
     },
     auth: {
       initialAdminPassword: "test-admin-password",
-      allowedClientIds: [CLAUDE, CHATGPT],
+      allowedClientIds,
     },
     storage: {
       sqlitePath: join(directory, "notice.sqlite"),

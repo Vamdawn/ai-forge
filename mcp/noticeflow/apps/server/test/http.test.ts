@@ -46,6 +46,75 @@ test("official Claude CIMD supports random loopback ports, consent and PKCE toke
   assert.equal(replay.status, 400);
 });
 
+for (const callbackId of ["", "abC012_-defg/"]) {
+  test(`official Codex CIMD accepts its listed loopback callbacks (${callbackId || "shared"})`, async (t) => {
+    const clientId = `https://chatgpt.com/oauth/codex/${callbackId}client.json`;
+    const callbackPath = `/callback${callbackId ? `/${callbackId.slice(0, -1)}` : ""}`;
+    const metadata = {
+      client_id: clientId,
+      application_type: "native",
+      redirect_uris: [
+        `http://127.0.0.1${callbackPath}`,
+        `http://localhost${callbackPath}`,
+      ],
+      token_endpoint_auth_method: "none",
+      grant_types: ["authorization_code", "refresh_token"],
+      response_types: ["code"],
+    };
+    const service = await fixture(
+      { providerFetch: async () => Response.json(metadata) },
+      [clientId],
+    );
+    t.after(() => service.dispose());
+    const redirectUri = `http://127.0.0.1:49152${callbackPath}`;
+    const { code } = await authorize(service.request, {
+      client_id: clientId,
+      redirect_uri: redirectUri,
+    });
+    const response = await redeem(service.request, code, {
+      client_id: clientId,
+      redirect_uri: redirectUri,
+    });
+    const tokens = await response.json();
+    assert.equal(response.status, 200, JSON.stringify(tokens));
+    assert.ok(tokens.refresh_token);
+    for (const redirect_uri of [
+      `http://127.0.0.1:49152${callbackPath}/other`,
+      `http://127.0.0.2:49152${callbackPath}`,
+    ]) {
+      const denied = await service.request(
+        authPath({ client_id: clientId, redirect_uri }),
+      );
+      const location = denied.headers.get("location") ?? "";
+      assert.ok(
+        denied.status >= 400 || new URL(location).searchParams.has("error"),
+      );
+    }
+  });
+}
+
+test("Codex CIMD localhost exception does not extend to lookalike identities", async (t) => {
+  const clientId = "https://chatgpt.com.evil.example/oauth/codex/client.json";
+  const service = await fixture(
+    {
+      providerFetch: async () => Response.json({
+        client_id: clientId,
+        application_type: "native",
+        redirect_uris: ["http://localhost/callback"],
+        token_endpoint_auth_method: "none",
+        grant_types: ["authorization_code"],
+        response_types: ["code"],
+      }),
+    },
+    [clientId],
+  );
+  t.after(() => service.dispose());
+  assert.equal(
+    (await service.request(authPath({ client_id: clientId }))).status,
+    400,
+  );
+});
+
 test("refresh rotates at days 13, 26 and 39 after browser session expiry, then expires after 30 idle days", async (t) => {
   const start = Date.now();
   t.mock.timers.enable({ apis: ["Date"], now: start });

@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-Noticeflow is an experimental remote MCP notification server for Node.js 24. Existing MCP hosts submit prepared notifications over Streamable HTTP and OAuth; a durable SQLite queue routes them to configured WeCom group robots. Local automated checks cover both MCP protocol eras and OAuth flows. The Linux/arm64 Docker image has passed build, startup, runtime-configured healthcheck, and persistent restart checks. Real Claude Code, ChatGPT, and WeCom acceptance remain pending.
+Noticeflow is an experimental remote MCP notification server for Node.js 24. Existing MCP hosts submit prepared notifications over Streamable HTTP and OAuth; a durable SQLite queue routes them to configured WeCom group robots. Local automated checks cover both MCP protocol eras and OAuth flows. The Linux/arm64 Docker image has passed build, startup, runtime-configured healthcheck, and persistent restart checks. Codex CLI 0.155.1 has passed local HTTPS OAuth and real Agent submission checks with delivery disabled. Real Claude Code, ChatGPT, and WeCom acceptance remain pending.
 
 ## Install
 
@@ -54,7 +54,7 @@ umask 077
 openssl rand -base64 32 > /srv/noticeflow/data-key
 ```
 
-Set an HTTPS origin without a path or trailing slash, the internal listener, exact allowed HTTPS CIMD URLs, absolute storage paths, targets, and topics. The example includes the official Claude Code and ChatGPT CIMD URLs. Only official WeCom HTTPS Webhook URLs with one nonempty `key` parameter are accepted. Unknown fields, duplicate YAML keys, missing targets, and invalid endpoints fail startup. Restart to load configuration changes; accepted deliveries keep their original message and destination.
+Set an HTTPS origin without a path or trailing slash, the internal listener, exact allowed HTTPS CIMD URLs, absolute storage paths, targets, and topics. The example includes the official Claude Code and ChatGPT CIMD URLs. For Codex, add the exact CIMD URL shown during login; it can include a server-specific callback ID. Only official WeCom HTTPS Webhook URLs with one nonempty `key` parameter are accepted. Unknown fields, duplicate YAML keys, missing targets, and invalid endpoints fail startup. Restart to load configuration changes; accepted deliveries keep their original message and destination.
 
 Remove `auth.initialAdminPassword` after first initialization. Preserve the key separately from database backups; losing it makes stored notifications and authorization unrecoverable. Keep the key and YAML readable only by the service user. Backups contain encrypted records and password hashes, so restrict their volume permissions too.
 

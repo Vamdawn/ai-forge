@@ -91,7 +91,10 @@ export function createAuthorization(
                   (metadata.application_type === "native" &&
                     url.protocol === "http:" &&
                     (["127.0.0.1", "[::1]"].includes(url.hostname) ||
-                      (metadata.client_id === CLAUDE &&
+                      ((metadata.client_id === CLAUDE ||
+                        /^https:\/\/chatgpt\.com\/oauth\/codex\/(?:[A-Za-z0-9_-]+\/)?client\.json$/.test(
+                          metadata.client_id ?? "",
+                        )) &&
                         url.hostname === "localhost"))))
               );
             } catch {

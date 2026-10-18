@@ -7,6 +7,8 @@ auth:
   allowedClientIds:
     - https://claude.ai/oauth/claude-code-client-metadata
     - https://chatgpt.com/oauth/client.json
+    # For Codex, add the exact CIMD URL shown during login, usually:
+    # https://chatgpt.com/oauth/codex/<callback-id>/client.json
 storage:
   sqlitePath: /data/noticeflow.sqlite
   encryptionKeyFile: /run/noticeflow/data-key

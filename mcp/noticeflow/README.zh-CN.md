@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-Noticeflow 是基于 Node.js 24 的实验性远程 MCP 通知服务。现成 MCP Host 通过 Streamable HTTP 与 OAuth 提交准备好的通知，持久化 SQLite 队列将其路由到配置的企业微信群机器人。本地自动化检查覆盖两代 MCP 协议和 OAuth 流程；Linux/arm64 Docker 镜像已通过构建、启动、运行时配置的健康检查及持久卷重启验证；真实 Claude Code、ChatGPT 及企业微信验收仍待完成。
+Noticeflow 是基于 Node.js 24 的实验性远程 MCP 通知服务。现成 MCP Host 通过 Streamable HTTP 与 OAuth 提交准备好的通知，持久化 SQLite 队列将其路由到配置的企业微信群机器人。本地自动化检查覆盖两代 MCP 协议和 OAuth 流程；Linux/arm64 Docker 镜像已通过构建、启动、运行时配置的健康检查及持久卷重启验证；Codex CLI 0.155.1 已在禁用投递的条件下通过本地 HTTPS OAuth 和真实 Agent 提交验收；真实 Claude Code、ChatGPT 及企业微信验收仍待完成。
 
 ## Install
 
@@ -54,7 +54,7 @@ umask 077
 openssl rand -base64 32 > /srv/noticeflow/data-key
 ```
 
-配置不含路径或尾随斜线的 HTTPS Origin、内部监听地址、精确的 HTTPS CIMD URL 白名单、绝对存储路径、Target 和 Topic。示例包含 Claude Code 与 ChatGPT 官方 CIMD URL。Webhook 只接受官方企业微信 HTTPS 端点及唯一非空 `key` 参数。未知字段、重复 YAML 键、缺失 Target 及无效端点会阻止启动。修改配置后须重启；已接收任务保留原消息和目的地。
+配置不含路径或尾随斜线的 HTTPS Origin、内部监听地址、精确的 HTTPS CIMD URL 白名单、绝对存储路径、Target 和 Topic。示例包含 Claude Code 与 ChatGPT 官方 CIMD URL。接入 Codex 时须添加登录时显示的完整 CIMD URL，其中可能包含按服务生成的回调 ID。Webhook 只接受官方企业微信 HTTPS 端点及唯一非空 `key` 参数。未知字段、重复 YAML 键、缺失 Target 及无效端点会阻止启动。修改配置后须重启；已接收任务保留原消息和目的地。
 
 首次初始化后删除 `auth.initialAdminPassword`。密钥与数据库备份分开保存；丢失密钥将无法恢复通知内容及授权。密钥和 YAML 只允许服务用户读取。备份包含密文记录和密码哈希，也须限制卷权限。
 

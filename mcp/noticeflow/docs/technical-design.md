@@ -1,6 +1,6 @@
 # Noticeflow 初版技术方案
 
-状态：首版服务端实现及本地自动化验证已加入仓库，Linux/arm64 镜像已通过构建、启动、运行时配置的健康检查及持久卷重启验证，真实接入与容量下维护延迟验收仍待完成。以[已确认的产品方案](product-design.md)为约束；本文给出模块接口、数据模型、运行时流程和验证门槛。涉及具体依赖的配置在编码时以锁定版本和真实 Host 接入测试为准。
+状态：首版服务端实现及本地自动化验证已加入仓库，Linux/arm64 镜像已通过构建、启动、运行时配置的健康检查及持久卷重启验证，Codex CLI 0.155.1 已在禁用 Worker 的条件下通过本地 HTTPS OAuth、真实 Agent 调用及通知入库验收；公网及其余 Host/渠道接入与容量下维护延迟验收仍待完成。以[已确认的产品方案](product-design.md)为约束；本文给出模块接口、数据模型、运行时流程和验证门槛。涉及具体依赖的配置在编码时以锁定版本和真实 Host 接入测试为准。
 
 ## 设计基线
 
@@ -116,11 +116,11 @@ Provider 的元数据与 SDK 镜像必须同源且对外使用相同 `issuer`。
 
 Grant 初始有效期为 30 天；授权码兑换及每次成功刷新时，先把对应 Grant 的有效期延长到不早于本次新访问令牌和刷新令牌的最晚过期时间，再完成新令牌持久化及返回。续期采用新旧截止时间的最大值，事务中同步更新加密 Payload 的 `exp` 与 Adapter 的 `expires_at`，分别按 Provider 的 UTC 秒与数据库的 UTC 毫秒换算，不能只延长数据库清理时间。Grant 续期失败时本次兑换失败，不返回父授权提前过期的新令牌。已过期、已消费或已撤销的刷新令牌不能因 Grant 续期而恢复；必须先验证当前令牌和 Grant 仍有效。库的[Grant 默认 TTL](https://github.com/panva/node-oidc-provider/blob/v9.12.2/lib/helpers/defaults.js#L407)与[刷新时的 Grant 校验](https://github.com/panva/node-oidc-provider/blob/v9.12.2/lib/helpers/grant_source.js#L32)要求显式实现这项续期，不能保留默认 14 天截止。
 
-CIMD 只接受 YAML `allowedClientIds` 中完整匹配的 HTTPS Client ID URL。`allowFetch` 在发起远端请求前过滤白名单，`allowClient` 对缓存命中的 Client 再过滤；使用库内 SSRF 防护，验证元数据 `client_id` 与 URL 一致。仅为实际接入的 Claude Code、ChatGPT Client ID 配置白名单。由于 `oidc-provider` 的 [CIMD 功能仍是实验特性](https://github.com/panva/node-oidc-provider/blob/main/docs/README.md)，先运行真实元数据、回调、刷新令牌互操作探针，版本升级也须重跑。
+CIMD 只接受 YAML `allowedClientIds` 中完整匹配的 HTTPS Client ID URL。`allowFetch` 在发起远端请求前过滤白名单，`allowClient` 对缓存命中的 Client 再过滤；使用库内 SSRF 防护，验证元数据 `client_id` 与 URL 一致。仅为实际接入的 Claude Code、ChatGPT、Codex Client ID 配置白名单。[Codex](https://learn.chatgpt.com/docs/extend/mcp) 可使用 `https://chatgpt.com/oauth/codex/client.json` 或带服务专属回调 ID 的 `https://chatgpt.com/oauth/codex/<callback-id>/client.json`；按实际登录显示的完整 URL 配置，不做前缀匹配。由于 `oidc-provider` 的 [CIMD 功能仍是实验特性](https://github.com/panva/node-oidc-provider/blob/main/docs/README.md)，先运行真实元数据、回调、刷新令牌互操作探针，版本升级也须重跑。
 
-回调验证分两类：HTTPS 地址与 CIMD 条目逐字符精确匹配；已确认的原生客户端 HTTP loopback 地址可按 [RFC 8252 §7.3](https://www.rfc-editor.org/rfc/rfc8252#section-7.3)忽略端口比较，其余字符仍须与同一条元数据地址一致。只接受 `127.0.0.1`、`[::1]` 中实际列出的主机；`localhost` 例外仅用于固定官方 Client ID `https://claude.ai/oauth/claude-code-client-metadata` 且 CIMD 明确列有该主机的情况。端口必须有效，不接受用户信息或片段，不在主机之间替换，不接受子域名、任意 loopback 地址或 URI 前缀匹配。授权码兑换时，`redirect_uri` 必须与该次授权请求的完整 URI 一致，包括实际端口，不能再次忽略端口。
+回调验证分两类：HTTPS 地址与 CIMD 条目逐字符精确匹配；已确认的原生客户端 HTTP loopback 地址可按 [RFC 8252 §7.3](https://www.rfc-editor.org/rfc/rfc8252#section-7.3)忽略端口比较，其余字符仍须与同一条元数据地址一致。只接受 `127.0.0.1`、`[::1]` 中实际列出的主机；`localhost` 例外仅用于固定官方 Client ID `https://claude.ai/oauth/claude-code-client-metadata`，以及上述两种形式的官方 Codex Client ID，且 CIMD 须明确列有该主机并作为原生客户端验证。端口必须有效，不接受用户信息或片段，不在主机之间替换，不接受子域名、任意 loopback 地址或 URI 前缀匹配。授权码兑换时，`redirect_uri` 必须与该次授权请求的完整 URI 一致，包括实际端口，不能再次忽略端口。
 
-客户端原生类型由服务端对已核验身份的限定适配确定，不能仅因 Client ID 在白名单中就把客户端视为原生。Claude Code 的官方 CIMD 未声明 `application_type` 时，在 Provider 校验前仅为上述固定身份补充 `native` 类型，保留抓取到的 Client ID 与回调列表；其他身份不套用该适配。[Provider 的回调实现](https://github.com/panva/node-oidc-provider/blob/v9.12.2/lib/models/client.js#L486)依赖原生类型，不能假定默认配置已兼容。接入探针必须验证所锁版本的公共扩展能完成此受限适配及 `localhost` 处理；未通过前不能宣称 Claude Code 接入可用，也不通过关闭回调校验或静默改为预注册客户端绕过。
+客户端原生类型以已核验 CIMD 的显式 `application_type` 为准，服务端仅对已核验身份作限定适配；不能仅因 Client ID 在白名单中就把客户端视为原生。Claude Code 的官方 CIMD 未声明 `application_type` 时，在 Provider 校验前仅为上述固定身份补充 `native` 类型，保留抓取到的 Client ID 与回调列表；其他身份不套用该适配。[Provider 的回调实现](https://github.com/panva/node-oidc-provider/blob/v9.12.2/lib/models/client.js#L486)依赖原生类型，不能假定默认配置已兼容。接入探针必须验证所锁版本的公共扩展能完成此受限适配及 `localhost` 处理；未通过前不能宣称 Claude Code 接入可用，也不通过关闭回调校验或静默改为预注册客户端绕过。
 
 管理员固定为一个账号。首次建库时从 YAML 读取初始密码，随机 16 字节盐、异步 `scrypt` 哈希后只保存哈希及参数；之后有该账号时忽略 YAML 密码并提示部署人员删除该字段。登录页只在授权交互中出现，显示 Client 名称、回调和 `notification:submit` 权限；自定义表单必须验证绑定该交互的 CSRF token，Cookie 设为 Secure、HttpOnly、SameSite=Lax。错误凭据使用统一提示，并按经 Nginx 校验的来源 IP 限制为每 15 分钟最多 5 次失败尝试。密码重置仅支持停服后的交互式维护命令：在打开数据库前取得排他维护锁，服务或其他数据库命令仍持锁时直接拒绝。取得锁后读入并确认新密码，在一个事务中换哈希并删除所有 OAuth 授权工件和登录会话，提交并关闭连接后才释放锁。重新启动后旧密码和旧授权均不可用；初版不支持在线重置，从而避免进行中的旧授权请求在删除之后重新写入令牌。
 
