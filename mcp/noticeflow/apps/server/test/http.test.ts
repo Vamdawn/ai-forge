@@ -104,6 +104,68 @@ test("MCP advertises its OAuth resource and challenges unauthenticated callers",
 });
 
 import { authorize, redeem, claudeMetadata } from "./oauth-client.js";
+for (const redirectUri of [
+  "http://127.0.0.1:49152/callback",
+  "https://client.example.com/oauth/callback?source=noticeflow",
+]) {
+  test(`sign-in form permits its validated OAuth callback (${new URL(redirectUri).protocol})`, async (t) => {
+    const publicBaseUrl = "https://notice.example.com/noticeflow";
+    const service = await fixture(
+      {
+        providerFetch: async () =>
+          Response.json({
+            ...claudeMetadata,
+            application_type: redirectUri.startsWith("http:") ? "native" : "web",
+            redirect_uris: [redirectUri],
+          }),
+      },
+      undefined,
+      publicBaseUrl,
+    );
+    t.after(() => service.dispose());
+    const start = await service.request(
+      authPath({ redirect_uri: redirectUri }, publicBaseUrl),
+    );
+    assert.equal(start.status, 303);
+    const page = await service.request(start.headers.get("location")!, {
+      headers: {
+        cookie: start.headers.getSetCookie().map((value) => value.split(";")[0]).join("; "),
+      },
+    });
+    assert.equal(page.status, 200);
+    const policy = page.headers.get("content-security-policy")!;
+    assert.ok(policy.split("; ").includes(`form-action 'self' ${new URL(redirectUri).origin}`));
+    for (const directive of ["default-src 'none'", "frame-ancestors 'none'", "base-uri 'none'"])
+      assert.ok(policy.split("; ").includes(directive));
+  });
+}
+
+test("allowlisted CIMD can reach sign-in over a slow proxy", async (t) => {
+  const service = await fixture({
+    providerFetch: async (_url, options) => {
+      await delay(3000, undefined, { signal: options?.signal ?? undefined });
+      return Response.json(claudeMetadata);
+    },
+  });
+  t.after(() => service.dispose());
+  const response = await service.request(authPath());
+  assert.equal(response.status, 303);
+  assert.match(response.headers.get("location")!, /^\/interaction\//);
+});
+
+test("an unresponsive CIMD still fails authorization within a bounded wait", { timeout: 25000 }, async (t) => {
+  const service = await fixture({
+    providerFetch: async (_url, options) => {
+      await delay(30000, undefined, { signal: options?.signal ?? undefined });
+      return Response.json(claudeMetadata);
+    },
+  });
+  t.after(() => service.dispose());
+  const response = await service.request(authPath());
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "AUTHORIZATION_FAILED" });
+});
+
 test("official Claude CIMD supports random loopback ports, consent and PKCE tokens", async (t) => {
   const service = await fixture({
     providerFetch: async () => Response.json(claudeMetadata),

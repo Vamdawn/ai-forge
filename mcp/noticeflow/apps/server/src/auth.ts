@@ -175,7 +175,12 @@ export function createAuthorization(
       },
     },
     fetch: async (url, options) => {
-      const response = await (providerFetch ?? fetch)(url, options);
+      // CIMD may cross an outbound proxy. Keep the provider's SSRF dispatcher
+      // and redirect policy, but allow more than its default 2.5 seconds.
+      const fetchOptions = config.auth.allowedClientIds.includes(String(url))
+        ? { ...options, signal: AbortSignal.timeout(10000) }
+        : options;
+      const response = await (providerFetch ?? fetch)(url, fetchOptions);
       if (String(url) !== CLAUDE || response.status !== 200) return response;
       const metadata: unknown = await response.clone().json();
       if (
@@ -283,9 +288,12 @@ export function createAuthorization(
           sameSite: "lax",
           path: `${basePath}/interaction/${details.uid}`,
         });
+        // Chromium applies form-action to the redirect chain after submission.
+        // The provider validated this callback before creating the interaction.
+        const callbackOrigin = new URL(String(details.params.redirect_uri)).origin;
         res.set(
           "Content-Security-Policy",
-          "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+          `default-src 'none'; form-action 'self' ${callbackOrigin}; frame-ancestors 'none'; base-uri 'none'`,
         );
         res.set("Cache-Control", "no-store");
         res.send(

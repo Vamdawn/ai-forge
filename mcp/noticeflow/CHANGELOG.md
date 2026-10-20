@@ -22,6 +22,8 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 
 ### Fixed
 
+- Permit the validated OAuth callback origin in the sign-in form's security policy, so Chromium can return to the MCP host after consent instead of leaving the page unchanged and failing on a second submission.
+- Allow up to ten seconds to fetch an allowlisted CIMD document through an outbound proxy, so slower exits can complete OAuth sign-in. Requests remain bounded and retain the authorization provider's SSRF protection and metadata validation.
 - Accept official Codex native CIMD documents that list both loopback IP and `localhost` callbacks, while keeping exact Client ID allowlisting and callback host/path validation. Previously these documents were rejected before sign-in.
 - Corrected the design for native OAuth loopback callbacks and exclusive SQLite recovery with preserved WAL files, so default Claude Code sign-in and interrupted restores have explicit acceptance rules.
 - Corrected delivery scheduling with conservative quota reservations and persistent destination-wide cooldowns, so delayed sends and retries share the same limits across restarts.
