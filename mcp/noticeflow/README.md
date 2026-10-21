@@ -84,8 +84,7 @@ node dist/main.js serve --config /absolute/path/config.yaml
 
 ## Links
 
-- [Product design](docs/product-design.md)
-- [Technical design](docs/technical-design.md)
+- [Architecture](docs/architecture.md)
 - [Glossary](GLOSSARY.md)
 - [Changelog](CHANGELOG.md)
 - [Repository license](../../LICENSE)

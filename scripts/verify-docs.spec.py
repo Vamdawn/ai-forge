@@ -129,8 +129,8 @@ class LinkTest(DocCheckTest):
         self.assertReports("link target does not exist")
 
     def test_broken_link_in_mcp_product_docs_is_reported(self) -> None:
-        self.edit("mcp/noticeflow/docs/product-design.md", "(research-mcp-project-layout.md)",
-                  "(research-mcp-project-layout-gone.md)")
+        self.edit("mcp/noticeflow/docs/architecture.md", "(../GLOSSARY.md)",
+                  "(../GLOSSARY-gone.md)")
         self.assertReports("link target does not exist")
 
     def test_broken_link_in_agents_is_reported(self) -> None:

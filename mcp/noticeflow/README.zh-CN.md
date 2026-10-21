@@ -84,8 +84,7 @@ node dist/main.js serve --config /absolute/path/config.yaml
 
 ## Links
 
-- [产品方案](docs/product-design.md)
-- [技术方案](docs/technical-design.md)
+- [架构说明（英文）](docs/architecture.md)
 - [术语表](GLOSSARY.md)
 - [变更记录](CHANGELOG.zh-CN.md)
 - [仓库许可证](../../LICENSE)

@@ -14,6 +14,7 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 
 ### Changed
 
+- Consolidated the product and technical designs, architecture review, and delivery-boundary decision into one English architecture document. Removed the superseded documents and directory research so maintained contracts, invariants, and verification boundaries have one reference.
 - Separated authorization persistence and offline recovery inside the existing server package, and centralized the OAuth contract without changing configuration, endpoints, or stored data. Shutdown now closes active MCP subscriptions through the handler before releasing storage.
 - Verified Codex CLI 0.155.1 OAuth, real Agent submissions, and automatic token refresh over local HTTPS. The acceptance runner kept the Worker disabled, and both notifications remained queued with zero delivery attempts; public ingress and real channels remain unverified.
 - Verified the Linux/arm64 Docker image builds and starts as a non-root user, passes runtime-configured healthchecks, and restarts with its existing database after removing the initial password. Other image platforms, public ingress, and remaining host/channel acceptance remain unverified.
