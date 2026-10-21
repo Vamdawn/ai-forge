@@ -44,26 +44,34 @@ class CommitGateTest(unittest.TestCase):
         (directory / "source.ts").write_text('export {};\n')
         self.run_git("add", path)
 
-    def test_mcp_nested_package_is_checked_once_for_product_docs_and_code(self):
-        self.package("mcp/noticeflow/apps/server")
+    def test_mcp_root_package_is_checked_once_for_product_docs_and_code(self):
+        self.package("mcp/noticeflow")
         readme = self.root / "mcp/noticeflow/README.md"
         readme.write_text("# Noticeflow\n")
         self.run_git("add", str(readme))
         self.run_git("commit", "-qm", "test MCP gate")
         self.assertEqual(self.log.read_text().splitlines(), [
-            f"{self.root}/mcp/noticeflow/apps/server:run typecheck",
-            f"{self.root}/mcp/noticeflow/apps/server:test",
+            f"{self.root}/mcp/noticeflow:run typecheck",
+            f"{self.root}/mcp/noticeflow:test",
+        ])
+
+    def test_nested_mcp_packages_remain_supported(self):
+        self.package("mcp/example/apps/service")
+        self.run_git("commit", "-qm", "test nested MCP gate")
+        self.assertEqual(self.log.read_text().splitlines(), [
+            f"{self.root}/mcp/example/apps/service:run typecheck",
+            f"{self.root}/mcp/example/apps/service:test",
         ])
 
     def test_mcp_typecheck_and_tests_each_block_a_commit(self):
-        self.package("mcp/noticeflow/apps/server")
+        self.package("mcp/noticeflow")
         for command in ("run typecheck", "test"):
             with self.subTest(command=command):
                 self.env["FAIL_TASK"] = command
                 result = self.run_git("commit", "-qm", "reject failing package", check=False)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("pre-commit:", result.stderr)
-                self.assertIn("mcp/noticeflow/apps/server", result.stderr)
+                self.assertIn("mcp/noticeflow", result.stderr)
 
     def test_existing_tool_and_plugin_gates_still_run(self):
         self.package("tools/example")

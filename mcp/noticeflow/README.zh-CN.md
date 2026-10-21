@@ -9,7 +9,7 @@ Noticeflow 是基于 Node.js 24 的实验性远程 MCP 通知服务。现成 MCP
 从本仓库构建服务端镜像：
 
 ```sh
-cd mcp/noticeflow/apps/server
+cd mcp/noticeflow
 docker build -t noticeflow:local .
 ```
 
@@ -47,7 +47,7 @@ noticeflow backup restore <backup-file>
 
 ## Configuration
 
-将 [config.example.yaml](apps/server/config.example.yaml) 复制到仓库外并替换占位值。单独生成 32 字节 Base64 数据密钥：
+将 [config.example.yaml](config.example.yaml) 复制到仓库外并替换占位值。单独生成 32 字节 Base64 数据密钥：
 
 ```sh
 umask 077
@@ -72,7 +72,7 @@ Nginx 必须覆盖转发 Host、协议和来源 IP 头，并限制其他客户�
 ## Development
 
 ```sh
-cd mcp/noticeflow/apps/server
+cd mcp/noticeflow
 npm ci --ignore-scripts
 npm run typecheck
 npm test

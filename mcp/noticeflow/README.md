@@ -9,7 +9,7 @@ Noticeflow is an experimental remote MCP notification server for Node.js 24. Exi
 Build the server image from this checkout:
 
 ```sh
-cd mcp/noticeflow/apps/server
+cd mcp/noticeflow
 docker build -t noticeflow:local .
 ```
 
@@ -47,7 +47,7 @@ Replace `noticeflow` with `docker exec noticeflow node dist/main.js` for a runni
 
 ## Configuration
 
-Copy [config.example.yaml](apps/server/config.example.yaml) outside the repository and replace its placeholders. Generate a separate 32-byte Base64 data key:
+Copy [config.example.yaml](config.example.yaml) outside the repository and replace its placeholders. Generate a separate 32-byte Base64 data key:
 
 ```sh
 umask 077
@@ -72,7 +72,7 @@ Nginx must replace forwarded host, scheme, and source-IP headers and keep the co
 ## Development
 
 ```sh
-cd mcp/noticeflow/apps/server
+cd mcp/noticeflow
 npm ci --ignore-scripts
 npm run typecheck
 npm test

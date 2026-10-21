@@ -1,6 +1,6 @@
 # Noticeflow Architecture
 
-Noticeflow accepts prepared notifications through a remote MCP server and delivers them asynchronously to configured WeCom group robots. This document defines the current architectural boundaries and invariants. See the [README](../README.md) for operation, the [configuration example](../apps/server/config.example.yaml) for configuration structure, and the [glossary](../GLOSSARY.md) for domain terms.
+Noticeflow accepts prepared notifications through a remote MCP server and delivers them asynchronously to configured WeCom group robots. This document defines the current architectural boundaries and invariants. See the [README](../README.md) for operation, the [configuration example](../config.example.yaml) for configuration structure, and the [glossary](../GLOSSARY.md) for domain terms.
 
 ## Scope and boundaries
 
@@ -31,18 +31,18 @@ Temporary maintenance command --> File lock --> SQLite and data key
 
 | Boundary | Responsibility |
 | --- | --- |
-| [MCP handler](../apps/server/src/http.ts) | SDK-managed protocol handling, tool discovery, structured results, and handler shutdown. |
-| [Authorization](../apps/server/src/auth.ts) | OAuth metadata, client and callback validation, administrator consent, resource and scope checks. |
-| [Submission](../apps/server/src/submit.ts) | Input validation, Topic resolution, channel preparation, and atomic acceptance. |
-| [Store](../apps/server/src/store.ts) | Short transactions for acceptance, leases, quotas, cooldowns, and authorization persistence. |
-| [Worker](../apps/server/src/worker.ts) | Delivery scheduling and result handling through the [Channel contract](../apps/server/src/channel.ts). |
-| [Maintenance](../apps/server/src/maintenance.ts) | Backup, exclusive recovery, password reset, and metadata-only task operations. |
+| [MCP handler](../src/http.ts) | SDK-managed protocol handling, tool discovery, structured results, and handler shutdown. |
+| [Authorization](../src/auth.ts) | OAuth metadata, client and callback validation, administrator consent, resource and scope checks. |
+| [Submission](../src/submit.ts) | Input validation, Topic resolution, channel preparation, and atomic acceptance. |
+| [Store](../src/store.ts) | Short transactions for acceptance, leases, quotas, cooldowns, and authorization persistence. |
+| [Worker](../src/worker.ts) | Delivery scheduling and result handling through the [Channel contract](../src/channel.ts). |
+| [Maintenance](../src/maintenance.ts) | Backup, exclusive recovery, password reset, and metadata-only task operations. |
 
 `server.publicBaseUrl` is the canonical HTTPS issuer, optionally including a deployment subpath; the MCP resource is `${publicBaseUrl}/mcp`. Public identifiers come from validated configuration, never untrusted request headers. Nginx preserves paths, replaces forwarded host, scheme, and source-IP headers, and prevents direct external access to the internal listener. An HTTP `Origin`, when present, must match the configured public origin.
 
 OAuth and interaction routes follow the base path. Discovery inserts the well-known suffix before that path: a `/noticeflow` deployment uses `/.well-known/oauth-protected-resource/noticeflow/mcp` and `/.well-known/oauth-authorization-server/noticeflow`. The proxy forwards those exact root discovery paths without taking over unrelated site routes. `/healthz` stays at the container root and exposes only process, database, and Worker state.
 
-The official MCP SDK handles Streamable HTTP, 2025 stateless handshakes and the 2026-07-28 protocol, and protocol errors; the server does not implement a parallel protocol stack. Dependency versions are pinned in the [server lockfile](../apps/server/package-lock.json). Configuration is validated and frozen at startup, including rejection of unknown fields and invalid references; changes require restart.
+The official MCP SDK handles Streamable HTTP, 2025 stateless handshakes and the 2026-07-28 protocol, and protocol errors; the server does not implement a parallel protocol stack. Dependency versions are pinned in the [server lockfile](../package-lock.json). Configuration is validated and frozen at startup, including rejection of unknown fields and invalid references; changes require restart.
 
 Shutdown stops new ingress and delivery claims, closes MCP handlers to end active subscriptions, and drains HTTP requests and maintenance before closing storage. In-flight OAuth requests retain database access while draining. A bounded HTTP shutdown deadline prevents persistent connections from holding the process indefinitely; unresolved deliveries recover through their leases.
 
@@ -89,7 +89,7 @@ All initial sends, automatic retries, and manual retries share at most 20 persis
 
 HTTP 429, WeCom rate-limit code `45009`, and retryable responses with a valid `Retry-After` extend a persistent destination-wide cooldown. Rate-limit responses impose at least 60 seconds; valid seconds or HTTP-date headers can extend it further. Updates only increase the existing deadline. Every related Target and retry observes it, including after restart; unrelated destinations continue. An expired lease's response may extend cooldown but cannot overwrite current task state. In-flight requests cannot be recalled.
 
-The [WeCom adapter](../apps/server/src/wecom.ts) requires both HTTP 2xx and JSON `errcode: 0` for success. It classifies business errors before generic HTTP handling, retries transient network and remote failures within budget, and fails permanent destination or parameter errors immediately. Per-task backoff, valid remote retry instructions, shared cooldown, and quota all constrain the next send. Raw remote error messages are not persisted or logged.
+The [WeCom adapter](../src/wecom.ts) requires both HTTP 2xx and JSON `errcode: 0` for success. It classifies business errors before generic HTTP handling, retries transient network and remote failures within budget, and fails permanent destination or parameter errors immediately. Per-task backoff, valid remote retry instructions, shared cooldown, and quota all constrain the next send. Raw remote error messages are not persisted or logged.
 
 ## Authorization and data protection
 
@@ -107,7 +107,7 @@ Configuration, keys, and host-side connection credentials stay outside Git and p
 
 ## Persistence and recovery
 
-SQLite uses a local durable volume, WAL, foreign keys, a finite busy timeout, and `synchronous=FULL`. Immediate transactions couple capacity checks with acceptance or manual retry; no network request runs within a database transaction. [Migrations](../apps/server/src/migrations.ts) define exact tables and indexes. Store operations preserve atomic lease, quota, cooldown, token-consumption, and authorization-revocation changes instead of exposing general SQL to callers.
+SQLite uses a local durable volume, WAL, foreign keys, a finite busy timeout, and `synchronous=FULL`. Immediate transactions couple capacity checks with acceptance or manual retry; no network request runs within a database transaction. [Migrations](../src/migrations.ts) define exact tables and indexes. Store operations preserve atomic lease, quota, cooldown, token-consumption, and authorization-revocation changes instead of exposing general SQL to callers.
 
 Successful and final-failure Deliveries are retained for 90 days from their latest terminal transition; unfinished work has no age-based cleanup. Notifications are removed only after all their Deliveries have been cleaned up. The unfinished-task cap does not bound total database size, so maintenance cost depends on historical volume.
 
@@ -126,7 +126,7 @@ Restore rolls back task state and can repeat external side effects. The Worker w
 
 ## Verification boundaries
 
-The [server tests](../apps/server/test) use temporary databases, controlled clocks, standard MCP clients, and fake Webhooks to check public boundaries. Their source is the executable reference for regression cases, not evidence that a deployed host or real channel has passed acceptance.
+The [server tests](../test) use temporary databases, controlled clocks, standard MCP clients, and fake Webhooks to check public boundaries. Their source is the executable reference for regression cases, not evidence that a deployed host or real channel has passed acceptance.
 
 | Area | Required regression boundary |
 | --- | --- |
