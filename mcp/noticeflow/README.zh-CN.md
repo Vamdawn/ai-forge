@@ -15,6 +15,8 @@ docker build -t noticeflow:local .
 
 镜像以 `node` 用户（UID 1000）运行。准备可写的 `/data`、`/backup` 卷，并只读挂载配置和数据密钥。凭据保存在仓库外。本资产尚未发布到 npm。
 
+已有 Compose 部署按[部署流程（英文）](docs/deployment.md)更新：构建固定提交、校验镜像包、备份、检查仅镜像变化的配置、更新单个服务，再验收或回滚。具体机器的记录放在已忽略的 `tmp/noticeflow/` 或仓库外。
+
 ## Usage
 
 在 Nginx HTTPS 代理后运行单个实例：

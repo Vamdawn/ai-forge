@@ -15,6 +15,8 @@ docker build -t noticeflow:local .
 
 The image runs as the `node` user (UID 1000). Provision writable `/data` and `/backup` volumes and mount the configuration and data key read-only. Keep credentials outside the checkout. This asset is not published to npm.
 
+For existing Compose deployments, follow the [deployment procedure](docs/deployment.md): build a fixed commit, verify the bundle, back up, check the image-only configuration change, update one service, and verify or roll back. Keep machine-specific records under ignored `tmp/noticeflow/` or outside the repository.
+
 ## Usage
 
 Run one instance behind Nginx HTTPS:

@@ -1,6 +1,8 @@
 node_modules
 dist
 test
+scripts
+prototypes
 docs
 README*
 CHANGELOG*
