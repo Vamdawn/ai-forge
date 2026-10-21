@@ -29,7 +29,7 @@ docker run --rm --name noticeflow \
   noticeflow:local
 ```
 
-让 Host 的通用 MCP Client 连接 `${publicBaseUrl}/mcp`，完成管理员 OAuth 授权，再以 `topic`、`title`、`content` 调用 `submit_notification`。`accepted` 表示全部扇出任务已提交，投递异步进行，重复调用会创建不同通知。初版只暴露该工具，使用官方 SDK 同时处理 2025 无状态握手和 2026-07-28 协议。
+让 Host 的通用 MCP Client 连接 `${publicBaseUrl}/mcp`。在授权页验证管理员密码，核对请求应用和发送通知的权限，再允许或取消连接；连接详情展示服务 URL 和经过校验的回调地址。密码错误可以重试，请求过期须从 Host 重新发起。随后以 `topic`、`title`、`content` 调用 `submit_notification`。`accepted` 表示全部扇出任务已提交，投递异步进行，重复调用会创建不同通知。初版只暴露该工具，使用官方 SDK 同时处理 2025 无状态握手和 2026-07-28 协议。
 
 同一镜像支持维护命令。所有命令须使用相同挂载和 `--config /run/noticeflow/config.yaml`；查询、重试及在线备份可通过 `docker exec` 执行。密码重置和恢复前先停服，再使用相同挂载运行临时容器；密码重置还需 `-it`。
 

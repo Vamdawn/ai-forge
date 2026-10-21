@@ -29,7 +29,7 @@ docker run --rm --name noticeflow \
   noticeflow:local
 ```
 
-Connect the host's generic MCP client to `${publicBaseUrl}/mcp`, complete administrator OAuth consent, and call `submit_notification` with `topic`, `title`, and `content`. `accepted` means the complete fanout is committed; delivery is asynchronous and repeated calls create distinct notifications. Only this tool is exposed. The server accepts both 2025 stateless handshakes and the 2026-07-28 protocol through the official SDK.
+Connect the host's generic MCP client to `${publicBaseUrl}/mcp`. On the authorization page, verify the administrator password, review the requesting application and notification permission, then allow or cancel the connection. Connection details show the service URL and validated callback. Password errors can be retried; expired requests must be restarted from the host. Then call `submit_notification` with `topic`, `title`, and `content`. `accepted` means the complete fanout is committed; delivery is asynchronous and repeated calls create distinct notifications. Only this tool is exposed. The server accepts both 2025 stateless handshakes and the 2026-07-28 protocol through the official SDK.
 
 The same image supports maintenance commands. Every command requires the same mounts and `--config /run/noticeflow/config.yaml`; use `docker exec` for queries, retries, and online backups. Stop the service before password reset or restore and run a temporary container with the same mounts; password reset also needs `-it`.
 

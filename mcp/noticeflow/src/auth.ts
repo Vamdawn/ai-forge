@@ -1,11 +1,15 @@
-import Provider, { errors, type Configuration } from "oidc-provider";
+import Provider, {
+  errors,
+  type Configuration,
+  type Interaction,
+} from "oidc-provider";
 import {
   createHmac,
   generateKeyPairSync,
   randomBytes,
   timingSafeEqual,
 } from "node:crypto";
-import express, { type Express } from "express";
+import express, { type Express, type Response, type NextFunction } from "express";
 import {
   OAuthError,
   OAuthErrorCode,
@@ -18,17 +22,10 @@ import {
 import type { Config } from "./config.js";
 import type { Store } from "./store.js";
 import { verifyPassword } from "./crypto.js";
+import { renderExpiredPage, renderInteractionPage } from "./auth-page.js";
 export const SCOPE = "notification:submit";
 const CLAUDE = "https://claude.ai/oauth/claude-code-client-metadata";
 const THIRTY_DAYS = 30 * 86400;
-const escape = (value: unknown) =>
-  String(value).replace(
-    /[&<>"']/g,
-    (char) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        char
-      ]!,
-  );
 export function createAuthorization(
   config: Config,
   store: Store,
@@ -272,35 +269,75 @@ export function createAuthorization(
   }
   function mount(app: Express) {
     const router = express.Router();
+    function sendPage(
+      res: Response,
+      nonce: string,
+      html: string,
+      callbackOrigin = "",
+    ) {
+      // Chromium checks the full redirect chain. Only the provider-validated
+      // callback origin is permitted alongside this server's resume route.
+      res.set(
+        "Content-Security-Policy",
+        [
+          "default-src 'none'",
+          `form-action 'self'${callbackOrigin ? ` ${callbackOrigin}` : ""}`,
+          "frame-ancestors 'none'",
+          "base-uri 'none'",
+          `style-src 'nonce-${nonce}'`,
+          `script-src 'nonce-${nonce}'`,
+        ].join("; "),
+      );
+      res.set("Cache-Control", "no-store");
+      res.set("Referrer-Policy", "no-referrer");
+      res.send(html);
+    }
+    async function showInteraction(
+      res: Response,
+      details: Interaction,
+      error?: "password" | "limited",
+    ) {
+      const client = await provider.Client.find(String(details.params.client_id));
+      const csrfNonce = randomBytes(24).toString("base64url");
+      const csrf = createHmac("sha256", store.vault.cookieKey)
+        .update(`${details.uid}:${csrfNonce}`)
+        .digest("base64url");
+      res.cookie("noticeflow_csrf", csrfNonce, {
+        secure: true,
+        httpOnly: true,
+        sameSite: "lax",
+        path: `${basePath}/interaction/${details.uid}`,
+      });
+      const nonce = randomBytes(24).toString("base64url");
+      sendPage(
+        res,
+        nonce,
+        renderInteractionPage({
+          nonce,
+          csrf,
+          action: `${basePath}/interaction/${details.uid}`,
+          clientName: client?.clientName ?? String(details.params.client_id),
+          clientId: String(details.params.client_id),
+          callback: String(details.params.redirect_uri),
+          resource,
+          scope: SCOPE,
+          prompt: details.prompt.name,
+          error,
+        }),
+        new URL(String(details.params.redirect_uri)).origin,
+      );
+    }
+    function interactionError(error: unknown, res: Response, next: NextFunction) {
+      if (!(error instanceof errors.SessionNotFound)) return next(error);
+      const nonce = randomBytes(24).toString("base64url");
+      sendPage(res.status(410), nonce, renderExpiredPage(nonce));
+    }
     router.get("/interaction/:uid", async (req, res, next) => {
       try {
         const details = await provider.interactionDetails(req, res);
-        const client = await provider.Client.find(
-          String(details.params.client_id),
-        );
-        const nonce = randomBytes(24).toString("base64url");
-        const csrf = createHmac("sha256", store.vault.cookieKey)
-          .update(`${details.uid}:${nonce}`)
-          .digest("base64url");
-        res.cookie("noticeflow_csrf", nonce, {
-          secure: true,
-          httpOnly: true,
-          sameSite: "lax",
-          path: `${basePath}/interaction/${details.uid}`,
-        });
-        // Chromium applies form-action to the redirect chain after submission.
-        // The provider validated this callback before creating the interaction.
-        const callbackOrigin = new URL(String(details.params.redirect_uri)).origin;
-        res.set(
-          "Content-Security-Policy",
-          `default-src 'none'; form-action 'self' ${callbackOrigin}; frame-ancestors 'none'; base-uri 'none'`,
-        );
-        res.set("Cache-Control", "no-store");
-        res.send(
-          `<html><head><title>Noticeflow</title></head><body><h1>Noticeflow 授权</h1><p>${escape(client?.clientName ?? details.params.client_id)}</p><p>${escape(details.params.redirect_uri)}</p><p>${SCOPE}：允许向配置的群机器人发送通知。</p><form method="post" action="${basePath}/interaction/${escape(details.uid)}"><input type="hidden" name="csrf" value="${csrf}">${details.prompt.name === "login" ? '<label>管理员密码<input name="password" type="password" required autocomplete="current-password"></label>' : ""}<button name="approve" value="yes">登录并授权</button></form></body></html>`,
-        );
+        await showInteraction(res, details);
       } catch (error) {
-        next(error);
+        interactionError(error, res, next);
       }
     });
     router.post(
@@ -323,9 +360,21 @@ export function createAuthorization(
             typeof provided !== "string" ||
             provided.length !== expected.length ||
             !timingSafeEqual(Buffer.from(provided), Buffer.from(expected)) ||
-            req.body.approve !== "yes"
+            (req.body.approve !== "yes" && req.body.approve !== "no")
           ) {
             res.status(403).json({ error: "AUTHORIZATION_FAILED" });
+            return;
+          }
+          if (req.body.approve === "no") {
+            await provider.interactionFinished(
+              req,
+              res,
+              {
+                error: "access_denied",
+                error_description: "Connection cancelled by the administrator",
+              },
+              { mergeWithLastSubmission: false },
+            );
             return;
           }
           if (details.prompt.name === "login") {
@@ -336,7 +385,7 @@ export function createAuthorization(
             );
             failures.set(ip, recent);
             if (recent.times.length + recent.inFlight >= 5) {
-              res.status(429).json({ error: "AUTHORIZATION_FAILED" });
+              await showInteraction(res.status(429), details, "limited");
               return;
             }
             recent.inFlight++;
@@ -350,7 +399,7 @@ export function createAuthorization(
             }
             if (!valid) {
               recent.times.push(Date.now());
-              res.status(401).json({ error: "AUTHORIZATION_FAILED" });
+              await showInteraction(res.status(401), details, "password");
               return;
             }
             await provider.interactionFinished(
@@ -378,7 +427,7 @@ export function createAuthorization(
             );
           } else res.status(400).json({ error: "AUTHORIZATION_FAILED" });
         } catch (error) {
-          next(error);
+          interactionError(error, res, next);
         }
       },
     );
