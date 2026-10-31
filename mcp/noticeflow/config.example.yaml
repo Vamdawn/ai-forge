@@ -18,6 +18,11 @@ targets:
   operations:
     channel: wecom-webhook
     webhookUrl: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=REPLACE_OUTSIDE_REPOSITORY
+  release:
+    channel: feishu-webhook
+    webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/REPLACE_OUTSIDE_REPOSITORY
+    # Only when the robot enables signature verification.
+    secret: REPLACE_OUTSIDE_REPOSITORY
 topics:
   build-failure:
-    targets: [operations]
+    targets: [operations, release]

@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-Noticeflow is an experimental remote MCP notification server for Node.js 24. Existing MCP hosts submit prepared notifications over Streamable HTTP and OAuth; a durable SQLite queue routes them to configured WeCom group robots. Local automated checks cover both MCP protocol eras and OAuth flows. The Linux/arm64 Docker image has passed build, startup, runtime-configured healthcheck, and persistent restart checks. Codex CLI 0.155.1 has passed local HTTPS OAuth and real Agent submission checks with delivery disabled. Real Claude Code, ChatGPT, and WeCom acceptance remain pending.
+Noticeflow is an experimental remote MCP notification server for Node.js 24. Existing MCP hosts submit prepared notifications over Streamable HTTP and OAuth; a durable SQLite queue routes them to configured WeCom or Feishu group robots. Local automated checks cover both MCP protocol eras and OAuth flows. The Linux/arm64 Docker image has passed build, startup, runtime-configured healthcheck, and persistent restart checks. Codex CLI 0.155.1 has passed local HTTPS OAuth and real Agent submission checks with delivery disabled. Real Claude Code, ChatGPT, WeCom, and Feishu acceptance remain pending.
 
 ## Install
 
@@ -56,7 +56,7 @@ umask 077
 openssl rand -base64 32 > /srv/noticeflow/data-key
 ```
 
-Set an HTTPS base URL without a query, fragment, or trailing slash, such as `https://noticeflow.example.com/noticeflow`, plus the internal listener, exact allowed HTTPS CIMD URLs, absolute storage paths, targets, and topics. An optional base path uses nonempty segments of letters, digits, `.`, `_`, `~`, or `-`; encoded or normalized path aliases are rejected. Origin-only configurations still work. Changing the base URL requires hosts to authorize again for the new MCP resource. The example includes the official Claude Code and ChatGPT CIMD URLs. For Codex, add the exact CIMD URL shown during login; it can include a server-specific callback ID. Only official WeCom HTTPS Webhook URLs with one nonempty `key` parameter are accepted. Unknown fields, duplicate YAML keys, missing targets, and invalid endpoints fail startup. Restart to load configuration changes; accepted deliveries keep their original message and destination.
+Set an HTTPS base URL without a query, fragment, or trailing slash, such as `https://noticeflow.example.com/noticeflow`, plus the internal listener, exact allowed HTTPS CIMD URLs, absolute storage paths, targets, and topics. An optional base path uses nonempty segments of letters, digits, `.`, `_`, `~`, or `-`; encoded or normalized path aliases are rejected. Origin-only configurations still work. Changing the base URL requires hosts to authorize again for the new MCP resource. The example includes the official Claude Code and ChatGPT CIMD URLs. For Codex, add the exact CIMD URL shown during login; it can include a server-specific callback ID. A target's `channel` is `wecom-webhook` or `feishu-webhook`. WeCom accepts only official HTTPS Webhook URLs with one nonempty `key` parameter; Feishu accepts only `https://open.feishu.cn/open-apis/bot/v2/hook/<token>` and an optional `secret` when the robot enables signature verification. Unknown fields, duplicate YAML keys, missing targets, and invalid endpoints fail startup. Restart to load configuration changes; accepted deliveries keep their original message and destination.
 
 Remove `auth.initialAdminPassword` after first initialization. Preserve the key separately from database backups; losing it makes stored notifications and authorization unrecoverable. Keep the key and YAML readable only by the service user. Backups contain encrypted records and password hashes, so restrict their volume permissions too.
 
@@ -65,11 +65,11 @@ Nginx must replace forwarded host, scheme, and source-IP headers and keep the co
 ## Limitations
 
 - Single administrator, one running server, and local SQLite storage only; no API-key mode, dedicated client, SMTP, attachments, or MCP management tools.
-- Markdown must fit 4096 UTF-8 bytes including the escaped title; images, HTML, mentions, task checkboxes, footnotes, and strikethrough are rejected. Content is never truncated or split.
-- At most 1000 unfinished deliveries, four concurrent sends, 120 tool calls per client per rolling minute, and 20 starts per Webhook per rolling minute. Conservative reservations can reduce throughput. Retries and manual requeues share persistent quotas and cooldowns.
+- WeCom Markdown must fit 4096 UTF-8 bytes including the escaped title; images, HTML, mentions, task checkboxes, footnotes, and strikethrough are rejected. Feishu sends a JSON 2.0 card (client 7.20 or later) within its 20 KB body limit; images, HTML or card tags, task checkboxes, footnotes, and more than four tables are rejected. Content is never truncated or split.
+- At most 1000 unfinished deliveries, four concurrent sends, 120 tool calls per client per rolling minute, and 20 starts per Webhook per rolling minute. Feishu's five-per-second limit is not enforced locally; its rate-limit response triggers the shared cooldown. Conservative reservations can reduce throughput. Retries and manual requeues share persistent quotas and cooldowns.
 - Retryable failures have four recorded attempts with 1/5/15 minute backoff. Interrupted attempts can repeat without consuming that budget. Terminal deliveries are retained 90 days; unfinished deliveries are retained until terminal.
 - Daily and manual online backups share a seven-file retention limit; failures preserve existing copies. Restore requires an exclusive lock, preserves the old main/WAL/SHM files, revokes authorization, and pauses sends for 60 seconds. An interrupted restore blocks startup; rerun restore to continue. Retain its preserved directory until recovery is verified, then remove the whole directory when no restore marker references it.
-- Public HTTPS host interoperability, a controlled real WeCom send, other image platforms, and capacity-dependent maintenance latency still need deployment acceptance. Local fixtures do not establish these results.
+- Public HTTPS host interoperability, controlled real WeCom and Feishu sends, other image platforms, and capacity-dependent maintenance latency still need deployment acceptance. Local fixtures do not establish these results.
 
 ## Development
 

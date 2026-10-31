@@ -1,12 +1,12 @@
 # Noticeflow Architecture
 
-Noticeflow accepts prepared notifications through a remote MCP server and delivers them asynchronously to configured WeCom group robots. This document defines the current architectural boundaries and invariants. See the [README](../README.md) for operation, the [configuration example](../config.example.yaml) for configuration structure, and the [glossary](../GLOSSARY.md) for domain terms.
+Noticeflow accepts prepared notifications through a remote MCP server and delivers them asynchronously to configured WeCom or Feishu group robots. This document defines the current architectural boundaries and invariants. See the [README](../README.md) for operation, the [configuration example](../config.example.yaml) for configuration structure, and the [glossary](../GLOSSARY.md) for domain terms.
 
 ## Scope and boundaries
 
 The runtime deliverable is one Node.js 24 and TypeScript server image, with one running instance, one administrator, and a local SQLite data volume. Existing hosts use their generic MCP clients; a dedicated Noticeflow client or skills plugin is not required. The host owns endpoint configuration, credentials, and permission to invoke tools. Generating notification content and triggering notifications when an upstream task finishes are host responsibilities.
 
-The server owns OAuth authorization, notification acceptance, Topic routing, durable delivery tasks, retries, and maintenance. WeCom Webhook is the only channel. Multi-tenancy, multiple server instances, SMTP, attachments, API-key authentication, and remote MCP administration are outside the current boundary. Maintenance commands run temporarily from the same image against the same configuration, database, and key.
+The server owns OAuth authorization, notification acceptance, Topic routing, durable delivery tasks, retries, and maintenance. WeCom and Feishu Webhooks are the supported channels. Multi-tenancy, multiple server instances, SMTP, attachments, API-key authentication, and remote MCP administration are outside the current boundary. Maintenance commands run temporarily from the same image against the same configuration, database, and key.
 
 Keeping these responsibilities in one process lets acceptance and delivery coordination use local transactions without operating a separate queue. Channel-specific preparation and sending remain behind the `Channel` interface; another channel requires configuration validation, an adapter, and tests, rather than a host plugin or a change to the MCP tool fields.
 
@@ -22,7 +22,7 @@ External Nginx: HTTPS termination and trusted forwarding
 Noticeflow process
   +-- MCP endpoint --> Authorization --> Submission --> SQLite
   +-- OAuth discovery, authorization, tokens, administrator consent
-  +-- Worker <--> SQLite --> Channel adapter --> WeCom Webhook
+  +-- Worker <--> SQLite --> Channel adapter --> WeCom or Feishu Webhook
   +-- Daily backup and retention maintenance
   +-- Private /healthz
 
@@ -50,7 +50,7 @@ Shutdown stops new ingress and delivery claims, closes MCP handlers to end activ
 
 The only MCP tool is `submit_notification(topic, title, content)`. Its input is a strict object with three nonempty strings and no extra fields. `topic` exactly matches a configured routing key, `title` is single-line plain text, and `content` is supported Markdown. Tool discovery advertises available Topics, the external side effect, and non-idempotent behavior.
 
-The WeCom adapter parses Markdown through a syntax-tree allowlist. Headings, emphasis, lists, quotations, links, separators, code, and tables are supported; images, HTML, mentions, task checkboxes, footnotes, and strikethrough are rejected. Links use HTTP or HTTPS. The complete prepared message, including the escaped title, must fit 4096 UTF-8 bytes. Unsupported content is rejected rather than truncated, split, or silently downgraded.
+The WeCom adapter parses Markdown through a syntax-tree allowlist. Headings, emphasis, lists, quotations, links, separators, code, and tables are supported; images, HTML, mentions, task checkboxes, footnotes, and strikethrough are rejected. Links use HTTP or HTTPS. The complete prepared message, including the escaped title, must fit 4096 UTF-8 bytes. The Feishu adapter sends a JSON 2.0 card with the title as plain text and the content in one Markdown component. Its allowlist also accepts strikethrough, rejects any HTML or card tag even inside code because card Markdown can still interpret `<at>`, and permits at most four tables; the signed request body must fit 20 KB. Unsupported content is rejected rather than truncated, split, or silently downgraded.
 
 Acceptance follows this order:
 
@@ -83,13 +83,13 @@ At most four requests run concurrently. A claim assigns a random lease ID and a 
 
 The retry budget counts recorded outcomes, including network timeouts: at most four outcomes per automatic cycle, with 1, 5, and 15 minute backoffs after retryable failures. Expired leases represent unknown outcomes and do not consume that budget, so crash recovery can cause more than four actual requests. Waiting for quota or cooldown also consumes no attempt. Manual retry accepts only a final failure, checks capacity atomically, resets the cycle, and preserves the Delivery ID and original plan.
 
-Quota and cooldown identity is an HMAC of the canonical Webhook URL. Configuration accepts only the official WeCom HTTPS endpoint with one nonempty `key` parameter, rejecting user information, fragments, extra parameters, and nondefault ports. Canonicalization prevents equivalent URL spellings or different Targets from obtaining separate limits for the same destination.
+Quota and cooldown identity is an HMAC of the canonical Webhook URL. Configuration accepts only the official WeCom HTTPS endpoint with one nonempty `key` parameter, or the official Feishu `/open-apis/bot/v2/hook/<token>` path without a query, rejecting user information, fragments, extra parameters, encoded or dot segments, and nondefault ports. Canonicalization prevents equivalent URL spellings or different Targets from obtaining separate limits for the same destination.
 
 All initial sends, automatic retries, and manual retries share at most 20 persistent reservations per destination. Each reservation remains occupied until its original lease deadline plus 60 seconds, including completed, unsent, or interrupted attempts. One reservation permits one request, and an expired lease cannot send. Because a request must begin within its lease, its reservation remains occupied for at least 60 seconds after the actual start; the reservation cap therefore bounds actual local request starts in every rolling minute. This deliberately conservative rule can reduce throughput and does not control arrival times at the remote service.
 
-HTTP 429, WeCom rate-limit code `45009`, and retryable responses with a valid `Retry-After` extend a persistent destination-wide cooldown. Rate-limit responses impose at least 60 seconds; valid seconds or HTTP-date headers can extend it further. Updates only increase the existing deadline. Every related Target and retry observes it, including after restart; unrelated destinations continue. An expired lease's response may extend cooldown but cannot overwrite current task state. In-flight requests cannot be recalled.
+HTTP 429, WeCom rate-limit code `45009`, Feishu rate-limit code `11232`, and retryable responses with a valid `Retry-After` extend a persistent destination-wide cooldown. Rate-limit responses impose at least 60 seconds; valid seconds or HTTP-date headers can extend it further. Updates only increase the existing deadline. Every related Target and retry observes it, including after restart; unrelated destinations continue. An expired lease's response may extend cooldown but cannot overwrite current task state. In-flight requests cannot be recalled.
 
-The [WeCom adapter](../src/wecom.ts) requires both HTTP 2xx and JSON `errcode: 0` for success. It classifies business errors before generic HTTP handling, retries transient network and remote failures within budget, and fails permanent destination or parameter errors immediately. Per-task backoff, valid remote retry instructions, shared cooldown, and quota all constrain the next send. Raw remote error messages are not persisted or logged.
+The [WeCom adapter](../src/wecom.ts) requires both HTTP 2xx and JSON `errcode: 0` for success. It classifies business errors before generic HTTP handling, retries transient network and remote failures within budget, and fails permanent destination or parameter errors immediately. Per-task backoff, valid remote retry instructions, shared cooldown, and quota all constrain the next send. The [Feishu adapter](../src/feishu.ts) applies the same rules to its `code` field and fails `9499`, `19021`, `19022`, and `19024` immediately. An optional signing secret is stored only inside the encrypted plan, and the signature is computed at send time because Feishu rejects timestamps older than one hour. Raw remote error messages are not persisted or logged.
 
 ## Authorization and data protection
 
@@ -136,6 +136,6 @@ The [server tests](../test) use temporary databases, controlled clocks, standard
 | Maintenance | Lock conflicts; nonempty WAL after abrupt exit; interruption at restore phases; preservation-copy reuse; key/integrity failure; authorization revocation; sending pause and backup retention. |
 | Lifecycle | Graceful MCP subscription closure and in-flight HTTP draining before storage closes. |
 
-Deployment acceptance additionally requires real host OAuth, discovery, submission, and refresh through the configured HTTPS proxy, plus a controlled WeCom send and channel-response inspection. Claude Code and ChatGPT interoperability must be verified separately from Codex acceptance. A successful `accepted` response is not proof of Webhook delivery, and one host's success does not establish another's compatibility.
+Deployment acceptance additionally requires real host OAuth, discovery, submission, and refresh through the configured HTTPS proxy, plus controlled WeCom and Feishu sends with channel-response inspection. Claude Code and ChatGPT interoperability must be verified separately from Codex acceptance. A successful `accepted` response is not proof of Webhook delivery, and one host's success does not establish another's compatibility.
 
 Image acceptance checks the actual SQLite engine as well as pinned npm dependencies, including applicable upstream WAL fixes, non-root operation, native dependencies, healthchecks, and persistent restarts. At expected retained-data volume, measure HTTP latency during backup, cleanup, and integrity checking: the live-queue cap does not bound synchronous maintenance cost. These checks are acceptance requirements, not claims of completed measurements. Versioned results and current limitations belong in the CHANGELOG and README.
