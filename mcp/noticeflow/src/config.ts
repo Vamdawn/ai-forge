@@ -51,10 +51,17 @@ const schema = z.strictObject({
   }),
   targets: z.record(
     z.string().min(1),
-    z.strictObject({
-      channel: z.literal("wecom-webhook"),
-      webhookUrl: z.string(),
-    }),
+    z.discriminatedUnion("channel", [
+      z.strictObject({
+        channel: z.literal("wecom-webhook"),
+        webhookUrl: z.string(),
+      }),
+      z.strictObject({
+        channel: z.literal("feishu-webhook"),
+        webhookUrl: z.string(),
+        secret: z.string().min(1).optional(),
+      }),
+    ]),
   ),
   topics: z.record(
     z.string().min(1),
@@ -103,6 +110,28 @@ export function normalizeWebhook(value: string) {
     throw new Error("INVALID_WEBHOOK");
   }
 }
+export function normalizeFeishuWebhook(value: string) {
+  try {
+    if (!/^https:\/\//i.test(value) || /[\s\u0000-\u001f\u007f\\]/.test(value))
+      throw new Error();
+    const url = new URL(value);
+    // The raw path must already be canonical: no query, fragment, encoding or dot segments.
+    const path = value.slice(value.indexOf("/", "https://".length));
+    if (
+      url.protocol !== "https:" ||
+      url.hostname !== "open.feishu.cn" ||
+      url.port ||
+      url.username ||
+      url.password ||
+      path !== url.pathname ||
+      !/^\/open-apis\/bot\/v2\/hook\/[A-Za-z0-9_-]+$/.test(path)
+    )
+      throw new Error();
+    return `https://open.feishu.cn${path}`;
+  } catch {
+    throw new Error("INVALID_WEBHOOK");
+  }
+}
 export function loadConfig(path: string): Config {
   try {
     if (!isAbsolute(path)) throw new Error();
@@ -112,7 +141,10 @@ export function loadConfig(path: string): Config {
     if (document.errors.length) throw new Error();
     const config = schema.parse(document.toJS());
     for (const target of Object.values(config.targets))
-      target.webhookUrl = normalizeWebhook(target.webhookUrl);
+      target.webhookUrl =
+        target.channel === "feishu-webhook"
+          ? normalizeFeishuWebhook(target.webhookUrl)
+          : normalizeWebhook(target.webhookUrl);
     for (const topic of Object.values(config.topics))
       if (topic.targets.some((id) => !Object.hasOwn(config.targets, id)))
         throw new Error();

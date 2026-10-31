@@ -8,6 +8,7 @@ export interface DeliveryPlan {
   channel: string;
   destination: string;
   message: string;
+  secret?: string;
 }
 export interface SendOutcome {
   success: boolean;

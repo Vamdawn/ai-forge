@@ -5,11 +5,12 @@ import { loadConfig } from "./config.js";
 import { Vault } from "./crypto.js";
 import { Store } from "./store.js";
 import { DeliveryWorker } from "./worker.js";
-import type { WebhookFetch } from "./channel.js";
+import type { Channel, WebhookFetch } from "./channel.js";
 import { log, type Logger } from "./log.js";
 import { mountMcp } from "./http.js";
 import { createSubmit } from "./submit.js";
 import { createWecom } from "./wecom.js";
+import { createFeishu } from "./feishu.js";
 import { createAuthorization } from "./auth.js";
 export interface ServiceOptions {
   providerFetch?: Configuration["fetch"];
@@ -34,8 +35,9 @@ export async function createService(
       (options.logger ?? log)({
         errorCode: "REMOVE_INITIAL_PASSWORD_FROM_CONFIG",
       });
-    const channels = new Map([
+    const channels = new Map<string, Channel>([
       ["wecom-webhook", createWecom(options.webhookFetch, options.now)],
+      ["feishu-webhook", createFeishu(options.webhookFetch, options.now)],
     ]);
     const submit = createSubmit(config, store, channels, options.now);
     const worker = new DeliveryWorker(

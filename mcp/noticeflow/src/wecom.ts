@@ -10,6 +10,7 @@ import type {
   WebhookFetch,
 } from "./channel.js";
 import { normalizeWebhook, type Config } from "./config.js";
+import { postWebhook, type ResponseCodes } from "./webhook.js";
 const allowed = new Set([
   "root",
   "text",
@@ -31,8 +32,12 @@ const allowed = new Set([
   "tableCell",
   "break",
 ]);
-const httpDate =
-  /^(?:[A-Za-z]{3}, \d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2} GMT|[A-Za-z]+, \d{2}-[A-Za-z]{3}-\d{2} \d{2}:\d{2}:\d{2} GMT|[A-Za-z]{3} [A-Za-z]{3} [ \d]\d \d{2}:\d{2}:\d{2} \d{4})$/;
+const codes: ResponseCodes = {
+  field: "errcode",
+  rejected: [93000, 93001, 93004, 40008, 45002],
+  rateLimited: 45009,
+  busy: -1,
+};
 const parser = unified().use(remarkParse).use(remarkGfm);
 function validate(
   node: Node & {
@@ -71,82 +76,14 @@ export function createWecom(
         message,
       });
     },
-    async send(plan): Promise<SendOutcome> {
-      try {
-        const response = await send(plan.destination, {
-          method: "POST",
-          redirect: "error",
-          signal: AbortSignal.timeout(10000),
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            msgtype: "markdown_v2",
-            markdown_v2: { content: plan.message },
-          }),
-        });
-        let body: unknown;
-        try {
-          body = await response.json();
-        } catch {
-          body = null;
-        }
-        const code =
-          body &&
-          typeof body === "object" &&
-          "errcode" in body &&
-          Number.isSafeInteger(body.errcode)
-            ? (body.errcode as number)
-            : undefined;
-        const receivedAt = now();
-        const header = response.headers.get("retry-after");
-        let retryAfter: number | undefined;
-        if (header && /^\d+$/.test(header)) {
-          const until = receivedAt + Number(header) * 1000;
-          if (Number.isSafeInteger(until)) retryAfter = until;
-        } else if (
-          header &&
-          httpDate.test(header) &&
-          Number.isFinite(Date.parse(header))
-        )
-          retryAfter = Math.max(receivedAt, Date.parse(header));
-        const metadata = {
-          httpStatus: response.status,
-          ...(code === undefined ? {} : { remoteCode: code }),
-        };
-        if (response.ok && code === 0) return { success: true, ...metadata };
-        if ([93000, 93001, 93004, 40008, 45002].includes(code!))
-          return {
-            success: false,
-            retryable: false,
-            errorCode: "REMOTE_REJECTED",
-            ...metadata,
-          };
-        const rateLimited = code === 45009 || response.status === 429;
-        const retryable =
-          code === -1 || rateLimited || response.status >= 500 || response.ok;
-        return {
-          success: false,
-          retryable,
-          errorCode: rateLimited
-            ? "REMOTE_RATE_LIMIT"
-            : code === -1
-              ? "REMOTE_BUSY"
-              : response.ok && code === undefined
-                ? "INVALID_RESPONSE"
-                : "HTTP_ERROR",
-          ...metadata,
-          ...(retryable && retryAfter !== undefined ? { retryAfter } : {}),
-          ...(retryable && (rateLimited || retryAfter !== undefined)
-            ? {
-                cooldownUntil: Math.max(
-                  rateLimited ? receivedAt + 60000 : 0,
-                  retryAfter ?? 0,
-                ),
-              }
-            : {}),
-        };
-      } catch {
-        return { success: false, retryable: true, errorCode: "NETWORK_ERROR" };
-      }
+    send(plan): Promise<SendOutcome> {
+      return postWebhook(
+        send,
+        now,
+        plan.destination,
+        { msgtype: "markdown_v2", markdown_v2: { content: plan.message } },
+        codes,
+      );
     },
   };
 }
