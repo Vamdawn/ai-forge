@@ -11,6 +11,8 @@ This file is the global release index: every asset release appends one summary l
 - `dsh-astrolabe@0.3.0` (2026-10-16) — marks the Working section with the host's still loading arc, so a section header no longer repeats the animated loader its rows carry → [Details](plugins/dsh-astrolabe/CHANGELOG.md)
 - `dsh-astrolabe@0.4.0` (2026-10-17) — folds every section behind one control whose label promises the rows its press reveals, drawn like the shipped browser's own overflow button, and rewrites the README around the install and upgrade paths → [Details](plugins/dsh-astrolabe/CHANGELOG.md)
 
+- `noticeflow@0.1.0` (2026-10-31) — first experimental release of the remote MCP notification service, with OAuth, durable Topic routing, and WeCom and Feishu group robot delivery → [Details](mcp/noticeflow/CHANGELOG.md)
+
 ## Repository milestones
 
 - 2026-10-17: Commits are gated by a versioned pre-commit hook, reached through `core.hooksPath`, that runs each staged asset's typecheck and tests plus the documentation checks; `verify-docs.py` now also holds a pair to the same heading levels, list entries per section, and code blocks, comparing commands rather than the comments a translation may rewrite.

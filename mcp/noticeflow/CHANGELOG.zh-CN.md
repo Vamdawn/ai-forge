@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-31
+
 ### Added
 
 - 实验性 Node.js 24 远程 MCP 通知服务。现成 Host 通过 Streamable HTTP 连接，以 `submit_notification(topic, title, content)` 提交准备好的通知。

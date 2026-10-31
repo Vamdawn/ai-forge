@@ -4,6 +4,8 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-31
+
 ### Added
 
 - An experimental Node.js 24 remote MCP notification server. Existing hosts connect over Streamable HTTP and submit prepared notifications through `submit_notification(topic, title, content)`.

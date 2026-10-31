@@ -11,6 +11,8 @@
 - `dsh-astrolabe@0.3.0` (2026-10-16) — 进行中分区改用宿主那枚静止的加载弧，分区标题不再重复行内那枚会旋转的 loader → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
 - `dsh-astrolabe@0.4.0` (2026-10-17) — 每个分区只用一个折叠控件，标签承诺的是这一次按压会展开的行数，外观取自官方浏览器自己的溢出按钮；README 围绕安装与升级路径重写 → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
 
+- `noticeflow@0.1.0` (2026-10-31) — 远程 MCP 通知服务首个实验版本，支持 OAuth、持久化 Topic 路由，以及企业微信和飞书群机器人投递 → [详情](mcp/noticeflow/CHANGELOG.zh-CN.md)
+
 ## Repository milestones
 
 - 2026-10-17: 提交由版本化的 pre-commit 钩子把关（经 `core.hooksPath` 接入）：对暂存区涉及的资产跑 typecheck 与测试，再跑文档校验；`verify-docs.py` 现在还会要求双语对具有相同的标题层级、各分节列表条目数与代码块——比对的是命令，翻译可以改写的注释除外。
