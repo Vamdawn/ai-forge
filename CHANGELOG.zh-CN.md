@@ -12,6 +12,7 @@
 - `dsh-astrolabe@0.4.0` (2026-10-17) — 每个分区只用一个折叠控件，标签承诺的是这一次按压会展开的行数，外观取自官方浏览器自己的溢出按钮；README 围绕安装与升级路径重写 → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
 
 - `noticeflow@0.1.0` (2026-10-31) — 远程 MCP 通知服务首个实验版本，支持 OAuth、持久化 Topic 路由，以及企业微信和飞书群机器人投递 → [详情](mcp/noticeflow/CHANGELOG.zh-CN.md)
+- `dsh-sidebar-plus@0.5.0` (2026-11-13) — 由 `@vamdawn/dsh-astrolabe` 更名后的版本，名字直接说明它重构的是会话侧边栏；持久化视图键与插件自有的 locale、slot 命名空间随之迁移 → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
 
 ## Repository milestones
 

@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-13
+
 ### Changed
 
 - 包名改为 `@vamdawn/dsh-sidebar-plus`，取代 `@vamdawn/dsh-astrolabe`，让名字直接说明它改的是会话侧边栏。目录、插件 id、持久化的视图键，以及插件自己的 locale 与 slot 命名空间随之更名，因此已保存的分区展开状态与手动排序会重新开始一次。

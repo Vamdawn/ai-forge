@@ -12,6 +12,7 @@ This file is the global release index: every asset release appends one summary l
 - `dsh-astrolabe@0.4.0` (2026-10-17) — folds every section behind one control whose label promises the rows its press reveals, drawn like the shipped browser's own overflow button, and rewrites the README around the install and upgrade paths → [Details](plugins/dsh-sidebar-plus/CHANGELOG.md)
 
 - `noticeflow@0.1.0` (2026-10-31) — first experimental release of the remote MCP notification service, with OAuth, durable Topic routing, and WeCom and Feishu group robot delivery → [Details](mcp/noticeflow/CHANGELOG.md)
+- `dsh-sidebar-plus@0.5.0` (2026-11-13) — renamed release of `@vamdawn/dsh-astrolabe`, whose name now states that it reworks the session sidebar; the persisted view key and the plugin's own locale and slot namespaces moved with it → [Details](plugins/dsh-sidebar-plus/CHANGELOG.md)
 
 ## Repository milestones
 

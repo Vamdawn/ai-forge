@@ -1,6 +1,6 @@
 {
   "name": "@vamdawn/dsh-sidebar-plus",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Sidebar Plus \u2014 tabbed session sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab",
   "repository": {
     "type": "git",
