@@ -8,7 +8,7 @@ All notable changes to this asset are documented in this file. The format follow
 
 ### Changed
 
-- Give the four status groups distinct, stable circular marks: neutral loading for Working, amber attention for Waiting, blue unread for Done, and a hollow neutral ring for Idle. Waiting rows now use a circled exclamation, unseen results use blue dots instead of success-green marks, and folding a group no longer changes its status symbol.
+- Replace Status group icons with semibold headings and whitespace aligned to Session titles. All Status groups stay open with progressive 50-row loading; subagent rows gain tree connectors, and unseen completed Sessions use green dots again.
 - Split Status into Working, Waiting, Done, and Idle so unseen results no longer mix with read history. Running/stopping background jobs and child work keep the parent active, human requests take precedence, and every Status section opens with 50 rows per reveal step.
 - Align Workspaces row sizes, title truncation, hover controls, selected styling, and collapse resets with the shipped browser. Workspace removal now opens the host modal, keeping its confirmation out of the session list.
 

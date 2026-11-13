@@ -431,7 +431,7 @@ export function statusGroups(
     {
       key: 'idle',
       title: t('group.idle'),
-      defaultOpen: false,
+      defaultOpen: true,
       rows: idle,
       revealable: true,
       draggable: false,

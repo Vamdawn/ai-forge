@@ -47,6 +47,12 @@ export const CSS = `
 .dwt-body::-webkit-scrollbar-thumb { background: transparent; border-radius: 999px; }
 .dwt-body:hover::-webkit-scrollbar-thumb { background: var(--dsh-scrollbar-thumb, var(--dsw-alias-border-l2)); }
 .dwt-group { margin-top: 4px; }
+/* Status headings share the Session title's 28px inset; whitespace carries the
+   grouping, with no icon cell, hover fill, or folding affordance. */
+.dwt-group[data-status='true'] { margin-top: 20px; }
+.dwt-group[data-status='true']:first-child { margin-top: 8px; }
+.dwt-status-title { box-sizing: border-box; display: flex; align-items: center; min-width: 0; height: 30px; margin: 0; padding: 0 8px 0 28px; color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; }
+.dwt-group[data-status='true'] > .dwt-group-head:hover { background: none; }
 .dwt-group-head { display: flex; align-items: center; gap: 2px; border-radius: 6px; }
 /* The hover fill spans the whole header row — leading mark, label, and the
    controls that appear on hover — so it never reads as a fill that stops short
@@ -63,9 +69,7 @@ export const CSS = `
 .dwt-group-header { box-sizing: border-box; display: flex; align-items: center; gap: 6px; width: 100%; height: 34px; min-width: 0; appearance: none; border: 0; background: none; cursor: pointer; padding: 0 8px; color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; line-height: 20px; font-weight: 400; text-align: left; border-radius: var(--dsw-radius-md); }
 .dwt-group-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dwt-group-header:hover { color: var(--dsw-alias-label-primary); }
-/* The leading cell is the same width whichever mark it holds, so Workspace and
-   Status sections keep their labels on one column. Marks are neutral except
-   where the section's state has a colour of its own. */
+/* Workspace header marks keep the native leading cell. */
 .dwt-group-mark { flex: none; width: 16px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-secondary); }
 .dwt-folder-mark, .dwt-folder { display: inline-flex; }
 .dwt-chevron { display: none; color: var(--dsw-alias-label-caption); }
@@ -73,13 +77,8 @@ export const CSS = `
 .dwt-group-head:hover .dwt-folder, .dwt-group-head:focus-within .dwt-folder { display: none; }
 .dwt-group-head:hover .dwt-chevron, .dwt-group-head:focus-within .dwt-chevron { display: inline-flex; }
 .dwt-group-head[data-current='true'] .dwt-folder { color: var(--dsw-alias-state-business-primary); }
-/* Working matches the host loader's neutral tone; blue means unseen, not success. */
-.dwt-group-mark[data-kind='running'], .dwt-group-mark[data-kind='idle'] { color: var(--dsw-alias-label-tertiary); }
-.dwt-group-mark[data-kind='input'], .dwt-input-mark { color: var(--dsw-alias-state-warn-primary); }
-.dwt-group-mark[data-kind='done'], .dwt-unread-dot { color: var(--dsw-alias-state-business-primary); }
-.dwt-status-ring { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%; corner-shape: round; }
-.dwt-status-ring[data-unread='true']::after { content: ''; width: 5px; height: 5px; border-radius: 50%; corner-shape: round; background: currentColor; }
-.dwt-unread-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; corner-shape: round; background: currentColor; }
+.dwt-input-mark { color: var(--dsw-alias-state-warn-primary); }
+.dwt-unread-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; corner-shape: round; background: var(--dsw-alias-state-success-primary); }
 /* The section menu card: display rows first, then the actions. */
 .dwt-menu-head { display: flex; align-items: center; gap: 6px; padding: 4px 8px 6px; color: var(--dsw-alias-label-primary); font-size: 13px; font-weight: 600; }
 .dwt-menu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -102,8 +101,15 @@ export const CSS = `
    leaving the row snaps back instead of sliding out of a box that no longer
    holds the tail. */
 .dwt-row:hover .dwt-row-title { width: max-content; overflow: visible; text-overflow: clip; transition: transform .35s ease; }
-.dwt-children { margin: 0 0 2px 15px; border-left: 1px solid var(--dsw-alias-border-l1); padding-left: 4px; }
-.dwt-child { display: flex; align-items: center; gap: 6px; border-radius: 7px; padding: 4px 8px 4px 6px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+/* Each child owns its branch so position animations move line and label
+   together. The final vertical segment stops at its elbow, including for a
+   single child; these decorative lines never intercept input. */
+.dwt-children { margin: 0 0 4px 28px; padding: 0; }
+.dwt-child { position: relative; display: flex; align-items: center; gap: 6px; border-radius: 7px; padding: 4px 8px 4px 14px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.dwt-child::before, .dwt-child::after { content: ''; position: absolute; left: 0; pointer-events: none; border-color: var(--dsw-alias-border-l2); border-style: solid; border-width: 0; }
+.dwt-child::before { top: 0; bottom: 0; border-left-width: 1px; }
+.dwt-child:last-child::before { bottom: 50%; }
+.dwt-child::after { top: 50%; width: 10px; border-top-width: 1px; }
 .dwt-child[data-openable='true'] { cursor: pointer; color: var(--dsw-alias-label-primary); }
 .dwt-child:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .dwt-child-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -188,49 +188,39 @@ test('a Session row marks only what needs attention, keeping the leading cell', 
   assert.equal(findClass(renderer, 'dwt-row-mark').length, 4);
 });
 
-test('Done and Idle keep distinct circular marks when folded and unread acknowledgement clears the row mark', async t => {
+test('Status uses plain headings, ignores saved collapse state and clears acknowledged unread marks', async t => {
   let unread = true;
-  let groupExpansion = { 'status:done': true, 'status:idle': true };
+  const groupExpansion = { 'status:running': false, 'status:input': false, 'status:done': false, 'status:idle': false, 'status:__pinned__': false };
   const { renderer, update } = await mount(t, {
-    useSessions: () => ({ ids: ['done', 'idle'], phase: 'ready', byId: { done: summary('done'), idle: summary('idle') } }),
-    useSessionStatus: () => new Map([['done', { completionUnread: unread }]]),
+    useSessions: () => ({ ids: ['run', 'wait', 'done', 'idle', 'pin'], phase: 'ready', byId: Object.fromEntries(
+      ['run', 'wait', 'done', 'idle', 'pin'].map(id => [id, summary(id)])) }),
+    useWorkspaces: () => ({ items: [], archivedSessionIds: [], pinnedSessionIds: ['pin'] }),
+    useSessionStatus: () => new Map([['run', { running: true }], ['wait', { pendingInteraction: { kind: 'question' } }], ['done', { completionUnread: unread }]]),
     useStore: () => ({ orderBy: 'updated', sessionOrder: {}, groupExpansion }),
   });
   await openStatusTab(renderer);
-  const mark = kind => findClass(renderer, 'dwt-group-mark').find(node => node.props['data-kind'] === kind);
-  const shape = kind => mark(kind).findAll(node => typeof node.type === 'string' && node.props.className === 'dwt-status-ring')
-    .map(node => node.props['data-unread']);
-  assert.deepEqual(shape('done'), [true]);
-  assert.deepEqual(shape('idle'), [false]);
+  const headings = () => findClass(renderer, 'dwt-status-title');
+  assert.equal(headings().length, 5);
+  assert.ok(headings().every(node => node.type === 'h3' && node.props.onClick === undefined && node.props['aria-expanded'] === undefined));
+  assert.equal(findClass(renderer, 'dwt-group-header').length, 0);
+  assert.equal(findClass(renderer, 'dwt-group-mark').length, 0);
+  assert.equal(findClass(renderer, 'dwt-row').length, 5);
   assert.equal(findClass(renderer, 'dwt-unread-dot').length, 1);
 
-  groupExpansion = { 'status:done': false, 'status:idle': false };
-  await update();
-  assert.deepEqual(shape('done'), [true]);
-  assert.deepEqual(shape('idle'), [false]);
-  assert.equal(findClass(renderer, 'dwt-row').length, 0);
-
   unread = false;
-  groupExpansion = { 'status:idle': true };
   await update();
-  assert.equal(mark('done'), undefined);
-  assert.equal(findClass(renderer, 'dwt-row').length, 2);
+  assert.equal(headings().length, 4);
+  assert.equal(findClass(renderer, 'dwt-row').length, 5);
   assert.equal(findClass(renderer, 'dwt-unread-dot').length, 0);
-  assert.equal(findClass(renderer, 'dwt-state-dot').length, 0);
 });
 
-test('the Working section draws a still loading arc, leaving the loader to the rows', async t => {
+test('the Working section has no icon, leaving the loader to the rows', async t => {
   const { renderer } = await mount(t, {
     useSessions: () => ({ ids: ['run'], phase: 'ready', byId: { run: { ...summary('run'), running: true } } }),
     useWorkspaces: () => ({ items: [workspace('one', ['run'])], pinnedSessionIds: [], archivedSessionIds: [] }),
   });
   act(() => findClass(renderer, 'dwt-tab')[1].props.onClick());
-  const mark = findClass(renderer, 'dwt-group-mark').find(node => node.props['data-kind'] === 'running');
-  assert.ok(mark, 'the Working section carries a mark');
-  assert.deepEqual(mark.findAll(node => node.props['data-icon'] !== undefined).map(node => node.props['data-icon']),
-    ['IconLoadingOutlineRegular']);
-  // The section is a category, so it never re-uses the animated row loader.
-  assert.equal(mark.findAll(node => node.props.className === 'dwt-state-dot').length, 0);
+  assert.equal(findClass(renderer, 'dwt-group-mark').length, 0);
   const row = findClass(renderer, 'dwt-row-mark')[0];
   assert.deepEqual(row.findAll(node => node.props.className === 'dwt-state-dot').map(node => node.props['data-state']),
     ['ongoing']);
@@ -460,7 +450,7 @@ test('the fold label promises exactly the rows its press reveals', async t => {
   const promised = [];
   let shown = findClass(renderer, 'dwt-row').length;
   assert.equal(shown, 50);
-  while (foldLabels(renderer)[0] !== 'showLess') {
+  while (foldLabels(renderer).length > 0) {
     const promise = Number(/^showMore\((\d+)\)$/.exec(foldLabels(renderer)[0])[1]);
     await foldPress(renderer);
     const next = findClass(renderer, 'dwt-row').length;
@@ -480,16 +470,14 @@ test('a remainder that fits in one step is taken whole', async t => {
   assert.deepEqual(foldLabels(renderer), ['showLess']);
 });
 
-test('the Idle fold shares the control and can be folded back', async t => {
+test('Status loads 50 at a time and never offers to collapse revealed rows', async t => {
   const { renderer } = await mount(t, completedStatus(55));
   await openStatusTab(renderer);
   assert.equal(findClass(renderer, 'dwt-row').length, 50);
   assert.deepEqual(foldLabels(renderer), ['showMore(5)']);
   await foldPress(renderer);
   assert.equal(findClass(renderer, 'dwt-row').length, 55);
-  assert.deepEqual(foldLabels(renderer), ['showLess']);
-  await foldPress(renderer);
-  assert.equal(findClass(renderer, 'dwt-row').length, 50);
+  assert.deepEqual(foldLabels(renderer), []);
 });
 
 test('a section whose rows all fit carries no fold control', async t => {

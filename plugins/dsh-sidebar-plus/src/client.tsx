@@ -7,7 +7,7 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 import {
   Button, IconChevronRightOutlineRegular, IconCloseFillRegular,
   IconEditOutlineRegular, IconEllipsisOutlineRegular, IconFlatListOutlineRegular,
-  IconFolderCloseRegular, IconFolderOpenRegular, IconLoadingOutlineRegular,
+  IconFolderCloseRegular, IconFolderOpenRegular,
   IconNewChatOutlineRegular, IconPinFillRegular, IconPinOutlineRegular,
   IconProjectAddOutlineRegular, IconSearchOutlineRegular, IconTrashOutlineRegular,
   IconUnarchiveOutlineRegular, IconWarningOutlineRegular, Menu, MenuItemButton, Modal, StateDot, Tooltip,
@@ -324,11 +324,9 @@ function SessionRow(props: {
 }
 
 /**
- * Leading mark of one section. Every section carries the same 16px cell, so the
- * labels of both tabs stay on one column, and where the icon family has an
- * open/closed pair the mark also reads the fold state — Workspace folders open
- * and the Pinned mark fills in. Status marks retain their shape when folded.
- * Status sections are keyed by their state bucket, the workspace axis by a
+ * Leading mark of a Workspaces section. Its 16px cell keeps the header labels
+ * aligned. Workspace folders open and the Pinned mark fills in with the fold
+ * state. The workspace axis is keyed by a
  * `WorkspaceId`, and the two synthetic accounts stand for Pinned and for the
  * Sessions no Workspace accounts for.
  * @param props - the section and whether it is expanded.
@@ -349,14 +347,6 @@ function GroupMark({ group, open }: { readonly group: Group; readonly open: bool
       return mark('pinned', open
         ? h(IconPinFillRegular, { size: 14 })
         : h(IconPinOutlineRegular, { size: 14 }));
-    case 'input':
-      return mark('input', h(IconWarningOutlineRegular, { size: 14 }));
-    case 'running':
-      // Still by design: the rows below carry the animated loader.
-      return mark('running', h(IconLoadingOutlineRegular, { size: 14 }));
-    case 'done':
-    case 'idle':
-      return mark(group.key, h('span', { className: 'dwt-status-ring', 'data-unread': group.key === 'done', 'aria-hidden': true }));
     default:
       return mark('loose', h(IconFlatListOutlineRegular, { size: 14 }));
   }
@@ -364,6 +354,7 @@ function GroupMark({ group, open }: { readonly group: Group; readonly open: bool
 
 function Section(props: {
   readonly group: Group;
+  readonly statusView: boolean;
   readonly holdLayout: boolean;
   readonly t: Props['t'];
   readonly now: number;
@@ -380,7 +371,7 @@ function Section(props: {
   readonly deleteWorkspace: Injected['deleteWorkspace'];
 }): ReactElement {
   const {
-    group, holdLayout, t, now, open, onToggle, openSession, startSession, renderSlot, rowDnd, groupDnd, onHover,
+    group, statusView, holdLayout, t, now, open, onToggle, openSession, startSession, renderSlot, rowDnd, groupDnd, onHover,
     renameWorkspace, deleteWorkspace, onInteraction,
   } = props;
   const workspacePath = group.path;
@@ -483,6 +474,7 @@ function Section(props: {
   // whose remainder fits in one step takes all of it, and a fully revealed one
   // goes back to the rows it opened with — so the control never shows an
   // expanding and a collapsing action at the same time.
+  // Status exposes this control only while more rows remain to be loaded.
   const pressFold = (): void => {
     const next = foldHidden === 0 ? foldStep : foldHidden <= foldStep ? Infinity : limit + foldStep;
     if (group.revealable === true) {
@@ -492,10 +484,12 @@ function Section(props: {
     }
   };
 
-  return h('section', { className: 'dwt-group', 'data-motion-group': group.key },
+  return h('section', { className: 'dwt-group', 'data-motion-group': group.key, 'data-status': statusView },
     h('div', { className: 'dwt-group-head', 'data-motion-id': `group:${group.key}`, 'data-menu': menuOpen ? 'open' : undefined,
       'data-current': group.rows.some(row => row.current) },
-      renaming
+      statusView
+        ? h('h3', { className: 'dwt-status-title' }, h('span', { className: 'dwt-group-title', title }, title))
+        : renaming
         ? h('input', {
           className: 'dwt-rename',
           type: 'text',
@@ -647,12 +641,12 @@ function Section(props: {
       onHover,
       onInteraction,
     })) : null,
-    open && (group.revealable === true || group.quota === true) && foldTotal > foldStep
+    open && (group.revealable === true || group.quota === true) && foldTotal > foldStep && (!statusView || foldHidden > 0)
       ? h('button', {
         className: 'dwt-more',
         type: 'button',
         'data-motion-id': `more:${group.key}`,
-        'aria-expanded': foldHidden === 0,
+        'aria-expanded': statusView ? undefined : foldHidden === 0,
         onClick: pressFold,
       }, foldHidden === 0 ? t('showLess') : t('showMore', { n: Math.min(foldHidden, foldStep) }))
       : null);
@@ -1101,7 +1095,7 @@ function WorkspaceTabs(props: Props): ReactElement {
   useEffect(() => { setHover(null); }, [layout.rows]);
   const attention = rows.some(row => row.state === 'input');
 
-  const isOpen = (group: Group): boolean => view.groupExpansion[`${tab}:${group.key}`] ?? group.defaultOpen;
+  const isOpen = (group: Group): boolean => tab === 'status' || (view.groupExpansion[`${tab}:${group.key}`] ?? group.defaultOpen);
   const toggle = (group: Group): void => {
     const key = `${tab}:${group.key}`;
     actions.setGroupExpanded(key, !(view.groupExpansion[key] ?? group.defaultOpen));
@@ -1262,6 +1256,7 @@ function WorkspaceTabs(props: Props): ReactElement {
         : groups.map(group => h(Section, {
           key: group.key,
           group,
+          statusView: tab === 'status',
           holdLayout: locked,
           t,
           now,

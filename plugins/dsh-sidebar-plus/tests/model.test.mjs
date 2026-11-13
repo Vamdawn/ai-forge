@@ -18,7 +18,7 @@ test('status buckets separate active work, human waits, unseen results and idle 
     ['idle', 'group.idle', ['idle']],
   ]);
   assert.ok(groups.every(group => group.revealable), 'each Status section uses the 50-row fold');
-  assert.ok(groups.find(group => group.key === 'done').defaultOpen, 'unseen results are visible by default');
+  assert.ok(groups.every(group => group.defaultOpen), 'all Status sections stay visible, including Idle');
 });
 
 test('acknowledging a completion moves it from Done to Idle', () => {
