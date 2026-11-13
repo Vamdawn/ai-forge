@@ -5,16 +5,17 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 // The host's own controls: hand-rolled buttons drifted from the native look
 // (radius, height, hover fill), and this package owns those decisions.
 import {
-  Button, IconCheckCircleFillRegular, IconCheckCircleOutlineRegular, IconCloseFillRegular,
+  Button, IconCheckCircleFillRegular, IconCheckCircleOutlineRegular, IconChevronRightOutlineRegular, IconCloseFillRegular,
   IconEditOutlineRegular, IconEllipsisOutlineRegular, IconFlatListOutlineRegular,
   IconFolderCloseRegular, IconFolderOpenRegular, IconLoadingOutlineRegular,
   IconNewChatOutlineRegular, IconPinFillRegular, IconPinOutlineRegular,
   IconProjectAddOutlineRegular, IconSearchOutlineRegular, IconTrashOutlineRegular,
-  IconUnarchiveOutlineRegular, IconWarningOutlineRegular, Menu, MenuItemButton, StateDot, Tooltip,
+  IconUnarchiveOutlineRegular, IconWarningOutlineRegular, Menu, MenuItemButton, Modal, StateDot, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { Context } from '@deepseek-ai/cordis';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client';
+import type { IJobs } from '@deepseek-ai/dsh-api-job-controller/client';
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
 // These imports provide service type augmentations; the Desktop loader owns the runtime services.
 import type {} from '@deepseek-ai/dsh-client-locale/client';
@@ -35,12 +36,12 @@ import type { ActivityChild, ContentHits, Group, Row, SearchHit, TabId } from '.
 import type { ViewStoreHandle } from './store.js';
 
 export const name = 'dsh-sidebar-plus-client';
-export const inject = ['slots', 'locale', 'uiWorkspace', 'workspaces', 'sessions', 'shortcuts'];
+export const inject = ['slots', 'locale', 'uiWorkspace', 'workspaces', 'sessions', 'shortcuts', 'jobs'];
 
 const NS = 'sidebar-plus' as const;
 const STYLE_ID = 'dsh-sidebar-plus-style';
-/** Completed rows the status sections fold to, and the step each press adds. */
-const REVEAL_STEP = 20;
+/** Rows each Status section opens with, and the step each press adds. */
+const REVEAL_STEP = 50;
 /**
  * Idle Sessions one Workspace section folds to, and the step each press adds.
  * Running Sessions and the selected blank New Session row stay visible without
@@ -57,6 +58,7 @@ const EMPTY_CONTENT_HITS: ContentHits = { items: [], hasMore: false };
 const CLOCK_MS = 30_000;
 
 interface Injected {
+  watchJobRows: IJobs['watchRows'];
   openSession: (sessionId: SessionId) => void;
   /** Start a fresh Session inside one Workspace, the shell's own New Session path. */
   startSession: (workspaceId: WorkspaceId) => void;
@@ -73,6 +75,7 @@ interface Injected {
   /** Ranked current-conversation matches; a refusal resolves to an empty list. */
   searchSessions: (query: string, signal: AbortSignal) => Promise<ContentHits>;
   hooks: {
+    jobs: IJobs['state'];
     /** Whether the directory-picking hole has an occupant; an empty hole offers no trigger. */
     directoryFlow: { getSnapshot(): boolean; subscribe(listener: () => void): () => void };
     shortcuts: WorkspaceBrowserInjected['hooks']['shortcuts'];
@@ -159,7 +162,7 @@ function ActivityList(props: {
     },
   },
   h('span', { className: 'dwt-row-mark' },
-    child.state === 'ongoing' ? h(StateDot, { state: 'ongoing' }) : null),
+    child.state === 'idle' ? null : h(StateDot, { state: child.state === 'input' ? 'warning' : 'ongoing' })),
   h('span', { className: 'dwt-child-title' }, child.title),
   h('span', { className: 'dwt-child-time' }, relativeTime(child.updatedAt, now, t)))));
 }
@@ -323,11 +326,11 @@ function SessionRow(props: {
 }
 
 /**
- * Leading mark of one section. Every section carries the same 14px cell, so the
+ * Leading mark of one section. Every section carries the same 16px cell, so the
  * labels of both tabs stay on one column, and where the icon family has an
  * open/closed pair the mark also reads the fold state — the Workspace folder
- * does it by opening, its Pinned and Completed counterparts by filling in.
- * Status sections are keyed by their `RowState`, the workspace axis by a
+ * does it by opening, its Pinned and Done counterparts by filling in.
+ * Status sections are keyed by their state bucket, the workspace axis by a
  * `WorkspaceId`, and the two synthetic accounts stand for Pinned and for the
  * Sessions no Workspace accounts for.
  * @param props - the section and whether it is expanded.
@@ -337,9 +340,11 @@ function GroupMark({ group, open }: { readonly group: Group; readonly open: bool
   const mark = (kind: string, icon: ReactElement): ReactElement =>
     h('span', { className: 'dwt-group-mark', 'data-kind': kind }, icon);
   if (group.workspaceId !== undefined) {
-    return mark('workspace', open
+    return mark('workspace', h('span', { className: 'dwt-folder-mark', 'data-open': open },
+      h('span', { className: 'dwt-folder' }, open
       ? h(IconFolderOpenRegular, { size: 14 })
-      : h(IconFolderCloseRegular, { size: 14 }));
+      : h(IconFolderCloseRegular, { size: 14 })),
+      h(IconChevronRightOutlineRegular, { className: 'dwt-chevron', size: 14 })));
   }
   switch (group.key) {
     case PINNED_ACCOUNT:
@@ -351,10 +356,12 @@ function GroupMark({ group, open }: { readonly group: Group; readonly open: bool
     case 'running':
       // Still by design: the rows below carry the animated loader.
       return mark('running', h(IconLoadingOutlineRegular, { size: 14 }));
-    case 'idle':
+    case 'done':
       return mark('done', open
         ? h(IconCheckCircleFillRegular, { size: 14 })
         : h(IconCheckCircleOutlineRegular, { size: 14 }));
+    case 'idle':
+      return mark('idle', h(IconFlatListOutlineRegular, { size: 14 }));
     default:
       return mark('loose', h(IconFlatListOutlineRegular, { size: 14 }));
   }
@@ -384,6 +391,9 @@ function Section(props: {
   const workspacePath = group.path;
   const [revealed, setRevealed] = useState(REVEAL_STEP);
   const [quota, setQuota] = useState(IDLE_QUOTA);
+  useEffect(() => {
+    if (!open && group.quota) setQuota(IDLE_QUOTA);
+  }, [open, group.quota]);
   // One fold per section, on the shipped browser's contract: a Workspace keeps
   // running rows and the New Session row outside its idle quota and preserves
   // the section's own order, while the Status sections slice their own ordered
@@ -488,7 +498,8 @@ function Section(props: {
   };
 
   return h('section', { className: 'dwt-group', 'data-motion-group': group.key },
-    h('div', { className: 'dwt-group-head', 'data-motion-id': `group:${group.key}`, 'data-menu': menuOpen ? 'open' : undefined },
+    h('div', { className: 'dwt-group-head', 'data-motion-id': `group:${group.key}`, 'data-menu': menuOpen ? 'open' : undefined,
+      'data-current': group.rows.some(row => row.current) },
       renaming
         ? h('input', {
           className: 'dwt-rename',
@@ -539,7 +550,7 @@ function Section(props: {
           } : {},
         },
         h(GroupMark, { group, open }),
-        h('span', null, title)),
+        h('span', { className: 'dwt-group-title', title }, title)),
       workspaceId === undefined || renaming
         ? null
         : h('div', { className: 'dwt-group-actions' },
@@ -607,27 +618,21 @@ function Section(props: {
             danger: true,
             onSelect: () => {
               setMenuOpen(false);
+              setError(null);
               setConfirming(true);
             },
           })))),
-    confirming
-      ? h('div', { className: 'dwt-confirm' },
-        h('span', null, t('ws.deleteConfirm')),
-        h(Button, {
-          size: 'sm',
-          variant: 'ghost',
-          disabled: busy,
-          onClick: commitDelete,
-        }, t('ws.delete')),
-        h(Button, {
-          size: 'sm',
-          variant: 'ghost',
-          onClick: () => {
-            setConfirming(false);
-          },
-        }, t('common.cancel')))
-      : null,
-    error === null ? null : h('div', { className: 'dwt-alert', role: 'alert' },
+    h(Modal, {
+      open: confirming,
+      title: t('ws.delete'),
+      closeLabel: t('dismiss'),
+      description: t('ws.deleteConfirm'),
+      onClose: () => { if (!busy) setConfirming(false); },
+      footer: h('div', { className: 'dwt-dialog-actions' },
+        h(Button, { variant: 'ghost', disabled: busy, onClick: () => setConfirming(false) }, t('common.cancel')),
+        h(Button, { className: 'dwt-delete-action', disabled: busy, onClick: commitDelete }, t('ws.delete'))),
+    }, error === null ? null : h('div', { role: 'alert' }, error)),
+    error === null || confirming ? null : h('div', { className: 'dwt-alert', role: 'alert' },
       error,
       h(Button, {
         size: 'sm',
@@ -896,7 +901,7 @@ function WorkspaceTabs(props: Props): ReactElement {
     insertWorkspaceBefore,
     createWorkspace, searchSessions, useDirectoryFlow, useSearchRequest, useShortcuts,
     renameWorkspace, deleteWorkspace,
-    useSessions, useSessionStatus, useWorkspaces, useStore, actions,
+    useSessions, useSessionStatus, useWorkspaces, useStore, actions, useJobs, watchJobRows,
   } = props;
   const [tab, setTab] = useState<TabId>('workspaces');
   const [now, setNow] = useState(() => Date.now());
@@ -976,6 +981,7 @@ function WorkspaceTabs(props: Props): ReactElement {
 
   const list = useSessions(state => state);
   const statuses = useSessionStatus(state => state);
+  const jobs = useJobs(state => state);
   const snapshot = useWorkspaces(state => state);
   const view = useStore(state => state);
 
@@ -1046,7 +1052,29 @@ function WorkspaceTabs(props: Props): ReactElement {
     return byId;
   }, [snapshot.items]);
   const current = useMemo(() => mainSessionId(list), [list]);
-  const rows = useMemo(() => topRows(list, statuses, archived, current), [list, statuses, archived, current]);
+  // Roster watches are shared with the host's viewers and own no Session retain.
+  // Diff the catalog instead of restarting every stream on a status update.
+  const jobWatches = useRef(new Map<SessionId, () => void>());
+  useEffect(() => {
+    const ids = new Set<SessionId>();
+    for (const id of list.ids) {
+      if (list.byId[id]?.blank || archived.has(id) || list.byId[id]?.origin === 'subagent') continue;
+      ids.add(id);
+      const values = list.projectionsBySession?.[id]?.values;
+      for (const child of values?.subagentCatalog ?? []) ids.add(child.id);
+    }
+    for (const [id, release] of jobWatches.current) {
+      if (!ids.has(id)) { release(); jobWatches.current.delete(id); }
+    }
+    for (const id of ids) {
+      if (!jobWatches.current.has(id)) jobWatches.current.set(id, watchJobRows(id));
+    }
+  }, [list, archived, watchJobRows]);
+  useEffect(() => () => {
+    for (const release of jobWatches.current.values()) release();
+    jobWatches.current.clear();
+  }, [watchJobRows]);
+  const rows = useMemo(() => topRows(list, statuses, archived, current, jobs), [list, statuses, archived, current, jobs]);
   const nextGroups = useMemo(() => tab === 'workspaces'
     ? workspaceGroups(snapshot, rows, current, t('group.pinned'), t('ungrouped'), view)
     : statusGroups(rows, t, snapshot.pinnedSessionIds ?? [], t('group.pinned')),
@@ -1470,6 +1498,7 @@ export function apply(ctx: Context): void {
         [FLOW_SLOT]: { kind: 'single', scope: 'root' },
       },
       inject: (): Injected => ({
+        watchJobRows: sessionId => ctx.jobs.watchRows(sessionId),
         openSession: sessionId => ctx.uiWorkspace.openSession(sessionId),
         startSession: workspaceId => ctx.uiWorkspace.startSession(workspaceId),
         unarchiveSession: sessionId => ctx.uiWorkspace.unarchiveSession(sessionId),
@@ -1484,7 +1513,7 @@ export function apply(ctx: Context): void {
             ? { items: result.value.items, hasMore: result.value.hasMore }
             : { items: [], hasMore: false };
         },
-        hooks: { directoryFlow: directoryFlowStore, searchRequest: searchRequests, shortcuts: ctx.shortcuts.catalog },
+        hooks: { jobs: ctx.jobs.state, directoryFlow: directoryFlowStore, searchRequest: searchRequests, shortcuts: ctx.shortcuts.catalog },
       }),
     }, WorkspaceTabs);
     hostReady = true;

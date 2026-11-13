@@ -1,7 +1,7 @@
 /** Keys the Sidebar Plus client namespace serves. */
 export type LocaleKey =
   | 'tab.workspaces' | 'tab.status'
-  | 'group.needsInput' | 'group.working' | 'group.completed' | 'group.pinned'
+  | 'group.waiting' | 'group.working' | 'group.done' | 'group.idle' | 'group.pinned'
   | 'ungrouped' | 'empty' | 'emptyHint' | 'loading'
   | 'pending.approval' | 'pending.planReview' | 'pending.question'
   | 'showMore' | 'showLess' | 'unread' | 'row.menu' | 'row.newSession'
@@ -19,9 +19,10 @@ export const DICTIONARIES = {
   zh: {
     'tab.workspaces': '工作区',
     'tab.status': '状态',
-    'group.needsInput': '待处理',
+    'group.waiting': '待输入',
     'group.working': '进行中',
-    'group.completed': '已完成',
+    'group.done': '已完成',
+    'group.idle': '空闲',
     'group.pinned': '已置顶',
     ungrouped: '未分组',
     empty: '还没有会话',
@@ -67,9 +68,10 @@ export const DICTIONARIES = {
   en: {
     'tab.workspaces': 'Workspaces',
     'tab.status': 'Status',
-    'group.needsInput': 'Needs input',
+    'group.waiting': 'Waiting',
     'group.working': 'Working',
-    'group.completed': 'Completed',
+    'group.done': 'Done',
+    'group.idle': 'Idle',
     'group.pinned': 'Pinned',
     ungrouped: 'Ungrouped',
     empty: 'No sessions yet',

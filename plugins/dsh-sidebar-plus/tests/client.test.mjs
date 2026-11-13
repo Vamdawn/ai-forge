@@ -10,6 +10,8 @@ const source = await readFile(new URL('../dist/client.js', import.meta.url), 'ut
 const primitives = new Proxy({}, { get: (_, name) => {
   if (name === 'Menu') return ({ anchor, open, children }) => React.createElement('div', null, anchor, open ? children : null);
   if (name === 'Tooltip') return ({ children }) => children;
+  if (name === 'Modal') return ({ open, title, description, children, footer, onClose }) => open
+    ? React.createElement('div', { role: 'dialog', 'aria-label': title, onClose }, description, children, footer) : null;
   if (name === 'StateDot') return ({ state }) => React.createElement('span', { className: 'dwt-state-dot', 'data-state': state });
   // Tag product icons with their export name: a mark is only meaningful if the
   // test can tell which glyph it drew.
@@ -47,6 +49,7 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
     effect: callback => { cleanups.push(callback()); },
     locale: { register: () => () => {} },
     shortcuts: { platform: 'macos', catalog: store([]) },
+    jobs: { state: store({ rows: {}, observed: {} }), watchRows: () => () => {} },
   };
   client.apply(ctx);
   const entry = slots.entriesOfSlot('sidebar.workspaces')[0];
@@ -58,6 +61,7 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
     renameWorkspace: async () => {}, deleteWorkspace: async () => {}, renderSlot: () => null,
     useDirectoryFlow: () => false, useSearchRequest: () => React.useSyncExternalStore(searchRequests.subscribe, searchRequests.getSnapshot),
     useShortcuts: () => [],
+    useJobs: () => ({ rows: {}, observed: {} }), watchJobRows: () => () => {},
     useSessions: () => ({ ids: ['a', 'b'], byId: { a: summary('a'), b: summary('b', 2) }, phase: 'ready' }),
     useSessionStatus: () => new Map(),
     useWorkspaces: () => ({ items: [workspace('one', ['a']), workspace('two', ['b'])], pinnedSessionIds: [], archivedSessionIds: [] }),
@@ -385,7 +389,7 @@ const completedStatus = count => {
 
 /** Switch the browser to the Status tab. */
 const openStatusTab = async renderer => act(async () => renderer.root
-  .findAll(node => node.props.className === 'dwt-tab' && node.children.join('') === 'tab.status')[0].props.onClick());
+  .findAll(node => node.props.className === 'dwt-tab' && node.children.includes('tab.status'))[0].props.onClick());
 
 const foldLabels = renderer => findClass(renderer, 'dwt-more').map(node => node.children.join(''));
 const foldPress = async renderer => act(async () => findClass(renderer, 'dwt-more')[0].props.onClick());
@@ -416,11 +420,11 @@ test('the fold control offers one direction at a time', async t => {
 });
 
 test('the fold label promises exactly the rows its press reveals', async t => {
-  const { renderer } = await mount(t, completedStatus(79));
+  const { renderer } = await mount(t, completedStatus(179));
   await openStatusTab(renderer);
   const promised = [];
   let shown = findClass(renderer, 'dwt-row').length;
-  assert.equal(shown, 20);
+  assert.equal(shown, 50);
   while (foldLabels(renderer)[0] !== 'showLess') {
     const promise = Number(/^showMore\((\d+)\)$/.exec(foldLabels(renderer)[0])[1]);
     await foldPress(renderer);
@@ -429,8 +433,8 @@ test('the fold label promises exactly the rows its press reveals', async t => {
     promised.push(promise);
     shown = next;
   }
-  assert.deepEqual(promised, [20, 20, 19]);
-  assert.equal(shown, 79);
+  assert.deepEqual(promised, [50, 50, 29]);
+  assert.equal(shown, 179);
 });
 
 test('a remainder that fits in one step is taken whole', async t => {
@@ -441,16 +445,16 @@ test('a remainder that fits in one step is taken whole', async t => {
   assert.deepEqual(foldLabels(renderer), ['showLess']);
 });
 
-test('the Completed fold shares the control and can be folded back', async t => {
-  const { renderer } = await mount(t, completedStatus(25));
+test('the Idle fold shares the control and can be folded back', async t => {
+  const { renderer } = await mount(t, completedStatus(55));
   await openStatusTab(renderer);
-  assert.equal(findClass(renderer, 'dwt-row').length, 20);
+  assert.equal(findClass(renderer, 'dwt-row').length, 50);
   assert.deepEqual(foldLabels(renderer), ['showMore(5)']);
   await foldPress(renderer);
-  assert.equal(findClass(renderer, 'dwt-row').length, 25);
+  assert.equal(findClass(renderer, 'dwt-row').length, 55);
   assert.deepEqual(foldLabels(renderer), ['showLess']);
   await foldPress(renderer);
-  assert.equal(findClass(renderer, 'dwt-row').length, 20);
+  assert.equal(findClass(renderer, 'dwt-row').length, 50);
 });
 
 test('a section whose rows all fit carries no fold control', async t => {
@@ -459,10 +463,7 @@ test('a section whose rows all fit carries no fold control', async t => {
   assert.deepEqual(foldLabels(renderer), []);
 });
 
-// A deliberate divergence from the shipped browser, which resets the fold when a
-// Workspace is closed and reopened. Nothing else pins it, and it is exactly what
-// the next refactor of the fold state would quietly undo.
-test('reopening a section keeps the rows its fold had already revealed', async t => {
+test('reopening a Workspace resets its idle quota like the shipped browser', async t => {
   let groupExpansion = { 'workspaces:one': true };
   const { renderer, update } = await mount(t, {
     ...idleWorkspace(12),
@@ -478,8 +479,75 @@ test('reopening a section keeps the rows its fold had already revealed', async t
 
   groupExpansion = { 'workspaces:one': true };
   await update();
-  assert.equal(findClass(renderer, 'dwt-row').length, 10);
-  assert.deepEqual(foldLabels(renderer), ['showMore(2)']);
+  assert.equal(findClass(renderer, 'dwt-row').length, 5);
+  assert.deepEqual(foldLabels(renderer), ['showMore(5)']);
+});
+
+test('workspace removal uses a modal and preserves the list while confirming', async t => {
+  const deleted = [];
+  const { renderer } = await mount(t, { deleteWorkspace: async id => deleted.push(id) });
+  await act(async () => renderer.root.findAllByType('button').find(node => node.props['aria-label'] === 'ws.menu').props.onClick());
+  await act(async () => renderer.root.findAllByType('button').find(node => node.children.includes('ws.delete')).props.onSelect());
+  assert.equal(renderer.root.findAll(node => node.props.role === 'dialog').length, 1);
+  assert.equal(findClass(renderer, 'dwt-confirm').length, 0);
+  assert.equal(findClass(renderer, 'dwt-row').length, 2);
+  await act(async () => renderer.root.findAllByType('button').find(node => node.children.includes('ws.delete')).props.onClick());
+  assert.deepEqual(deleted, ['one']);
+});
+
+test('every Status bucket opens with 50 rows and reveals the remainder', async t => {
+  for (const kind of ['running', 'input', 'done', 'idle', 'pinned']) {
+    const options = completedStatus(55);
+    const ids = options.useSessions().ids;
+    const status = kind === 'running' ? { running: true }
+      : kind === 'input' ? { pendingInteraction: { kind: 'question' } }
+        : kind === 'done' ? { completionUnread: true } : {};
+    const { renderer } = await mount(t, { ...options,
+      useSessionStatus: () => new Map(ids.map(id => [id, status])),
+      useWorkspaces: () => ({ items: [], archivedSessionIds: [], pinnedSessionIds: kind === 'pinned' ? ids : [] }),
+    });
+    await openStatusTab(renderer);
+    assert.equal(findClass(renderer, 'dwt-row').length, 50, kind);
+    assert.deepEqual(foldLabels(renderer), ['showMore(5)']);
+    await foldPress(renderer);
+    assert.equal(findClass(renderer, 'dwt-row').length, 55, kind);
+  }
+});
+
+test('job roster watches survive list updates and release removed and unmounted Sessions', async t => {
+  const started = [], released = [];
+  const state = nested([['child', 'Task', 1]], false);
+  const { renderer, props, update } = await mount(t, {
+    useSessions: () => state.list,
+    useWorkspaces: () => state.workspaces,
+    watchJobRows: id => { started.push(id); return () => released.push(id); },
+  });
+  assert.deepEqual(started, ['p', 'child']);
+  props.useSessions = () => ({ ...state.list });
+  await update();
+  assert.deepEqual(started, ['p', 'child']);
+  assert.deepEqual(released, []);
+  props.useWorkspaces = () => ({ ...state.workspaces, archivedSessionIds: ['p'] });
+  await update();
+  assert.deepEqual(released, ['p', 'child']);
+  props.useWorkspaces = () => state.workspaces;
+  await update();
+  act(() => renderer.unmount());
+  assert.deepEqual(released, ['p', 'child', 'p', 'child']);
+});
+
+test('live job state moves a stopped Session between Working and Done', async t => {
+  let jobs = { rows: { a: [{ owner: 'a', status: 'running' }] }, observed: {} };
+  const { renderer, update } = await mount(t, {
+    useSessions: () => ({ ids: ['a'], byId: { a: summary('a') }, phase: 'ready' }),
+    useJobs: () => jobs,
+    useSessionStatus: () => new Map([['a', { completionUnread: true }]]),
+  });
+  await openStatusTab(renderer);
+  assert.deepEqual(findClass(renderer, 'dwt-group-title').map(node => node.children.join('')), ['group.working']);
+  jobs = { rows: { a: [{ owner: 'a', status: 'completed' }] }, observed: {} };
+  await update();
+  assert.deepEqual(findClass(renderer, 'dwt-group-title').map(node => node.children.join('')), ['group.done']);
 });
 
 // The fold replaced the host Button, and Button.module.css is what declared

@@ -3,6 +3,7 @@ import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/c
 import type { WorkspaceId, WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client';
 import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/client';
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots';
+import type { JobsSnapshot } from '@deepseek-ai/dsh-api-job-controller/client';
 import type {} from './locales.js';
 
 /** Account key of the Workspace-less section. */
@@ -18,7 +19,7 @@ export type RowState = 'idle' | 'running' | 'input';
  * is identified by the absence of the loader, so completion never competes with
  * the Session marks for the same green.
  */
-export type ChildState = 'ongoing' | 'idle';
+export type ChildState = 'ongoing' | 'input' | 'idle';
 export type TabId = 'workspaces' | 'status';
 
 /** One Host content match: the Session and the matched excerpt. */
@@ -49,6 +50,7 @@ export interface ActivityChild {
   readonly key: string;
   readonly title: string;
   readonly state: ChildState;
+  readonly pending?: PendingKind;
   readonly openable: SessionId;
   /** Latest activity, shown as the row's trailing time. */
   readonly updatedAt: number;
@@ -123,15 +125,21 @@ export function relativeTime(updatedAt: number, now: number, t: PropsLocale<'sid
 /** Non-running nested rows one Session shows; an active child never uses this quota. */
 const CHILD_QUOTA = 5;
 
+/** A roster also includes unowned jobs; only this Session's own work counts. */
+function hasBackgroundWork(jobs: JobsSnapshot | undefined, id: SessionId): boolean {
+  return jobs?.rows[id]?.some(job => job.owner === id
+    && (job.status === 'running' || job.status === 'stopping')) ?? false;
+}
+
 /**
  * The nested layer a row renders: every active child, then the most recently
  * active others while the quota lasts. The excess stays out of the sidebar
  * rather than behind a reveal, so a wide fan-out cannot stretch it.
  */
 function visibleChildren(children: readonly ActivityChild[]): ActivityChild[] {
-  let slots = Math.max(0, CHILD_QUOTA - children.filter(child => child.state === 'ongoing').length);
+  let slots = Math.max(0, CHILD_QUOTA - children.filter(child => child.state !== 'idle').length);
   return children.filter(child => {
-    if (child.state === 'ongoing') {
+    if (child.state !== 'idle') {
       return true;
     }
     if (slots === 0) {
@@ -152,11 +160,13 @@ function subagentChildren(
   list: SessionListState,
   statuses: SessionStatusSnapshot,
   id: SessionId,
+  jobs?: JobsSnapshot,
 ): ActivityChild[] {
   return subagentEntries(list, id).map(entry => {
     const summary = list.byId[entry.id];
     const status = statuses.get(entry.id);
-    const running = status?.running ?? summary?.running ?? false;
+    const running = (status?.running ?? summary?.running ?? false) || hasBackgroundWork(jobs, entry.id);
+    const pending = pendingKind(status?.pendingInteraction?.kind);
     const label = entry.label?.trim();
     const at = summary?.updatedAt ?? entry.createdAt;
     return {
@@ -165,7 +175,8 @@ function subagentChildren(
         // The log-backed title is only the fallback: for a delegated child it is
         // the first sentence of its prompt rather than the task it was given.
         title: label === undefined || label === '' ? summary?.displayTitle ?? entry.id : label,
-        state: running ? 'ongoing' : 'idle',
+        state: pending !== undefined ? 'input' : running ? 'ongoing' : 'idle',
+        ...pending === undefined ? {} : { pending },
         openable: entry.id,
         updatedAt: at,
       } satisfies ActivityChild,
@@ -197,6 +208,7 @@ export function topRows(
   statuses: SessionStatusSnapshot,
   archived: ReadonlySet<SessionId>,
   current: SessionId | undefined,
+  jobs?: JobsSnapshot,
 ): Row[] {
   const rows: Row[] = [];
   for (const id of list.ids) {
@@ -212,9 +224,12 @@ export function topRows(
     const status = statuses.get(id);
     const selfRunning = status?.running ?? summary.running;
     const unread = status?.completionUnread === true;
-    const children = subagentChildren(list, statuses, id);
+    const children = subagentChildren(list, statuses, id, jobs);
     const childRunning = children.some(child => child.state === 'ongoing');
-    const { state, pending } = rowStateOf(statuses, id, summary.running, childRunning);
+    const childPending = children.find(child => child.pending !== undefined)?.pending;
+    const own = rowStateOf(statuses, id, summary.running, childRunning || hasBackgroundWork(jobs, id));
+    const pending = own.pending ?? childPending;
+    const state = pending === undefined ? own.state : 'input';
     rows.push({
       id,
       title: summary.displayTitle,
@@ -226,7 +241,7 @@ export function topRows(
       blank: summary.blank,
       // The nested layer belongs to a Session that is working or owes a look, so
       // it folds away with the last of those and never grows past its quota.
-      children: selfRunning || childRunning || unread ? visibleChildren(children) : [],
+      children: selfRunning || childRunning || pending !== undefined || unread ? visibleChildren(children) : [],
     });
   }
   rows.sort((left, right) => right.updatedAt - left.updatedAt);
@@ -369,7 +384,8 @@ export function statusGroups(
       buckets[row.state].push(row);
     }
   }
-  const completed = [...buckets.idle].sort((left, right) => Number(right.unread) - Number(left.unread));
+  const done = buckets.idle.filter(row => row.unread);
+  const idle = buckets.idle.filter(row => !row.unread);
   const groups: Group[] = [];
   // As in tab one: pin recency is the order, so this section is not a drag target.
   if (pinnedRows.length > 0) {
@@ -380,17 +396,10 @@ export function statusGroups(
       rows: pinnedRows,
       draggable: false,
       quota: false,
+      revealable: true,
     });
   }
   groups.push(
-    {
-      key: 'input',
-      title: t('group.needsInput'),
-      defaultOpen: true,
-      rows: buckets.input,
-      draggable: false,
-      quota: false,
-    },
     {
       key: 'running',
       title: t('group.working'),
@@ -398,14 +407,33 @@ export function statusGroups(
       rows: buckets.running,
       draggable: false,
       quota: false,
+      revealable: true,
+    },
+    {
+      key: 'input',
+      title: t('group.waiting'),
+      defaultOpen: true,
+      rows: buckets.input,
+      draggable: false,
+      quota: false,
+      revealable: true,
+    },
+    {
+      key: 'done',
+      title: t('group.done'),
+      defaultOpen: true,
+      rows: done,
+      revealable: true,
+      unreadCount: done.length,
+      draggable: false,
+      quota: false,
     },
     {
       key: 'idle',
-      title: t('group.completed'),
+      title: t('group.idle'),
       defaultOpen: false,
-      rows: completed,
+      rows: idle,
       revealable: true,
-      unreadCount: completed.filter(row => row.unread).length,
       draggable: false,
       quota: false,
     });

@@ -6,6 +6,11 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+### Changed
+
+- Split Status into Working, Waiting, Done, and Idle so unseen results no longer mix with read history. Running/stopping background jobs and child work keep the parent active, human requests take precedence, and every Status section opens with 50 rows per reveal step.
+- Align Workspaces row sizes, title truncation, hover controls, selected styling, and collapse resets with the shipped browser. Workspace removal now opens the host modal, keeping its confirmation out of the session list.
+
 ## [0.5.0] - 2026-11-13
 
 ### Changed

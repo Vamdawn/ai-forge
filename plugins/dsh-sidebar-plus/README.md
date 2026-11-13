@@ -62,26 +62,26 @@ The earlier `@vamdawn/dsh-astrolabe` install is removed the same way. Remove it 
 
 ## Usage
 
-- **Workspaces** groups sessions by registered Workspace, then Ungrouped; **Status** groups them by Needs input, Working, and Completed.
+- **Workspaces** groups sessions by registered Workspace, then Ungrouped; **Status** groups them in order: Working (running or waiting for subagent/background work), Waiting (human input or approval), Done (a finished turn with an unseen result), and Idle (no active work or unseen result). Human requests take precedence over active work, and opening a completed Session moves it from Done to Idle.
 - Both tabs open with a **Pinned** section while anything is pinned, and a pinned session leaves the section it would otherwise sit in.
 - Each status section carries its own state's mark, and Working's arc stays still while its rows carry the animated loader. A Session row is marked only where it needs attention: waiting on you, working — its own turn or a delegation it started — or a completed turn you have not opened. Blank and idle rows leave the leading cell empty.
-- Sections collapse, and Workspace menus show their section counts. A section with more rows than one fold step carries one fold control: its label promises the rows that press will reveal, its last press takes the remainder whole, and only a fully revealed section offers to fold back. Completed stays folded at 20 rows, unseen completions first.
+- Sections collapse, and Workspace menus show their section counts. A section with more rows than one fold step carries one fold control: its label promises the rows that press will reveal, its last press takes the remainder whole, and only a fully revealed section offers to fold back. Every Status section starts with 50 rows and reveals 50 more per press; Working, Waiting, and Done open by default, while Idle starts collapsed.
 - Search matches titles and Workspace names immediately, then adds debounced conversation matches with snippets. It follows the host `session.search` binding (⌘K / Ctrl+K by default, including custom keys); the plugin registers no duplicate shortcut. Archived results restore from their row action.
 - Subagent sessions nest under the session that spawned them and open on click, newest activity first, titled by their delegation label and printing their own time.
-- That layer appears while a Session is working, has a delegation running, or owes a look, and shows five rows at a time; a running delegation is never the one left out.
+- That layer appears while a Session is working, waiting on input, or owes a look, and fills up to five rows; running and waiting delegations are always retained.
 - Hovering a Session adds its Workspace name, directory, and when that Workspace was created.
-- Rows keep the host and third-party session menu actions, including pin, unpin, and archive. The native directory picker adds a Workspace or opens a new session; Workspace menus offer rename and remove.
+- Workspaces follows the shipped browser’s 34px Workspace headers and 32px Session rows, single-line titles, hover chevrons/actions, and selected-row fill. Rows keep host and third-party menu actions; the native directory picker adds Workspaces, and Workspace removal uses the host’s modal instead of inserting a confirmation into the list.
 - Sessions and Workspace groups can be dragged to reorder, with automatic reordering animated and reduced-motion preferences respected.
 - The 56px rail renders when the sidebar is collapsed.
 - Plugin copy ships in Chinese and English.
 
 ## Limitations
 
-- The shipped browser's view options are not re-hosted: its grouping modes are gone, there is no archived filter, and there is no copy action. The scheduled-task clock mark and the hover card's task section are absent too.
+- Workspaces uses a separate renderer matched to host package `0.2.0-rc.2`; the host exposes the entire browser as one slot, so it cannot embed just the native Workspace list. The shipped browser's view options are not re-hosted: its grouping modes are gone, there is no archived filter, and there is no copy action. The scheduled-task clock mark and the hover card's task section are absent too.
 - An archived search result must be restored before opening, and a failed restore shows inline so it can be retried.
 - A session drag switches to a saved manual order with no control to return to recent-activity order, and drops reorder only within the same group.
-- Workspace groups fold to five idle sessions and Completed to 20 rows; running, pending-input, and selected blank sessions do not consume the Workspace quota. Both folds keep their revealed rows when their section is collapsed and reopened, where the shipped browser resets to the first batch.
-- The nested layer carries subagent sessions only: the running turn, background jobs, and scheduled reminders stay out of the sidebar.
+- Workspace groups fold to five idle sessions; running, pending-input, and selected blank sessions do not consume the quota. Closing a Workspace resets that quota, as in the shipped browser; Status sections retain their revealed count while mounted.
+- The nested layer lists subagent sessions only. Owned running/stopping background jobs affect Working classification without adding rows; scheduled reminders do not affect these buckets. Job state uses one shared roster subscription per listed Session and cataloged direct child, released on removal or unmount.
 - A Session shows five nested rows at a time, so delegations beyond them are reachable only from the host's own subagent menu in the session header.
 - The rail uses placeholder glyphs rather than the shipped icon set.
 - Full native drag-and-drop is unverified: automation triggered `dragstart` but never completed a reliable `drop`. Live Desktop pointer, layout, and directory-picker behaviour has not had a manual pass either, and Web and non-macOS platforms have not been validated live.

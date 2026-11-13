@@ -1,5 +1,5 @@
 export const CSS = `
-.dwt-root { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.dwt-root { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
 /* The region's one header row, shaped like the shipped Workspace section header
    this entry replaces: a 36px band, the label slot on the left, and 28px icon
    buttons on the right that the expanding search pushes out of the way. */
@@ -54,17 +54,25 @@ export const CSS = `
    shipped browser paints its rows with, rather than the brighter layer fill. */
 .dwt-group-head:hover, .dwt-group-head[data-menu='open'] { background: var(--dsw-alias-interactive-bg-hover); }
 .dwt-group-head .dwt-group-header { flex: 1; min-width: 0; }
-.dwt-group-actions { display: flex; align-items: center; gap: 2px; flex: none; opacity: 0; }.dwt-group-head:hover .dwt-group-actions, .dwt-group-head:focus-within .dwt-group-actions, .dwt-group-head[data-menu='open'] .dwt-group-actions { opacity: 1; }
+.dwt-group-actions { display: none; align-items: center; gap: 2px; flex: none; opacity: 0; }.dwt-group-head:hover .dwt-group-actions, .dwt-group-head:focus-within .dwt-group-actions, .dwt-group-head[data-menu='open'] .dwt-group-actions { display: flex; opacity: 1; }
 .dwt-rename { flex: 1; min-width: 0; margin: 0 4px; appearance: none; height: 32px; border: 0.5px solid var(--dsw-alias-border-l4); border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; padding: 0 8px; }
 .dwt-rename:focus-visible { outline: none; border-color: var(--dsw-alias-state-business-primary); }
-.dwt-confirm { display: flex; align-items: center; gap: 6px; margin: 0 8px 6px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
-/* The section title is the parent level, so it carries the larger size. */
-.dwt-group-header { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 30px; appearance: none; border: 0; background: none; cursor: pointer; padding: 5px 8px; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 14px; font-weight: 600; text-align: left; border-radius: 6px; }
+/* Native row metrics: a 34px Workspace header and a 32px Session row. */
+.dwt-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dwt-delete-action:not(:disabled) { color: var(--dsw-alias-state-error-primary); }
+.dwt-group-header { box-sizing: border-box; display: flex; align-items: center; gap: 6px; width: 100%; height: 34px; min-width: 0; appearance: none; border: 0; background: none; cursor: pointer; padding: 0 8px; color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; line-height: 20px; font-weight: 400; text-align: left; border-radius: var(--dsw-radius-md); }
+.dwt-group-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dwt-group-header:hover { color: var(--dsw-alias-label-primary); }
 /* The leading cell is the same width whichever mark it holds, so Workspace and
    Status sections keep their labels on one column. Marks are neutral except
    where the section's state has a colour of its own. */
-.dwt-group-mark { flex: none; width: 14px; height: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-secondary); }
+.dwt-group-mark { flex: none; width: 16px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-secondary); }
+.dwt-folder-mark, .dwt-folder { display: inline-flex; }
+.dwt-chevron { display: none; color: var(--dsw-alias-label-caption); }
+.dwt-folder-mark[data-open='true'] .dwt-chevron { transform: rotate(90deg); }
+.dwt-group-head:hover .dwt-folder, .dwt-group-head:focus-within .dwt-folder { display: none; }
+.dwt-group-head:hover .dwt-chevron, .dwt-group-head:focus-within .dwt-chevron { display: inline-flex; }
+.dwt-group-head[data-current='true'] .dwt-folder { color: var(--dsw-alias-state-business-primary); }
 /* The Working mark is a line icon drawn in currentColor, so the section tint
    reaches the glyph through the cell alone. */
 .dwt-group-mark[data-kind='running'] { color: var(--dsw-alias-state-success-primary); }
@@ -76,21 +84,12 @@ export const CSS = `
 .dwt-menu-path { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0 0 2px; appearance: none; border: 0; background: none; cursor: pointer; padding: 4px 8px 6px; border-top: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary); font: inherit; font-size: 11px; font-family: var(--ds-font-family-code); text-align: left; }
 .dwt-menu-path:hover { color: var(--dsw-alias-label-primary); }
 .dwt-menu-path > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* The count moved into the section menu, so the label carries the row alone. */
-/* A group's sessions and their controls are its children, so the whole block is
-   inset past the group's own left padding: the two levels never share a left
-   edge, and every nested surface — row hover, current accent, drag indicator —
-   stays inside the group's column. Set so the session title stays the same few
-   pixels right of the group label the row width leaves (8px padding + a 14px
-   mark + 5px gap = 27px to the label) after the folder mark replaced the fold
-   glyph. */
-/* A Session's 16px leading cell matches a section's mark cell, so the title of
-   every Session lands on the same left baseline as the section label it belongs
-   to — the nesting is carried by the section's fold mark, not by an indent. */
-.dwt-row { display: flex; align-items: center; gap: 5px; border-radius: 8px; padding: 5px 8px; cursor: pointer; color: var(--dsw-alias-label-primary); font-size: 13px; }
+/* Session and Workspace titles share the native baseline; row marks reserve 16px. */
+.dwt-group > div + div { margin-top: 2px; }
+.dwt-row { box-sizing: border-box; display: flex; align-items: center; gap: 0; height: 32px; border-radius: var(--dsw-radius-md); padding: 0 8px; cursor: pointer; color: var(--dsw-alias-label-primary); font-size: 14px; line-height: 20px; }
 .dwt-row:hover, .dwt-row[data-menu='open'] { background: var(--dsw-alias-interactive-bg-hover); }
-.dwt-row[data-current='true'] { background: var(--dsw-alias-interactive-bg-hover); box-shadow: inset 2px 0 0 var(--dsw-alias-brand-primary); }
-.dwt-row-clip { flex: 1; min-width: 0; overflow: hidden; }
+.dwt-row[data-current='true'] { background: var(--dsw-alias-interactive-bg-hover); }
+.dwt-row-clip { margin: 0 6px 0 4px; flex: 1; min-width: 0; overflow: hidden; }
 .dwt-row-title { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transform: translateX(var(--dwt-shift, 0px)); }
 /* The crawl has to lift the title's own clipping, otherwise that clip travels
    with the box and the text paints outside the row; the wrapper above then does
@@ -105,9 +104,9 @@ export const CSS = `
 .dwt-child[data-openable='true'] { cursor: pointer; color: var(--dsw-alias-label-primary); }
 .dwt-child:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .dwt-child-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dwt-row-mark { flex: none; width: 14px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
+.dwt-row-mark { flex: none; width: 16px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
 .dwt-child-time { flex: none; font-size: 11px; color: var(--dsw-alias-label-secondary); }
-.dwt-trailing { flex: none; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.dwt-trailing { flex: none; font-size: 10px; line-height: 16px; color: var(--dsw-alias-label-tertiary); }
 /* The row keeps two controls. Both live in one strip that is out of flow at
    rest, so the relative time holds the trailing cell on its own; hovering swaps
    the cell in place — the strip takes exactly the slot the time was holding, so
@@ -116,7 +115,7 @@ export const CSS = `
    the difference and every row below it slides — the title's line box is 16px
    for a Latin title and 18px for a CJK one, so the taller strip only moved the
    Latin rows, which read as the list twitching as the pointer travelled. */
-.dwt-rowbar { flex: none; display: none; align-items: center; gap: 6px; height: 16px; }
+.dwt-rowbar { flex: none; display: none; align-items: center; gap: 10px; height: 16px; }
 .dwt-row:hover .dwt-rowbar, .dwt-row:focus-within .dwt-rowbar, .dwt-row[data-menu='open'] .dwt-rowbar { display: inline-flex; }
 .dwt-row:hover .dwt-trailing, .dwt-row:focus-within .dwt-trailing, .dwt-row[data-menu='open'] .dwt-trailing { display: none; }
 .dwt-trigger { flex: none; display: inline-flex; align-items: center; justify-content: center; appearance: none; border: 0; background: none; color: var(--dsw-alias-label-tertiary); font: inherit; width: 16px; height: 16px; padding: 0; border-radius: var(--dsw-radius-xs); cursor: pointer; }

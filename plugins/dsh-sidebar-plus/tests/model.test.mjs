@@ -5,6 +5,29 @@ import { workspaceGroups, topRows, statusGroups, layoutKeys } from '../src/model
 const row = (id, extra = {}) => ({ id, title: id, state: 'idle', updatedAt: 1, unread: false, current: false, blank: false, children: [], ...extra });
 const view = { orderBy: 'updated', sessionOrder: {} };
 
+test('status buckets separate active work, human waits, unseen results and idle sessions', () => {
+  const rows = [row('idle'), row('done', { unread: true }),
+    row('run', { state: 'running', unread: true }), row('wait', { state: 'input', unread: true }),
+    row('blank', { blank: true }), row('pin', { unread: true })];
+  const groups = statusGroups(rows, key => key, ['pin'], 'Pinned');
+  assert.deepEqual(groups.map(group => [group.key, group.title, group.rows.map(row => row.id)]), [
+    ['__pinned__', 'Pinned', ['pin']],
+    ['running', 'group.working', ['run']],
+    ['input', 'group.waiting', ['wait']],
+    ['done', 'group.done', ['done']],
+    ['idle', 'group.idle', ['idle']],
+  ]);
+  assert.ok(groups.every(group => group.revealable), 'each Status section uses the 50-row fold');
+  assert.ok(groups.find(group => group.key === 'done').defaultOpen, 'unseen results are visible by default');
+});
+
+test('acknowledging a completion moves it from Done to Idle', () => {
+  const list = { ids: ['a'], byId: { a: { displayTitle: 'a', updatedAt: 1, running: false, blank: false } } };
+  const groups = unread => statusGroups(topRows(list, new Map([['a', { completionUnread: unread }]]), new Set()), key => key, [], 'Pinned');
+  assert.equal(groups(true)[0].key, 'done');
+  assert.equal(groups(false)[0].key, 'idle');
+});
+
 test('empty and fully pinned workspaces retain their management header', () => {
   const snapshot = { items: [
     { workspaceId: 'empty', title: 'Empty', sessionIds: [] },
@@ -41,6 +64,32 @@ const nested = (parent, children, extra = {}) => ({
   ...extra,
 });
 const childRows = (list, statuses = new Map()) => topRows(list, statuses, new Set(), undefined)[0];
+
+test('owned live background work keeps a stopped Session Working until settlement', () => {
+  const list = nested({}, []);
+  const states = status => topRows(list, new Map([['parent', { completionUnread: true }]]), new Set(), undefined,
+    { rows: { parent: [{ owner: 'parent', status }] }, observed: {} });
+  for (const status of ['running', 'stopping']) {
+    assert.equal(statusGroups(states(status), key => key, [], 'Pinned')[0].key, 'running');
+  }
+  for (const status of ['completed', 'killed', 'failed']) {
+    assert.equal(statusGroups(states(status), key => key, [], 'Pinned')[0].key, 'done');
+  }
+  const foreign = topRows(list, new Map(), new Set(), undefined,
+    { rows: { parent: [{ status: 'running' }, { owner: 'other', status: 'running' }] }, observed: {} });
+  assert.equal(foreign[0].state, 'idle', 'unowned and foreign jobs do not mark every Session Working');
+});
+
+test('child background work and human requests propagate to the parent bucket', () => {
+  const list = nested({}, [['child', 'Task', false, 2]]);
+  const jobs = { rows: { child: [{ owner: 'child', status: 'running' }] }, observed: {} };
+  assert.equal(topRows(list, new Map(), new Set(), undefined, jobs)[0].state, 'running');
+  const statuses = new Map([['child', { pendingInteraction: { kind: 'approval' } }]]);
+  const parent = topRows(list, statuses, new Set(), undefined, jobs)[0];
+  assert.equal(parent.state, 'input');
+  assert.equal(parent.pending, 'approval');
+  assert.equal(parent.children[0].state, 'input');
+});
 
 test('nested rows take the delegation label, the loader and the newest activity order', () => {
   const list = nested({ running: true }, [
