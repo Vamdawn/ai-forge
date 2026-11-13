@@ -18,14 +18,14 @@ import type {
  * a cell it may compose, and the mirror in `mirror.ts` re-registers the shipped
  * and third-party contributions into it.
  */
-export const MENU_SLOT = 'astrolabe.session.menu.item';
-export const ROW_ACTION_SLOT = 'astrolabe.session.row.action';
+export const MENU_SLOT = 'sidebar-plus.session.menu.item';
+export const ROW_ACTION_SLOT = 'sidebar-plus.session.row.action';
 /**
  * Our own copy of the directory-picking hole. The composed picker package fills
  * the shipped one, which only the entry we shadow may render, so "Add
  * workspace" needs its own hole and a mirrored occupant.
  */
-export const FLOW_SLOT = 'astrolabe.directoryFlow';
+export const FLOW_SLOT = 'sidebar-plus.directoryFlow';
 
 /**
  * The slot-level hook factories the shipped menu declares. Entries read
@@ -40,26 +40,26 @@ export const menuOpenStateFactory: SlotHookFactory<typeof MENU_SLOT, UseMenuOpen
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     /** This plugin's own Session "..." menu: the shipped rows and third-party rows, re-hosted. */
-    'astrolabe.session.menu.item': {
+    'sidebar-plus.session.menu.item': {
       kind: 'list';
       scope: 'root';
       owner: SessionRowOwnerProps;
       hookContext: MenuOpenState;
       inject: {
         hooks: {
-          menuOpenState: SlotHookFactory<'astrolabe.session.menu.item', UseMenuOpenState>;
+          menuOpenState: SlotHookFactory<'sidebar-plus.session.menu.item', UseMenuOpenState>;
           shortcuts: HostObservable<readonly ShortcutCatalogEntry[]>;
         };
       };
     };
     /** This plugin's own Session row hover buttons, after the "..." trigger. */
-    'astrolabe.session.row.action': {
+    'sidebar-plus.session.row.action': {
       kind: 'list';
       scope: 'root';
       owner: SessionRowOwnerProps;
     };
     /** This plugin's own directory-picking hole, filled by the mirrored picker occupant. */
-    'astrolabe.directoryFlow': {
+    'sidebar-plus.directoryFlow': {
       kind: 'single';
       scope: 'root';
       owner: DirectoryFlowOwnerProps;

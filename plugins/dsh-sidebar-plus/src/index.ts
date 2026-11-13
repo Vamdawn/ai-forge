@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 
-export const name = 'dsh-astrolabe';
+export const name = 'dsh-sidebar-plus';
 
 /**
  * The spike is client-only. The Host half exists so the bundle entry loads and

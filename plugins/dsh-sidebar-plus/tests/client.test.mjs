@@ -108,7 +108,7 @@ test('new query immediately discards previous content hits, including after a fa
 test('directory adoption starts a session in the created workspace', async t => {
   let flow;
   const started = [];
-  await mount(t, { startSession: id => started.push(id), renderSlot: (name, owner) => { if (name === 'astrolabe.directoryFlow') flow = owner; return null; } });
+  await mount(t, { startSession: id => started.push(id), renderSlot: (name, owner) => { if (name === 'sidebar-plus.directoryFlow') flow = owner; return null; } });
   await act(async () => flow.onPicked('/new'));
   assert.deepEqual(started, ['created']);
 });
@@ -274,7 +274,7 @@ test('the row itself still opens with Enter', async t => {
   assert.deepEqual(opened, ['a']);
 });
 
-test('native search requests from the shadowed workspace browser reach Astrolabe', async t => {
+test('native search requests from the shadowed workspace browser reach Sidebar Plus', async t => {
   let requests;
   const { renderer } = await mount(t, {}, (slots, store) => {
     requests = store({ searchRequest: 0 });

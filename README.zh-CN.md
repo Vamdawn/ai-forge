@@ -67,8 +67,8 @@
 ### Plugins
 
 - [@vamdawn/dsh-appearance-plus](plugins/dsh-appearance-plus/README.zh-CN.md)：自定义 DeepSeek Harness 的界面字体、代码字体与背景图片。
-- [@vamdawn/dsh-astrolabe](plugins/dsh-astrolabe/README.zh-CN.md)：接管 DeepSeek Harness 侧边栏会话区域的双轴标签页面板，含搜索、置顶分组与行内会话动作。
 - [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.zh-CN.md)：根据会话上下文生成 DeepSeek Harness 会话名称。
+- [@vamdawn/dsh-sidebar-plus](plugins/dsh-sidebar-plus/README.zh-CN.md)：DeepSeek Harness 的标签式会话侧边栏，含工作区标签页、按状态分组的会话标签页、搜索、置顶分组与行内会话动作。
 
 ### MCP 产品
 

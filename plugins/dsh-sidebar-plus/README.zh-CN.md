@@ -1,21 +1,21 @@
-# @vamdawn/dsh-astrolabe
+# @vamdawn/dsh-sidebar-plus
 
 [English](README.md) | 简体中文
 
-[![npm version](https://img.shields.io/npm/v/@vamdawn/dsh-astrolabe.svg)](https://www.npmjs.com/package/@vamdawn/dsh-astrolabe)
+[![npm version](https://img.shields.io/npm/v/@vamdawn/dsh-sidebar-plus.svg)](https://www.npmjs.com/package/@vamdawn/dsh-sidebar-plus)
 
-Astrolabe — DeepSeek Harness 的标签式左侧边栏：一个工作区标签页，一个按状态分组的会话标签页。
+Sidebar Plus — DeepSeek Harness 的标签式会话侧边栏：一个工作区标签页，一个按状态分组的会话标签页。
 
 它接管随产品发布的侧边栏中的会话区域，并在其上放置一条标签条，让同一个侧边栏沿两个维度——**工作区**或**状态**——浏览同一批会话，不必跳转到任何其他位置。它面向需要同时保留这两种分组方式的 DeepSeek Harness 用户。
 
-状态：实验性（`0.x`），已针对 DeepSeek Harness Client 包 `0.2.0-rc.2` 与 Cordis `4.0.4` 完成测试。`0.x` 版本不附带任何稳定性承诺，而本插件的公开接口就是它所依赖的 Host slot 合约——随产品发布的工作区浏览器自己的 slot——因此 Host 升级可能使其失效。
+状态：实验性（`0.x`），已针对 DeepSeek Harness Client 包 `0.2.0-rc.2` 与 Cordis `4.0.4` 完成测试。`0.x` 版本不附带任何稳定性承诺，而本插件的公开接口就是它所依赖的 Host slot 合约——随产品发布的工作区浏览器自己的 slot——因此 Host 升级可能使其失效。更早的版本以 `@vamdawn/dsh-astrolabe` 发布，下面的命令使用新的包名。
 
 ## 安装
 
 ### 从 npm 安装
 
 ```sh
-dsh plugin --profile desktop add @vamdawn/dsh-astrolabe
+dsh plugin --profile desktop add @vamdawn/dsh-sidebar-plus
 ```
 
 Web `profile` 请使用 `--profile web`。
@@ -23,7 +23,7 @@ Web `profile` 请使用 `--profile web`。
 ### 从源码检出安装
 
 ```sh
-cd plugins/dsh-astrolabe
+cd plugins/dsh-sidebar-plus
 npm ci --ignore-scripts
 npm run build
 ```
@@ -31,7 +31,7 @@ npm run build
 然后把该目录安装到当前启用的 `profile`，通常是 `desktop` 或 `web`：
 
 ```sh
-dsh plugin --profile <profile> add "$PWD/plugins/dsh-astrolabe"
+dsh plugin --profile <profile> add "$PWD/plugins/dsh-sidebar-plus"
 ```
 
 安装会以链接方式引用该目录，因此请保持目录及其 `dist/` 可用，并在改动源文件后重新构建。如果 macOS 桌面端 CLI 不在 PATH 中，请使用：
@@ -49,14 +49,16 @@ dsh plugin --profile <profile> add "$PWD/plugins/dsh-astrolabe"
 `0.x` 的版本范围不跨 minor，因此安装在 `0.3.0` 的 profile 会一直运行该版本，直到显式安装新版本：
 
 ```sh
-dsh plugin --profile desktop add @vamdawn/dsh-astrolabe
+dsh plugin --profile desktop add @vamdawn/dsh-sidebar-plus
 ```
 
 ### 卸载
 
 ```sh
-dsh plugin --profile <profile> remove @vamdawn/dsh-astrolabe
+dsh plugin --profile <profile> remove @vamdawn/dsh-sidebar-plus
 ```
+
+更早的 `@vamdawn/dsh-astrolabe` 安装用同一条命令卸载。请在安装本包之前先卸载它，因为两者抢占同一个侧边栏 slot。
 
 ## 用法
 
@@ -87,7 +89,7 @@ dsh plugin --profile <profile> remove @vamdawn/dsh-astrolabe
 ## 开发
 
 ```sh
-cd plugins/dsh-astrolabe
+cd plugins/dsh-sidebar-plus
 npm ci --ignore-scripts
 npm run typecheck
 npm test

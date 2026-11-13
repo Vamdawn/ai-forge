@@ -1,21 +1,21 @@
-# @vamdawn/dsh-astrolabe
+# @vamdawn/dsh-sidebar-plus
 
 English | [简体中文](README.zh-CN.md)
 
-[![npm version](https://img.shields.io/npm/v/@vamdawn/dsh-astrolabe.svg)](https://www.npmjs.com/package/@vamdawn/dsh-astrolabe)
+[![npm version](https://img.shields.io/npm/v/@vamdawn/dsh-sidebar-plus.svg)](https://www.npmjs.com/package/@vamdawn/dsh-sidebar-plus)
 
-Astrolabe — tabbed left sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab
+Sidebar Plus — tabbed session sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab
 
 It takes over the session region of the shipped sidebar and puts a tab strip on top, so one sidebar browses the same sessions along two axes — **Workspaces** or **status** — without navigating anywhere. It is for DeepSeek Harness users who want both groupings at once.
 
-Status: experimental (`0.x`), tested against DeepSeek Harness client packages `0.2.0-rc.2` and Cordis `4.0.4`. A `0.x` release carries no stability promise, and the plugin's public surface is the host slot contract it depends on — the shipped workspace browser's own slots — so a host update can break it.
+Status: experimental (`0.x`), tested against DeepSeek Harness client packages `0.2.0-rc.2` and Cordis `4.0.4`. A `0.x` release carries no stability promise, and the plugin's public surface is the host slot contract it depends on — the shipped workspace browser's own slots — so a host update can break it. Earlier releases shipped as `@vamdawn/dsh-astrolabe`; the commands below use the new package name.
 
 ## Install
 
 ### From npm
 
 ```sh
-dsh plugin --profile desktop add @vamdawn/dsh-astrolabe
+dsh plugin --profile desktop add @vamdawn/dsh-sidebar-plus
 ```
 
 Use `--profile web` for a Web profile.
@@ -23,7 +23,7 @@ Use `--profile web` for a Web profile.
 ### From a source checkout
 
 ```sh
-cd plugins/dsh-astrolabe
+cd plugins/dsh-sidebar-plus
 npm ci --ignore-scripts
 npm run build
 ```
@@ -31,7 +31,7 @@ npm run build
 Then install that directory into your active profile, typically `desktop` or `web`:
 
 ```sh
-dsh plugin --profile <profile> add "$PWD/plugins/dsh-astrolabe"
+dsh plugin --profile <profile> add "$PWD/plugins/dsh-sidebar-plus"
 ```
 
 The install links the directory, so keep it and its `dist/` in place and rebuild after changing source files. If the macOS Desktop CLI is not on PATH, use:
@@ -49,14 +49,16 @@ Reload the client page. The Host loads the bundle, but a browser evaluates a Cli
 A `0.x` range does not cross the minor, so a profile installed at `0.3.0` keeps running it until the new version is installed explicitly:
 
 ```sh
-dsh plugin --profile desktop add @vamdawn/dsh-astrolabe
+dsh plugin --profile desktop add @vamdawn/dsh-sidebar-plus
 ```
 
 ### Uninstalling
 
 ```sh
-dsh plugin --profile <profile> remove @vamdawn/dsh-astrolabe
+dsh plugin --profile <profile> remove @vamdawn/dsh-sidebar-plus
 ```
+
+The earlier `@vamdawn/dsh-astrolabe` install is removed the same way. Remove it before adding this package, because both claim the same sidebar slot.
 
 ## Usage
 
@@ -87,7 +89,7 @@ dsh plugin --profile <profile> remove @vamdawn/dsh-astrolabe
 ## Development
 
 ```sh
-cd plugins/dsh-astrolabe
+cd plugins/dsh-sidebar-plus
 npm ci --ignore-scripts
 npm run typecheck
 npm test

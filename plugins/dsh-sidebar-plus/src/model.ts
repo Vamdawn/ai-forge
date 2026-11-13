@@ -107,7 +107,7 @@ function subagentEntries(list: SessionListState, parentId: SessionId): readonly 
   return values?.subagentCatalog ?? [];
 }
 
-export function relativeTime(updatedAt: number, now: number, t: PropsLocale<'astrolabe'>['t']): string {
+export function relativeTime(updatedAt: number, now: number, t: PropsLocale<'sidebar-plus'>['t']): string {
   const seconds = Math.max(0, Math.round((now - updatedAt) / 1000));
   if (seconds < 60) {
     return t('time.now');
@@ -354,7 +354,7 @@ export function workspaceGroups(
  */
 export function statusGroups(
   rows: readonly Row[],
-  t: PropsLocale<'astrolabe'>['t'],
+  t: PropsLocale<'sidebar-plus'>['t'],
   pinnedSessionIds: readonly SessionId[],
   pinnedTitle: string,
 ): Group[] {

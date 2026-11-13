@@ -67,8 +67,8 @@ Pick an asset from the index below and open its entry point. Use a skill togethe
 ### Plugins
 
 - [@vamdawn/dsh-appearance-plus](plugins/dsh-appearance-plus/README.md) — customize the DeepSeek Harness interface font, code font, and background image.
-- [@vamdawn/dsh-astrolabe](plugins/dsh-astrolabe/README.md) — a two-axis tabbed panel that replaces the session area of the DeepSeek Harness sidebar, with search, pinned groups, and row actions.
 - [@vamdawn/dsh-rename-session](plugins/dsh-rename-session/README.md) — generate a DeepSeek Harness session name from the conversation context.
+- [@vamdawn/dsh-sidebar-plus](plugins/dsh-sidebar-plus/README.md) — a tabbed session sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab, with search, pinned groups, and row actions.
 
 ### MCP products
 

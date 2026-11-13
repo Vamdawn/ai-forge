@@ -34,11 +34,11 @@ import { PINNED_ACCOUNT, UNGROUPED_ACCOUNT, relativeTime, topRows, mainSessionId
 import type { ActivityChild, ContentHits, Group, Row, SearchHit, TabId } from './model.js';
 import type { ViewStoreHandle } from './store.js';
 
-export const name = 'dsh-astrolabe-client';
+export const name = 'dsh-sidebar-plus-client';
 export const inject = ['slots', 'locale', 'uiWorkspace', 'workspaces', 'sessions', 'shortcuts'];
 
-const NS = 'astrolabe' as const;
-const STYLE_ID = 'dsh-astrolabe-style';
+const NS = 'sidebar-plus' as const;
+const STYLE_ID = 'dsh-sidebar-plus-style';
 /** Completed rows the status sections fold to, and the step each press adds. */
 const REVEAL_STEP = 20;
 /**

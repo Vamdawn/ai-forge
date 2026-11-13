@@ -25,7 +25,7 @@ export interface ViewState {
  */
 export function createViewStore() {
   return defineStore({
-    persist: 'dsh-astrolabe/view',
+    persist: 'dsh-sidebar-plus/view',
     init: (): ViewState => ({ sessionOrder: {}, orderBy: 'updated', groupExpansion: {} }),
     actions: {
       setOrderBy(draft, mode: ViewState['orderBy']) {

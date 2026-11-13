@@ -6,6 +6,10 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+### Changed
+
+- The package ships as `@vamdawn/dsh-sidebar-plus` in place of `@vamdawn/dsh-astrolabe`, so its name now states what it changes: the session sidebar. The directory, the plugin id, the persisted view key, and the plugin's own locale and slot namespaces move with it, so a saved section expansion and manual order start fresh once.
+
 ## [0.4.0] - 2026-10-17
 
 ### Changed

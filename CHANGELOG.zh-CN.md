@@ -6,15 +6,16 @@
 
 - `dsh-rename-session@0.1.0` (2026-10-13) — 首次发布 `@vamdawn/dsh-rename-session`，支持根据会话上下文生成名称与中英文界面 → [详情](plugins/dsh-rename-session/CHANGELOG.zh-CN.md)
 - `dsh-appearance-plus@0.1.0` (2026-10-15) — 首次发布 `@vamdawn/dsh-appearance-plus`，支持自定义界面字体、代码字体与背景图片 → [详情](plugins/dsh-appearance-plus/CHANGELOG.zh-CN.md)
-- `dsh-astrolabe@0.1.0` (2026-10-16) — 首次发布 `@vamdawn/dsh-astrolabe`，提供工作区/状态双轴侧栏、搜索、目录选择与会话换位动画 → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
-- `dsh-astrolabe@0.2.0` (2026-10-16) — 让会话行的每种标记只有一种含义、把正在运行的子代理归入进行中状态，为嵌套的 subagent 行补上委派标签与时间，悬停卡片补充 Workspace 信息，并随包发布简体中文 README 与 CHANGELOG → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
-- `dsh-astrolabe@0.3.0` (2026-10-16) — 进行中分区改用宿主那枚静止的加载弧，分区标题不再重复行内那枚会旋转的 loader → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
-- `dsh-astrolabe@0.4.0` (2026-10-17) — 每个分区只用一个折叠控件，标签承诺的是这一次按压会展开的行数，外观取自官方浏览器自己的溢出按钮；README 围绕安装与升级路径重写 → [详情](plugins/dsh-astrolabe/CHANGELOG.zh-CN.md)
+- `dsh-astrolabe@0.1.0` (2026-10-16) — 首次发布 `@vamdawn/dsh-astrolabe`，提供工作区/状态双轴侧栏、搜索、目录选择与会话换位动画 → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
+- `dsh-astrolabe@0.2.0` (2026-10-16) — 让会话行的每种标记只有一种含义、把正在运行的子代理归入进行中状态，为嵌套的 subagent 行补上委派标签与时间，悬停卡片补充 Workspace 信息，并随包发布简体中文 README 与 CHANGELOG → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
+- `dsh-astrolabe@0.3.0` (2026-10-16) — 进行中分区改用宿主那枚静止的加载弧，分区标题不再重复行内那枚会旋转的 loader → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
+- `dsh-astrolabe@0.4.0` (2026-10-17) — 每个分区只用一个折叠控件，标签承诺的是这一次按压会展开的行数，外观取自官方浏览器自己的溢出按钮；README 围绕安装与升级路径重写 → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
 
 - `noticeflow@0.1.0` (2026-10-31) — 远程 MCP 通知服务首个实验版本，支持 OAuth、持久化 Topic 路由，以及企业微信和飞书群机器人投递 → [详情](mcp/noticeflow/CHANGELOG.zh-CN.md)
 
 ## Repository milestones
 
+- 2026-11-13：`plugins/dsh-astrolabe` 更名为 `plugins/dsh-sidebar-plus`，以 `@vamdawn/dsh-sidebar-plus` 发布，让插件名直接说明它重构的是会话侧边栏；更早的发布记录保留 `dsh-astrolabe@X.Y.Z` 的 tag 文本，链接指向更名后的资产 CHANGELOG。
 - 2026-10-17: 提交由版本化的 pre-commit 钩子把关（经 `core.hooksPath` 接入）：对暂存区涉及的资产跑 typecheck 与测试，再跑文档校验；`verify-docs.py` 现在还会要求双语对具有相同的标题层级、各分节列表条目数与代码块——比对的是命令，翻译可以改写的注释除外。
 - 2026-10-16: 发版规则新增 Publishing 一节：npm 的双因素 web 认证需要交互式终端，因此 `scripts/npm-publish-pty.py` 在伪终端下运行 `npm publish` 并把认证链接写到人能打开的文件里；该节还记录了 registry 的传播延迟、发布产物核对，以及 `0.x` caret 所需的 profile 重装步骤。
 - 2026-10-16: 每份 README 与 CHANGELOG 都补齐中文对照，文档体系统一遵循 [documentation-standard.md](docs/documentation-standard.md)；插件 README 精简为用户向内容；`AGENTS.md` 与规则按 DeepSeek Harness 模板改写为英文，`agents/` 层拆解为 `docs/`（规则）与 `scripts/`（校验）；`scripts/verify-docs.py` 做基础校验，`scripts/verify-docs.spec.py` 覆盖这些校验。

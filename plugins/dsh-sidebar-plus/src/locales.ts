@@ -1,4 +1,4 @@
-/** Keys the Astrolabe client namespace serves. */
+/** Keys the Sidebar Plus client namespace serves. */
 export type LocaleKey =
   | 'tab.workspaces' | 'tab.status'
   | 'group.needsInput' | 'group.working' | 'group.completed' | 'group.pinned'
@@ -116,6 +116,6 @@ export const DICTIONARIES = {
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    astrolabe: LocaleKey;
+    'sidebar-plus': LocaleKey;
   }
 }

@@ -44,7 +44,7 @@ export function DesktopMotionFixture() {
   }, 'Moving session') : null));
   return h('div', { ref: root, style: { position: 'fixed', right: 20, top: 90, width: 420,
     padding: 16, background: '#fff', color: '#222', border: '1px solid #999', zIndex: 99999 } },
-    h('strong', null, 'Astrolabe motion verification (synthetic)'),
+    h('strong', null, 'Sidebar Plus motion verification (synthetic)'),
     h('div', null, h('button', { onClick: () => run(false) }, 'Move across groups'),
       h('button', { onClick: () => run(true) }, 'Three updates 80ms apart')),
     h(AnimatedList, { context: 'fixture', layout: String(step), dragging }, children),

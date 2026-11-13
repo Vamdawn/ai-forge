@@ -45,12 +45,12 @@ const childRows = (list, statuses = new Map()) => topRows(list, statuses, new Se
 test('nested rows take the delegation label, the loader and the newest activity order', () => {
   const list = nested({ running: true }, [
     ['one', 'Research AGENTS.md best practices', false, 20],
-    ['two', 'Translate astrolabe README to Chinese', true, 30],
+    ['two', 'Translate sidebar-plus README to Chinese', true, 30],
     ['three', '   ', false, 10],
   ]);
   assert.deepEqual(childRows(list, new Map([['two', { running: true }]])).children
     .map(child => [child.key, child.title, child.state, child.updatedAt]), [
-    ['two', 'Translate astrolabe README to Chinese', 'ongoing', 30],
+    ['two', 'Translate sidebar-plus README to Chinese', 'ongoing', 30],
     ['one', 'Research AGENTS.md best practices', 'idle', 20],
     ['three', 'log title of three', 'idle', 10],
   ]);

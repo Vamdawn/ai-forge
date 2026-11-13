@@ -10,7 +10,7 @@ file a human can open to read that URL, and answers the "Press ENTER to open in
 the browser" prompt so the CLI opens the browser and polls until the browser
 half of the flow finishes.
 
-    python3 scripts/npm-publish-pty.py plugins/dsh-astrolabe
+    python3 scripts/npm-publish-pty.py plugins/dsh-sidebar-plus
 
 The URL is single-use and belongs to the run that printed it: keep this process
 alive until the human has authenticated. See `docs/versioning-and-release.md`.

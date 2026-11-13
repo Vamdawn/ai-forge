@@ -84,7 +84,7 @@ class PairingTest(DocCheckTest):
         self.assertReports("missing the Simplified Chinese side of the pair")
 
     def test_non_canonical_suffix_is_reported(self) -> None:
-        self.create("plugins/dsh-astrolabe/README.zh.md", "# wrong suffix\n")
+        self.create("plugins/dsh-sidebar-plus/README.zh.md", "# wrong suffix\n")
         self.assertReports("use the fixed suffix")
 
     def test_switcher_must_follow_the_h1(self) -> None:
@@ -103,18 +103,18 @@ class PairStructureTest(DocCheckTest):
     """The pair's shape: heading levels, list entries per section, and code."""
 
     def test_heading_level_mismatch_is_reported(self) -> None:
-        self.edit("plugins/dsh-astrolabe/README.zh-CN.md", "\n## 用法\n", "\n### 用法\n")
+        self.edit("plugins/dsh-sidebar-plus/README.zh-CN.md", "\n## 用法\n", "\n### 用法\n")
         self.assertReports("heading levels differ")
 
     def test_list_entry_count_mismatch_is_reported(self) -> None:
-        self.edit("plugins/dsh-astrolabe/README.zh-CN.md",
+        self.edit("plugins/dsh-sidebar-plus/README.zh-CN.md",
                   "- 侧边栏折叠时渲染 56px 图标栏。\n", "")
         self.assertReports("list entries per section differ")
 
     def test_translated_command_in_a_code_block_is_reported(self) -> None:
-        self.edit("plugins/dsh-astrolabe/README.zh-CN.md",
-                  "dsh plugin --profile <profile> remove @vamdawn/dsh-astrolabe",
-                  "dsh 插件 --profile <profile> remove @vamdawn/dsh-astrolabe")
+        self.edit("plugins/dsh-sidebar-plus/README.zh-CN.md",
+                  "dsh plugin --profile <profile> remove @vamdawn/dsh-sidebar-plus",
+                  "dsh 插件 --profile <profile> remove @vamdawn/dsh-sidebar-plus")
         self.assertReports("differs beyond its comments")
 
     def test_translated_code_comment_is_accepted(self) -> None:

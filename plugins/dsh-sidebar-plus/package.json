@@ -1,13 +1,13 @@
 {
-  "name": "@vamdawn/dsh-astrolabe",
+  "name": "@vamdawn/dsh-sidebar-plus",
   "version": "0.4.0",
-  "description": "Astrolabe \u2014 tabbed left sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab",
+  "description": "Sidebar Plus \u2014 tabbed session sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Vamdawn/ai-forge.git",
-    "directory": "plugins/dsh-astrolabe"
+    "directory": "plugins/dsh-sidebar-plus"
   },
-  "homepage": "https://github.com/Vamdawn/ai-forge/tree/main/plugins/dsh-astrolabe#readme",
+  "homepage": "https://github.com/Vamdawn/ai-forge/tree/main/plugins/dsh-sidebar-plus#readme",
   "bugs": {
     "url": "https://github.com/Vamdawn/ai-forge/issues"
   },
@@ -15,8 +15,9 @@
     "deepseek-harness",
     "dsh",
     "plugin",
-    "astrolabe",
     "sidebar",
+    "session-sidebar",
+    "tabs",
     "workspace",
     "session"
   ],
