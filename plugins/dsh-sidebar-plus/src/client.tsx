@@ -5,7 +5,7 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 // The host's own controls: hand-rolled buttons drifted from the native look
 // (radius, height, hover fill), and this package owns those decisions.
 import {
-  Button, IconCheckCircleFillRegular, IconCheckCircleOutlineRegular, IconChevronRightOutlineRegular, IconCloseFillRegular,
+  Button, IconChevronRightOutlineRegular, IconCloseFillRegular,
   IconEditOutlineRegular, IconEllipsisOutlineRegular, IconFlatListOutlineRegular,
   IconFolderCloseRegular, IconFolderOpenRegular, IconLoadingOutlineRegular,
   IconNewChatOutlineRegular, IconPinFillRegular, IconPinOutlineRegular,
@@ -32,7 +32,7 @@ import { createViewStore } from './store.js';
 import { CSS } from './styles.js';
 import { AnimatedList } from './motion.js';
 import { PINNED_ACCOUNT, UNGROUPED_ACCOUNT, relativeTime, topRows, mainSessionId, workspaceGroups, statusGroups, layoutKeys, searchHits } from './model.js';
-import type { ActivityChild, ContentHits, Group, Row, SearchHit, TabId } from './model.js';
+import type { ActivityChild, ContentHits, Group, Row, RowState, SearchHit, TabId } from './model.js';
 import type { ViewStoreHandle } from './store.js';
 
 export const name = 'dsh-sidebar-plus-client';
@@ -129,12 +129,14 @@ function createdLabel(createdAt: string, t: Props['t']): string {
   return t('card.created', { time: `${date} ${pad(at.getHours())}:${pad(at.getMinutes())}` });
 }
 
-/**
- * The nested subagent layer: one row per delegation the parent is showing, most
- * recently active first. Only an active child carries a mark, so the layer
- * reads as what the Session is doing now rather than as a second history, and
- * every row keeps the time it was last touched.
- */
+/** One attention mark shared by session, nested, and search rows. Idle stays quiet. */
+function SessionMark({ state, unread = false }: { readonly state: RowState; readonly unread?: boolean }): ReactElement | null {
+  if (state === 'input') return h(IconWarningOutlineRegular, { className: 'dwt-input-mark', size: 14 });
+  if (state === 'running') return h(StateDot, { state: 'ongoing' });
+  return unread ? h('span', { className: 'dwt-unread-dot', 'aria-hidden': true }) : null;
+}
+
+/** The nested subagent layer, newest first; active children retain their own mark and time. */
 function ActivityList(props: {
   readonly children: readonly ActivityChild[];
   readonly openSession: Injected['openSession'];
@@ -162,7 +164,7 @@ function ActivityList(props: {
     },
   },
   h('span', { className: 'dwt-row-mark' },
-    child.state === 'idle' ? null : h(StateDot, { state: child.state === 'input' ? 'warning' : 'ongoing' })),
+    h(SessionMark, { state: child.state === 'ongoing' ? 'running' : child.state })),
   h('span', { className: 'dwt-child-title' }, child.title),
   h('span', { className: 'dwt-child-time' }, relativeTime(child.updatedAt, now, t)))));
 }
@@ -216,13 +218,9 @@ function SessionRow(props: {
   /**
    * The one leading mark a Session row earns: something waiting on you,
    * something working — its own turn or a delegation it started — or a
-   * completion to look at. Every other row keeps the 14px cell empty, so the
+   * completion to look at. Every other row keeps the 16px cell empty, so the
    * titles stay on one column without a colour that means two things.
    */
-  const mark = row.blank ? undefined
-    : row.state === 'input' ? 'warning'
-      : row.state === 'running' ? 'ongoing'
-        : row.unread ? 'done' : undefined;
   return h('div', null,
     h('div', {
       className: 'dwt-row',
@@ -272,7 +270,7 @@ function SessionRow(props: {
         }
       },
     },
-    h('span', { className: 'dwt-row-mark' }, mark === undefined ? null : h(StateDot, { state: mark })),
+    h('span', { className: 'dwt-row-mark' }, row.blank ? null : h(SessionMark, { state: row.state, unread: row.unread })),
     // The crawl moves the title's own box, so the clipping has to come from this
     // wrapper: it is the flex item and never moves, which keeps every painted
     // pixel inside the row.
@@ -328,8 +326,8 @@ function SessionRow(props: {
 /**
  * Leading mark of one section. Every section carries the same 16px cell, so the
  * labels of both tabs stay on one column, and where the icon family has an
- * open/closed pair the mark also reads the fold state — the Workspace folder
- * does it by opening, its Pinned and Done counterparts by filling in.
+ * open/closed pair the mark also reads the fold state — Workspace folders open
+ * and the Pinned mark fills in. Status marks retain their shape when folded.
  * Status sections are keyed by their state bucket, the workspace axis by a
  * `WorkspaceId`, and the two synthetic accounts stand for Pinned and for the
  * Sessions no Workspace accounts for.
@@ -357,11 +355,8 @@ function GroupMark({ group, open }: { readonly group: Group; readonly open: bool
       // Still by design: the rows below carry the animated loader.
       return mark('running', h(IconLoadingOutlineRegular, { size: 14 }));
     case 'done':
-      return mark('done', open
-        ? h(IconCheckCircleFillRegular, { size: 14 })
-        : h(IconCheckCircleOutlineRegular, { size: 14 }));
     case 'idle':
-      return mark('idle', h(IconFlatListOutlineRegular, { size: 14 }));
+      return mark(group.key, h('span', { className: 'dwt-status-ring', 'data-unread': group.key === 'done', 'aria-hidden': true }));
     default:
       return mark('loose', h(IconFlatListOutlineRegular, { size: 14 }));
   }
@@ -706,9 +701,7 @@ function SearchHitRow(props: {
     // The leading cell owns every row marker; an archived row keeps it blank
     // because the greyed row already carries that meaning.
     h('span', { className: 'dwt-hit-slot' },
-      openable && hit.state !== 'idle'
-        ? h(StateDot, { state: hit.state === 'input' ? 'warning' : 'ongoing' })
-        : null),
+      openable ? h(SessionMark, { state: hit.state }) : null),
     h('span', { className: 'dwt-hit-title' }, hit.title),
     openable ? null : h('span', { className: 'dwt-hit-actions' },
       h(Tooltip, {

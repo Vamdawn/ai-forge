@@ -180,8 +180,43 @@ test('a Session row marks only what needs attention, keeping the leading cell', 
     ]),
   });
   assert.deepEqual(findClass(renderer, 'dwt-state-dot').map(node => node.props['data-state']),
-    ['ongoing', 'done', 'warning']);
+    ['ongoing']);
+  assert.equal(findClass(renderer, 'dwt-unread-dot').length, 1);
+  assert.equal(findClass(renderer, 'dwt-input-mark').length, 1);
+  assert.deepEqual(findClass(renderer, 'dwt-input-mark').map(node => node.props['data-icon']),
+    ['IconWarningOutlineRegular']);
   assert.equal(findClass(renderer, 'dwt-row-mark').length, 4);
+});
+
+test('Done and Idle keep distinct circular marks when folded and unread acknowledgement clears the row mark', async t => {
+  let unread = true;
+  let groupExpansion = { 'status:done': true, 'status:idle': true };
+  const { renderer, update } = await mount(t, {
+    useSessions: () => ({ ids: ['done', 'idle'], phase: 'ready', byId: { done: summary('done'), idle: summary('idle') } }),
+    useSessionStatus: () => new Map([['done', { completionUnread: unread }]]),
+    useStore: () => ({ orderBy: 'updated', sessionOrder: {}, groupExpansion }),
+  });
+  await openStatusTab(renderer);
+  const mark = kind => findClass(renderer, 'dwt-group-mark').find(node => node.props['data-kind'] === kind);
+  const shape = kind => mark(kind).findAll(node => typeof node.type === 'string' && node.props.className === 'dwt-status-ring')
+    .map(node => node.props['data-unread']);
+  assert.deepEqual(shape('done'), [true]);
+  assert.deepEqual(shape('idle'), [false]);
+  assert.equal(findClass(renderer, 'dwt-unread-dot').length, 1);
+
+  groupExpansion = { 'status:done': false, 'status:idle': false };
+  await update();
+  assert.deepEqual(shape('done'), [true]);
+  assert.deepEqual(shape('idle'), [false]);
+  assert.equal(findClass(renderer, 'dwt-row').length, 0);
+
+  unread = false;
+  groupExpansion = { 'status:idle': true };
+  await update();
+  assert.equal(mark('done'), undefined);
+  assert.equal(findClass(renderer, 'dwt-row').length, 2);
+  assert.equal(findClass(renderer, 'dwt-unread-dot').length, 0);
+  assert.equal(findClass(renderer, 'dwt-state-dot').length, 0);
 });
 
 test('the Working section draws a still loading arc, leaving the loader to the rows', async t => {

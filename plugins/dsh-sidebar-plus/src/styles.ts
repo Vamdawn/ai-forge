@@ -73,10 +73,13 @@ export const CSS = `
 .dwt-group-head:hover .dwt-folder, .dwt-group-head:focus-within .dwt-folder { display: none; }
 .dwt-group-head:hover .dwt-chevron, .dwt-group-head:focus-within .dwt-chevron { display: inline-flex; }
 .dwt-group-head[data-current='true'] .dwt-folder { color: var(--dsw-alias-state-business-primary); }
-/* The Working mark is a line icon drawn in currentColor, so the section tint
-   reaches the glyph through the cell alone. */
-.dwt-group-mark[data-kind='running'] { color: var(--dsw-alias-state-success-primary); }
-.dwt-group-mark[data-kind='input'] { color: var(--dsw-alias-state-warn-primary); }
+/* Working matches the host loader's neutral tone; blue means unseen, not success. */
+.dwt-group-mark[data-kind='running'], .dwt-group-mark[data-kind='idle'] { color: var(--dsw-alias-label-tertiary); }
+.dwt-group-mark[data-kind='input'], .dwt-input-mark { color: var(--dsw-alias-state-warn-primary); }
+.dwt-group-mark[data-kind='done'], .dwt-unread-dot { color: var(--dsw-alias-state-business-primary); }
+.dwt-status-ring { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%; corner-shape: round; }
+.dwt-status-ring[data-unread='true']::after { content: ''; width: 5px; height: 5px; border-radius: 50%; corner-shape: round; background: currentColor; }
+.dwt-unread-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; corner-shape: round; background: currentColor; }
 /* The section menu card: display rows first, then the actions. */
 .dwt-menu-head { display: flex; align-items: center; gap: 6px; padding: 4px 8px 6px; color: var(--dsw-alias-label-primary); font-size: 13px; font-weight: 600; }
 .dwt-menu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
