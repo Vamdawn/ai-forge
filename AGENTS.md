@@ -13,7 +13,6 @@ plugins/<name>/    Plugins loaded by a host application; entry point README.md; 
 mcp/<name>/        MCP products; entry point README.md; versioned
 docs/              Harness rules for this repository, one topic per file
 scripts/           Checks and repository-only tooling
-.claude/ .agents/  Runtime adapters and tool configuration; hold no project knowledge
 ```
 
 Harness rules live in `docs/*.md`, and Conventions lists which one to read before which change. Add a nested `AGENTS.md` only when a subdirectory needs different commands from this file.
@@ -36,6 +35,7 @@ git tag -l '<name>@*'                 # release history of one asset
 - **Version per asset.** Bump, changelog, and tag one asset at a time as `<asset-name>@X.Y.Z`; user-visible changes get an `[Unreleased]` entry in the same commit ([versioning-and-release.md](docs/versioning-and-release.md)).
 - **Docs ship with the change.** A behavior change and the README or CHANGELOG it affects land in one commit; every README and CHANGELOG is a bilingual pair (`README.md` or `CHANGELOG.md` plus `.zh-CN.md`) with the same heading structure ([documentation-standard.md](docs/documentation-standard.md), [versioning-and-release.md](docs/versioning-and-release.md)).
 - **Machine-checkable first.** A constraint a script can enforce becomes a check, not prose; run `python3 scripts/verify-docs.py` before committing documentation changes.
+- **Git conventions.** Read [git-conventions.md](docs/git-conventions.md) before starting repository changes, managing branches, committing, pushing, or preparing a release.
 - **Asset layout.** Read [asset-layout.md](docs/asset-layout.md) before adding, deleting, renaming, or moving an asset, changing a documentation entry point, or editing a rule file.
 - **Markdown assets.** Read [markdown-assets.md](docs/markdown-assets.md) before editing frontmatter-bearing Markdown or a file under `prompts/`; frontmatter and body are separate regions, and scope words such as "keep only" mean the narrowest reading.
 - **README and CHANGELOG.** Read [documentation-standard.md](docs/documentation-standard.md) before writing or restructuring either (sections, length budgets, the bilingual pair).
