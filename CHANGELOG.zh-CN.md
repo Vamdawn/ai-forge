@@ -13,6 +13,7 @@
 
 - `noticeflow@0.1.0` (2026-10-31) — 远程 MCP 通知服务首个实验版本，支持 OAuth、持久化 Topic 路由，以及企业微信和飞书群机器人投递 → [详情](mcp/noticeflow/CHANGELOG.zh-CN.md)
 - `dsh-sidebar-plus@0.5.0` (2026-11-13) — 由 `@vamdawn/dsh-astrolabe` 更名后的版本，名字直接说明它重构的是会话侧边栏；持久化视图键与插件自有的 locale、slot 命名空间随之迁移 → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
+- `dsh-sidebar-plus@0.6.0` (2026-11-16) — 接入官方 Workspaces 浏览器及其已保存的视图设置，Status 划分为四个分组并以树形结构展示子代理会话 → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
 
 ## Repository milestones
 

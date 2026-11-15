@@ -6,6 +6,8 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-16
+
 ### Changed
 
 - Reuse the official Workspaces browser and its view store. Its view options, search, grouping, ordering, archive filtering, folder actions, dialogs, and third-party decorations are available alongside the enhanced Status tab.
