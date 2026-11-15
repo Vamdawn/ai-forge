@@ -27,7 +27,8 @@ import type {} from '@deepseek-ai/dsh-client-shortcuts/client';
 import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots';
 import { DICTIONARIES } from './locales.js';
 import { FLOW_SLOT, MENU_SLOT, ROW_ACTION_SLOT, menuOpenStateFactory } from './contract.js';
-import { createMirror } from './mirror.js';
+import type { UseSectionScroller } from './contract.js';
+import { createMirror, createNativeBrowser, NATIVE_SLOT } from './mirror.js';
 import { createViewStore } from './store.js';
 import { CSS } from './styles.js';
 import { AnimatedList } from './motion.js';
@@ -78,6 +79,8 @@ interface Injected {
     jobs: IJobs['state'];
     /** Whether the directory-picking hole has an occupant; an empty hole offers no trigger. */
     directoryFlow: { getSnapshot(): boolean; subscribe(listener: () => void): () => void };
+    /** Native browser is available after its registration and child aliases are ready. */
+    nativeBrowser: { getSnapshot(): boolean; subscribe(listener: () => void): () => void };
     shortcuts: WorkspaceBrowserInjected['hooks']['shortcuts'];
     /** Monotonic counter forwarded from the host's search command. */
     searchRequest: { getSnapshot(): number; subscribe(listener: () => void): () => void };
@@ -113,10 +116,11 @@ interface GroupDnd {
 }
 
 type Props = PropsRuntime<'sidebar.workspaces'>
-  & PropsRenderSlots<typeof MENU_SLOT | typeof ROW_ACTION_SLOT | typeof FLOW_SLOT>
+  & PropsRenderSlots<typeof MENU_SLOT | typeof ROW_ACTION_SLOT | typeof FLOW_SLOT | typeof NATIVE_SLOT>
   & PropsStore<ViewStoreHandle>
   & PropsLocale<typeof NS>
-  & InjectFace<Injected>;
+  & InjectFace<Injected>
+  & { useSectionScroller?: UseSectionScroller };
 
 /**
  * A Workspace's absolute creation instant, in the shipped hover card's own
@@ -738,6 +742,7 @@ function SearchHitRow(props: {
  * @returns the header row.
  */
 function Header(props: {
+  readonly tabsOnly?: boolean;
   readonly tab: TabId;
   readonly attention: boolean;
   readonly t: Props['t'];
@@ -757,7 +762,7 @@ function Header(props: {
 }): ReactElement {
   const {
     tab, attention, t, onSelect, query, onQuery, searchOpen, onSearchOpen, searchRef, canAdd, onAdd,
-    searchKeys, rootRef, onSearchFocus,
+    searchKeys, rootRef, onSearchFocus, tabsOnly,
   } = props;
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const ids: readonly TabId[] = ['workspaces', 'status'];
@@ -806,7 +811,7 @@ function Header(props: {
     },
     t(id === 'workspaces' ? 'tab.workspaces' : 'tab.status'),
     id === 'status' && attention ? h('span', { className: 'dwt-badge' }) : null))),
-    h('div', { className: searchOpen ? 'dwt-searchslot dwt-searchslot-open' : 'dwt-searchslot' },
+    tabsOnly ? null : h('div', { className: searchOpen ? 'dwt-searchslot dwt-searchslot-open' : 'dwt-searchslot' },
       // The trigger stays mounted while the field is open: it shrinks into the
       // capsule's leading glyph, the way the shipped header keeps its own. It
       // must not be replaced — the click that opened the search is still
@@ -866,7 +871,7 @@ function Header(props: {
           }, h(IconCloseFillRegular, { size: 12 })),
         ]
         : null),
-    h('div', { className: searchOpen ? 'dwt-headactions dwt-headactions-hidden' : 'dwt-headactions' },
+    tabsOnly ? null : h('div', { className: searchOpen ? 'dwt-headactions dwt-headactions-hidden' : 'dwt-headactions' },
       canAdd
         ? h(Tooltip, {
           label: t('addWorkspace'),
@@ -884,13 +889,17 @@ function Header(props: {
 
 function WorkspaceTabs(props: Props): ReactElement {
   const {
-    wide, expandSidebar, t, openSession, startSession, unarchiveSession, renderSlot,
+    wide, expandSidebar, useSectionScroller, t, openSession, startSession, unarchiveSession, renderSlot,
     insertWorkspaceBefore,
-    createWorkspace, searchSessions, useDirectoryFlow, useSearchRequest, useShortcuts,
+    createWorkspace, searchSessions, useDirectoryFlow, useSearchRequest, useShortcuts, useNativeBrowser,
     renameWorkspace, deleteWorkspace,
     useSessions, useSessionStatus, useWorkspaces, useStore, actions, useJobs, watchJobRows,
   } = props;
   const [tab, setTab] = useState<TabId>('workspaces');
+  const nativeAvailable = useNativeBrowser(value => value);
+  const nativeWorkspaces = tab === 'workspaces' && nativeAvailable;
+  const nativeView = wide && nativeWorkspaces;
+  const [nativeSearchOnMount, setNativeSearchOnMount] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -904,7 +913,7 @@ function WorkspaceTabs(props: Props): ReactElement {
   const searchRequest = useSearchRequest(value => value);
   const searchKeys = useShortcuts(entries => entries.find(entry => entry.id === 'session.search')?.keys ?? []);
   useEffect(() => {
-    if (searchRequest === 0) {
+    if (searchRequest === 0 || nativeView) {
       return;
     }
     // The rail has no header to expand a field into, so a request from the
@@ -912,8 +921,15 @@ function WorkspaceTabs(props: Props): ReactElement {
     // dependency of this effect: the shell rebuilds that callback every render,
     // and it is idempotent while the sidebar is already wide.
     expandSidebar();
-    setSearchOpen(true);
+    if (nativeWorkspaces) {
+      setNativeSearchOnMount(true);
+    } else {
+      setSearchOpen(true);
+    }
   }, [searchRequest]);
+  useEffect(() => {
+    if (nativeView) setNativeSearchOnMount(false);
+  }, [nativeView]);
   /**
    * The field only exists once the slot has expanded, so focus follows the open
    * state instead of the request that asked for it — focusing from the request
@@ -1278,8 +1294,9 @@ function WorkspaceTabs(props: Props): ReactElement {
   /** The Workspace of the hovered Session, whose facts the card prints. */
   const hoveredWorkspace = hover === null ? undefined : workspaceBySession.get(hover.row.id);
 
-  return h('div', { className: 'dwt-root' },
+  return h('div', { className: 'dwt-root', 'data-native': nativeView },
     h(Header, {
+      tabsOnly: nativeView,
       tab,
       attention,
       t,
@@ -1303,7 +1320,11 @@ function WorkspaceTabs(props: Props): ReactElement {
         searchRootRef.current = node;
       },
     }),
-    flowError === null ? null : h('div', { className: 'dwt-alert', role: 'alert' },
+    nativeView ? h('div', { className: 'dwt-native-host' }, renderSlot(NATIVE_SLOT, {
+      wide, expandSidebar, searchOnMount: nativeSearchOnMount,
+      ...useSectionScroller === undefined ? {} : { useSectionScroller },
+    })) : null,
+    nativeView || flowError === null ? null : h('div', { className: 'dwt-alert', role: 'alert' },
       t('addFailed'), ': ', flowError,
       h(Button, {
         size: 'sm',
@@ -1312,14 +1333,14 @@ function WorkspaceTabs(props: Props): ReactElement {
           setFlowError(null);
         },
       }, t('dismiss'))),
-    h(AnimatedList, {
+    nativeView ? null : h(AnimatedList, {
       context: `${tab}:${wide}:${needle !== ''}:${JSON.stringify(view.groupExpansion)}`,
       layout: layout.nested,
       dragging: dragging !== null || draggingGroup !== null,
     }, body),
     // The picking interaction fills our own hole; the trigger above only shows
     // while it has an occupant, so an empty hole leaves no dead add affordance.
-    renderSlot(FLOW_SLOT, {
+    nativeView ? null : renderSlot(FLOW_SLOT, {
       open: flowOpen,
       busy: flowBusy,
       onPicked: (path: string) => {
@@ -1346,7 +1367,7 @@ function WorkspaceTabs(props: Props): ReactElement {
     }),
     // The card is fixed-positioned from the hovered row's box, so the sidebar's
     // scroll container cannot clip it.
-    hover === null ? null : h('div', {
+    nativeView || hover === null ? null : h('div', {
       className: 'dwt-card',
       role: 'tooltip',
       style: { top: `${hover.top}px`, left: `${hover.left}px` },
@@ -1370,11 +1391,10 @@ function WorkspaceTabs(props: Props): ReactElement {
 }
 
 /**
- * Shadowing entry: the shipped browser registers at the default priority 0, so
- * a lower priority wins the single slot. It declares its own two Session-row
- * seats rather than the shipped keys — a duplicate declaration throws, and the
- * renderer authorizes `renderSlot` per declaring entry — and the mirror
- * re-registers the shipped and third-party rows into those seats.
+ * The lower-priority entry wins the shell slot, hosting the official browser
+ * behind Workspaces and our own rows behind Status. Each owns private child
+ * seats: the native adapter remaps the official browser's declarations, and
+ * the Status mirrors retain the shipped and third-party Session actions.
  */
 export function apply(ctx: Context): void {
   ctx.effect(() => {
@@ -1393,9 +1413,11 @@ export function apply(ctx: Context): void {
   let hostReady = false;
   /** Published occupancy of our directory-flow hole; the add trigger reads it. */
   const directoryFlowStore = createSnapshotStore(false);
+  const nativeBrowserStore = createSnapshotStore(false);
   /** Bumped by the host search command; the component opens and focuses the box. */
   const searchRequests = createSnapshotStore(0);
   const mirrors = [
+    createNativeBrowser(ctx, () => hostReady, ready => nativeBrowserStore.set(ready)),
     createMirror(ctx, 'sidebar.workspaces.session.menu.item', MENU_SLOT, () => hostReady),
     // The row keeps two controls — the menu trigger and Archive — so the
     // shipped pin button is dropped here; pinning stays reachable as the menu's
@@ -1418,6 +1440,7 @@ export function apply(ctx: Context): void {
   };
   ctx.effect(() => {
     const stops = [
+      ctx.slots.subscribe('sidebar.workspaces', syncMirrors),
       ctx.slots.subscribe('sidebar.workspaces.session.menu.item', syncMirrors),
       ctx.slots.subscribe('sidebar.workspaces.session.row.action', syncMirrors),
       ctx.slots.subscribe('sidebar.workspaces.directoryFlow', syncMirrors),
@@ -1470,6 +1493,7 @@ export function apply(ctx: Context): void {
       locale: NS,
       store: viewStore,
       children: {
+        [NATIVE_SLOT]: { kind: 'single', scope: 'root' },
         [MENU_SLOT]: {
           kind: 'list',
           scope: 'root',
@@ -1501,7 +1525,7 @@ export function apply(ctx: Context): void {
             ? { items: result.value.items, hasMore: result.value.hasMore }
             : { items: [], hasMore: false };
         },
-        hooks: { jobs: ctx.jobs.state, directoryFlow: directoryFlowStore, searchRequest: searchRequests, shortcuts: ctx.shortcuts.catalog },
+        hooks: { jobs: ctx.jobs.state, directoryFlow: directoryFlowStore, nativeBrowser: nativeBrowserStore, searchRequest: searchRequests, shortcuts: ctx.shortcuts.catalog },
       }),
     }, WorkspaceTabs);
     hostReady = true;

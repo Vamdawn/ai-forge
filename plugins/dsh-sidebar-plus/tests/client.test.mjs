@@ -59,7 +59,7 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
     unarchiveSession: async () => {}, insertWorkspaceBefore: async () => {},
     createWorkspace: async () => ({ workspaceId: 'created' }), searchSessions: async () => ({ items: [], hasMore: false }),
     renameWorkspace: async () => {}, deleteWorkspace: async () => {}, renderSlot: () => null,
-    useDirectoryFlow: () => false, useSearchRequest: () => React.useSyncExternalStore(searchRequests.subscribe, searchRequests.getSnapshot),
+    useDirectoryFlow: () => false, useNativeBrowser: () => false, useSearchRequest: () => React.useSyncExternalStore(searchRequests.subscribe, searchRequests.getSnapshot),
     useShortcuts: () => [],
     useJobs: () => ({ rows: {}, observed: {} }), watchJobRows: () => () => {},
     useSessions: () => ({ ids: ['a', 'b'], byId: { a: summary('a'), b: summary('b', 2) }, phase: 'ready' }),
@@ -75,6 +75,29 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
 }
 
 const findClass = (renderer, className) => renderer.root.findAll(node => node.props.className === className && typeof node.type === 'string');
+
+test('Workspaces renders the native browser alone, while tabs still switch to the enhanced Status view', async t => {
+  const calls = [];
+  const { renderer } = await mount(t, {
+    useNativeBrowser: () => true,
+    useSearchRequest: () => 1,
+    renderSlot: (key, owner) => { calls.push([key, owner]); return null; },
+  });
+  assert.ok(calls.some(([key, owner]) => key === 'sidebar-plus.nativeWorkspaces' && owner.wide === true));
+  assert.equal(findClass(renderer, 'dwt-native-host').length, 1);
+  assert.equal(findClass(renderer, 'dwt-group').length, 0);
+  assert.equal(findClass(renderer, 'dwt-search').length, 0, 'the native browser consumes its own search command');
+  assert.equal(findClass(renderer, 'dwt-iconbutton').length, 0, 'only the native toolbar supplies search and add');
+  assert.equal(calls.filter(([key]) => key === 'sidebar-plus.directoryFlow').length, 0, 'no second directory picker mounts');
+
+  await openStatusTab(renderer);
+  assert.equal(findClass(renderer, 'dwt-native-host').length, 0);
+  assert.equal(findClass(renderer, 'dwt-status-title').length, 1);
+  assert.equal(findClass(renderer, 'dwt-row').length, 2);
+  await act(async () => findClass(renderer, 'dwt-tabs')[0].props.onKeyDown({ key: 'ArrowLeft', preventDefault() {} }));
+  assert.equal(findClass(renderer, 'dwt-native-host').length, 1);
+  assert.equal(findClass(renderer, 'dwt-group').length, 0);
+});
 
 test('keyboard activation of row controls does not navigate the parent session', async t => {
   const opened = [];
@@ -580,4 +603,19 @@ test('live job state moves a stopped Session between Working and Done', async t 
 test('the fold control sizes its own border box', () => {
   const css = /var CSS = `([\s\S]*?)`;/.exec(source)[1];
   assert.match(/\.dwt-more \{([^}]*)\}/.exec(css)[1], /box-sizing: border-box;/);
+});
+
+test('Status headings and the leading Session icon column share a horizontal inset', () => {
+  const css = /var CSS = `([\s\S]*?)`;/.exec(source)[1];
+  const leftPadding = selector => {
+    const rule = css.split(`${selector} {`)[1].split('}')[0];
+    const [, right, , left = right] = /padding: ([^;]+);/.exec(rule)[1].trim().split(/\s+/);
+    return left;
+  };
+  assert.equal(leftPadding('.dwt-status-title'), leftPadding('.dwt-row'));
+});
+
+test('Status heading text cannot be selected', () => {
+  const css = /var CSS = `([\s\S]*?)`;/.exec(source)[1];
+  assert.match(/\.dwt-status-title \{([^}]*)\}/.exec(css)[1], /\buser-select: none;/);
 });

@@ -62,29 +62,29 @@ The earlier `@vamdawn/dsh-astrolabe` install is removed the same way. Remove it 
 
 ## Usage
 
-- **Workspaces** groups sessions by registered Workspace, then Ungrouped; **Status** groups them in order: Working (running or waiting for subagent/background work), Waiting (human input or approval), Done (a finished turn with an unseen result), and Idle (no active work or unseen result). Human requests take precedence over active work, and opening a completed Session moves it from Done to Idle.
+- **Workspaces** reuses the official browser, including its saved view options, grouping, ordering, archive filter, and Workspace/session controls; **Status** groups them in order: Working (running or waiting for subagent/background work), Waiting (human input or approval), Done (a finished turn with an unseen result), and Idle (no active work or unseen result). Human requests take precedence over active work, and opening a completed Session moves it from Done to Idle.
 - Both tabs open with a **Pinned** section while anything is pinned, and a pinned session leaves the section it would otherwise sit in.
-- Status groups use semibold text headings aligned with Session titles and extra space between groups, without heading icons or collapse controls. Only working rows animate; waiting rows use an amber circled exclamation, unseen completed results carry a green dot, and blank/idle rows keep the leading cell empty.
-- Workspace sections collapse, and their menus show session counts. Their overflow control reveals another batch, then offers to fold back once all rows are visible. Status sections always stay open, including Idle; each starts with 50 rows and reveals up to 50 more per press until all rows are visible, without a fold-back action.
+- Status group headings use semibold text aligned with the leading Session icon column, with extra space between groups and no heading icons or collapse controls. Only working rows animate; waiting rows use an amber circled exclamation, unseen completed results carry a green dot, and blank/idle rows keep the leading cell empty.
+- Workspace expansion, overflow controls, and menus follow the official browser and share its saved viewing state. Status sections always stay open, including Idle; each starts with 50 rows and reveals up to 50 more per press until all rows are visible, without a fold-back action.
 - Search matches titles and Workspace names immediately, then adds debounced conversation matches with snippets. It follows the host `session.search` binding (⌘K / Ctrl+K by default, including custom keys); the plugin registers no duplicate shortcut. Archived results restore from their row action.
-- Subagent sessions nest under their parent with vertical and elbow connectors, newest activity first. They open on click, use their delegation label, and show their own time.
+- In Status, subagent sessions nest under their parent with vertical and elbow connectors, newest activity first. They open on click, use their delegation label, and show their own time.
 - That layer appears while a Session is working, waiting on input, or owes a look, and fills up to five rows; running and waiting delegations are always retained.
-- Hovering a Session adds its Workspace name, directory, and when that Workspace was created.
-- Workspaces follows the shipped browser’s 34px Workspace headers and 32px Session rows, single-line titles, hover chevrons/actions, and selected-row fill. Rows keep host and third-party menu actions; the native directory picker adds Workspaces, and Workspace removal uses the host’s modal instead of inserting a confirmation into the list.
+- In Status, hovering a Session adds its Workspace name, directory, and when that Workspace was created.
+- Workspaces renders the official component with its own styles, dialogs, search, directory picker, scheduled-task decorations, and third-party actions. The two view tabs share the toolbar on wider sidebars and sit above it on narrow sidebars. Opening search temporarily hides the tabs when they share the toolbar.
 - Sessions and Workspace groups can be dragged to reorder, with automatic reordering animated and reduced-motion preferences respected.
 - The 56px rail renders when the sidebar is collapsed.
 - Plugin copy ships in Chinese and English.
 
 ## Limitations
 
-- Workspaces uses a separate renderer matched to host package `0.2.0-rc.2`; the host exposes the entire browser as one slot, so it cannot embed just the native Workspace list. The shipped browser's view options are not re-hosted: its grouping modes are gone, there is no archived filter, and there is no copy action. The scheduled-task clock mark and the hover card's task section are absent too.
-- An archived search result must be restored before opening, and a failed restore shows inline so it can be retried.
-- A session drag switches to a saved manual order with no control to return to recent-activity order, and drops reorder only within the same group.
-- Workspace groups fold to five idle sessions; running, pending-input, and selected blank sessions do not consume the quota. Closing a Workspace resets that quota, as in the shipped browser; Status sections retain their revealed count while mounted.
+- Native browser reuse depends on the host registration and toolbar structure. It has automated coverage against `0.2.0-rc.2` and has been exercised in the Web host `0.2.2-rc.2`. Workspaces falls back to the plugin list with fewer view options when the native registration is unavailable or the browser fails to render.
+- In Status, an archived search result must be restored before opening, and a failed restore shows inline so it can be retried.
+- The fallback Workspace list has no view-options menu; dragging switches to manual order and accepts drops only within the same group. The native browser retains its ordering controls.
+- Workspaces uses the host’s five-idle-session quota and resets it on closing a group. Status sections retain their revealed count while mounted.
 - The nested layer lists subagent sessions only. Owned running/stopping background jobs affect Working classification without adding rows; scheduled reminders do not affect these buckets. Job state uses one shared roster subscription per listed Session and cataloged direct child, released on removal or unmount.
 - A Session shows five nested rows at a time, so delegations beyond them are reachable only from the host's own subagent menu in the session header.
 - The rail uses placeholder glyphs rather than the shipped icon set.
-- Full native drag-and-drop is unverified: automation triggered `dragstart` but never completed a reliable `drop`. Live Desktop pointer, layout, and directory-picker behaviour has not had a manual pass either, and Web and non-macOS platforms have not been validated live.
+- Web on macOS has been verified for search, view options, directory selection, and Workspace group reordering. Session drag-and-drop, the Desktop app and its system directory picker, and non-macOS platforms remain unverified in a live host.
 
 ## Development
 

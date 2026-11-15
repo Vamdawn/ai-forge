@@ -27,6 +27,9 @@ export const ROW_ACTION_SLOT = 'sidebar-plus.session.row.action';
  */
 export const FLOW_SLOT = 'sidebar-plus.directoryFlow';
 
+/** The newer sidebar shell coordinates wheel scrolling with its active section. */
+export type UseSectionScroller = () => { bindScrollerRef(element: HTMLElement | null): void };
+
 /**
  * The slot-level hook factories the shipped menu declares. Entries read
  * `useMenuOpenState()` to dismiss the menu they sit in, and the renderer binds
@@ -39,6 +42,12 @@ export const menuOpenStateFactory: SlotHookFactory<typeof MENU_SLOT, UseMenuOpen
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
+    /** Official browser, with its own store and remapped child seats. */
+    'sidebar-plus.nativeWorkspaces': {
+      kind: 'single';
+      scope: 'root';
+      owner: { wide: boolean; expandSidebar: () => void; searchOnMount: boolean; useSectionScroller?: UseSectionScroller };
+    };
     /** This plugin's own Session "..." menu: the shipped rows and third-party rows, re-hosted. */
     'sidebar-plus.session.menu.item': {
       kind: 'list';

@@ -1,5 +1,21 @@
 export const CSS = `
 .dwt-root { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+/* Reuse the native browser's complete region, including its toolbar and list.
+   Only replace its header label with our tabs; no hashed host classes are used.
+   The host's accessible search input tells us when it owns the shared header. */
+.dwt-root[data-native='true'] { position: relative; container-type: inline-size; }
+.dwt-native-host { display: flex; flex: 1; min-height: 0; min-width: 0; }
+.dwt-native-host > [data-slot='sidebar-plus.nativeWorkspaces'] > div { flex: 1; min-width: 0; }
+.dwt-native-host > [data-slot='sidebar-plus.nativeWorkspaces'] > div > div:first-child > span:first-child { visibility: hidden; }
+.dwt-root[data-native='true'] > .dwt-head { position: absolute; z-index: 1; top: 2px; left: 4px; max-width: calc(100% - 104px); height: 36px; margin: 0; padding: 0; border: 0; }
+@container (min-width: 250px) {
+  .dwt-root[data-native='true']:has(.dwt-native-host input[tabindex='0']) > .dwt-head { visibility: hidden; pointer-events: none; }
+}
+/* The shell can shrink below the combined width of the tabs and three controls. */
+@container (width < 250px) {
+  .dwt-root[data-native='true'] > .dwt-native-host { margin-top: 36px; }
+  .dwt-root[data-native='true'] > .dwt-head { max-width: none; right: 4px; }
+}
 /* The region's one header row, shaped like the shipped Workspace section header
    this entry replaces: a 36px band, the label slot on the left, and 28px icon
    buttons on the right that the expanding search pushes out of the way. */
@@ -47,11 +63,10 @@ export const CSS = `
 .dwt-body::-webkit-scrollbar-thumb { background: transparent; border-radius: 999px; }
 .dwt-body:hover::-webkit-scrollbar-thumb { background: var(--dsh-scrollbar-thumb, var(--dsw-alias-border-l2)); }
 .dwt-group { margin-top: 4px; }
-/* Status headings share the Session title's 28px inset; whitespace carries the
-   grouping, with no icon cell, hover fill, or folding affordance. */
+/* Status headings start at the leading Session icon column. */
 .dwt-group[data-status='true'] { margin-top: 20px; }
 .dwt-group[data-status='true']:first-child { margin-top: 8px; }
-.dwt-status-title { box-sizing: border-box; display: flex; align-items: center; min-width: 0; height: 30px; margin: 0; padding: 0 8px 0 28px; color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; }
+.dwt-status-title { box-sizing: border-box; display: flex; align-items: center; min-width: 0; height: 30px; margin: 0; padding: 0 8px; color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; user-select: none; }
 .dwt-group[data-status='true'] > .dwt-group-head:hover { background: none; }
 .dwt-group-head { display: flex; align-items: center; gap: 2px; border-radius: 6px; }
 /* The hover fill spans the whole header row — leading mark, label, and the

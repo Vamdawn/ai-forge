@@ -8,9 +8,15 @@ All notable changes to this asset are documented in this file. The format follow
 
 ### Changed
 
-- Replace Status group icons with semibold headings and whitespace aligned to Session titles. All Status groups stay open with progressive 50-row loading; subagent rows gain tree connectors, and unseen completed Sessions use green dots again.
+- Reuse the official Workspaces browser and its view store. Its view options, search, grouping, ordering, archive filtering, folder actions, dialogs, and third-party decorations are available alongside the enhanced Status tab.
+- Status groups use semibold headings aligned with the leading Session icon column, with more space between groups. All Status groups stay open and load 50 rows at a time. Subagent rows show tree connectors, and unseen completed Sessions use green dots again.
 - Split Status into Working, Waiting, Done, and Idle so unseen results no longer mix with read history. Running/stopping background jobs and child work keep the parent active, human requests take precedence, and every Status section opens with 50 rows per reveal step.
 - Align Workspaces row sizes, title truncation, hover controls, selected styling, and collapse resets with the shipped browser. Workspace removal now opens the host modal, keeping its confirmation out of the session list.
+
+### Fixed
+
+- Prevent accidental text selection when dragging across Status group headings.
+- Returning to Workspaces keeps search closed until the next request. On narrow sidebars, the tabs sit above the host toolbar so all controls stay clickable.
 
 ## [0.5.0] - 2026-11-13
 

@@ -1,5 +1,107 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { LocaleNamespaceMap, SlotMap, StoredEntry } from '@deepseek-ai/dsh-client-ui-slots';
+import type { WorkspaceBrowserInjected } from '@deepseek-ai/dsh-client-ui-workspace/client';
+import { createElement, useState } from 'react';
+import type { ComponentType, ReactNode } from 'react';
+
+export const NATIVE_SLOT = 'sidebar-plus.nativeWorkspaces';
+
+/**
+ * Re-host the shipped browser with its original store handle, inject factory,
+ * locale, and component. The renderer reference-counts a root store handle,
+ * so both registrations share the host's existing instance. Each child gets
+ * a private alias to preserve authorization without redeclaring a host slot.
+ */
+export function createNativeBrowser(ctx: Context, ready: () => boolean, onReady: (ready: boolean) => void): Mirror {
+  let source: StoredEntry | undefined;
+  let remove: (() => void) | undefined;
+  let mirrors: Mirror[] = [];
+  let stops: (() => void)[] = [];
+  let available = false;
+  const publish = (next: boolean): void => {
+    if (available === next) return;
+    available = next;
+    onReady(next);
+  };
+  const clear = (): void => {
+    for (const stop of stops) stop();
+    stops = [];
+    for (const mirror of mirrors) mirror.dispose();
+    mirrors = [];
+    remove?.();
+    remove = undefined;
+    source = undefined;
+    publish(false);
+  };
+  return {
+    sync(): void {
+      const next = ready() ? ctx.slots.entries('sidebar.workspaces').find(entry =>
+        entry.children?.['sidebar.workspaces.directoryFlow'] !== undefined) : undefined;
+      if (next === source) {
+        for (const mirror of mirrors) mirror.sync();
+        return;
+      }
+      clear();
+      if (next === undefined) return;
+      const children = Object.entries(next.children ?? {});
+      // The alias registrations and the shared store stay on the root scope.
+      if (children.some(([, spec]) => spec.scope !== 'root' || spec.kind === 'chain')) return;
+      const aliases = new Map(children.map(([key]) => [key, `sidebar-plus.native.${key}`]));
+      type Render = (key: string, owner: unknown, opts?: unknown) => ReactNode;
+      type ShortcutState = ReturnType<WorkspaceBrowserInjected['hooks']['workspaceShortcuts']['getSnapshot']>;
+      type ShortcutHook = <T>(select: (state: ShortcutState) => T) => T;
+      type NativeProps = Record<string, unknown> & { renderSlot: Render; useWorkspaceShortcuts?: ShortcutHook };
+      const Native = next.component as ComponentType<NativeProps>;
+      const Host = ({ renderSlot, useWorkspaceShortcuts, searchOnMount, ...props }: NativeProps): ReactNode => {
+        const shortcuts = useWorkspaceShortcuts?.(state => state);
+        // The host treats every nonzero counter as a request on mount. Skip
+        // requests already delivered to an earlier view, except a rail request
+        // that expanded this view and is still waiting for its search field.
+        const [baseline] = useState(() => (shortcuts?.searchRequest ?? 0) - (searchOnMount ? 1 : 0));
+        return createElement(Native, {
+          ...props,
+          useWorkspaceShortcuts: shortcuts && (select => select({
+            ...shortcuts, searchRequest: shortcuts.searchRequest - baseline,
+          })),
+          renderSlot: (key, owner, opts) => {
+            const alias = aliases.get(key);
+            if (alias === undefined) throw new Error(`Native Workspaces requested an undeclared child: ${key}`);
+            return renderSlot(alias, owner, opts);
+          },
+        });
+      };
+      // The source is a runtime ledger entry; keep type erasure at this foreign
+      // entry boundary. register() still validates every declaration and store.
+      const register = ctx.slots.register.bind(ctx.slots) as unknown as (options: object, component: unknown) => () => void;
+      try {
+        remove = register({
+          name: NATIVE_SLOT,
+          store: next.store,
+          inject: next.inject,
+          locale: next.locale,
+          children: Object.fromEntries(children.map(([key, spec]) => [aliases.get(key)!, spec])),
+        }, Host);
+        source = next;
+        mirrors = children.map(([key]) => createMirror(ctx,
+          key as keyof SlotMap & string, aliases.get(key)! as keyof SlotMap & string, () => ready() && remove !== undefined));
+        const sync = (): void => { for (const mirror of mirrors) mirror.sync(); };
+        stops = children.map(([key]) => ctx.slots.subscribe(key as keyof SlotMap & string, sync));
+        stops.push(ctx.slots.onEntryError((key, entry, _error, info) => {
+          if (key !== NATIVE_SLOT || !info.abdicated || entry.component !== Host) return;
+          // A child-slot update should not retry the same incompatible browser.
+          // Its replacement or the next sidebar declaration can try again.
+          publish(false);
+        }));
+        sync();
+        publish(true);
+      } catch (error) {
+        clear();
+        console.warn('Sidebar Plus could not mount native Workspaces:', error);
+      }
+    },
+    dispose: clear,
+  };
+}
 
 /** One target slot's mirrored entries, reconciled against its source slot. */
 export interface Mirror {
