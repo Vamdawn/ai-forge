@@ -15,7 +15,7 @@ Read when: starting repository changes; creating or merging branches; committing
 ## Release boundary
 
 1. Prepare releases on `main` with a clean working tree, after integrating the target asset's feature work and synchronizing with `origin/main`. Review all changes to that asset since its last release, including changes from earlier tasks.
-2. Follow [versioning-and-release.md](versioning-and-release.md) for the release commit, annotated tag, distribution, and artifact verification. The publish-before-push requirement for registry packages applies to the release commit and its tag; it does not block earlier feature pushes.
+2. Follow [versioning-and-release.md](versioning-and-release.md) for the distribution steps. For npm releases, push the release commit to `main`, dispatch the publishing workflow manually, and push the annotated tag only after verifying the registry artifact against the workflow artifact.
 3. Push only the target asset's release tag for that run. Preserve published release commits and tags; deliver corrections through new commits and new versions.
 4. Preserve pushed `main` history. Correct mistakes with follow-up or revert commits; limit commit rewriting to unpublished work.
 

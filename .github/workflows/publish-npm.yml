@@ -1,0 +1,105 @@
+name: Publish npm package
+run-name: Publish ${{ inputs.asset }}@${{ inputs.version }} to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      asset:
+        description: Plugin to publish
+        required: true
+        type: choice
+        options:
+          - dsh-appearance-plus
+          - dsh-rename-session
+          - dsh-sidebar-plus
+      version:
+        description: Expected stable version in package.json (X.Y.Z)
+        required: true
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: npm-publish-${{ inputs.asset }}
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    if: github.repository == 'Vamdawn/ai-forge' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.tarball.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Check, test, and pack the selected plugin
+        env:
+          ASSET: ${{ inputs.asset }}
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          case "$ASSET" in
+            dsh-appearance-plus|dsh-rename-session|dsh-sidebar-plus) ;;
+            *) echo "Unknown npm asset: $ASSET" >&2; exit 1 ;;
+          esac
+          python3 scripts/verify-docs.py
+          cd "plugins/$ASSET"
+          node --input-type=commonjs <<'NODE'
+          const { name, version, private: isPrivate } = require("./package.json");
+          const expectedName = `@vamdawn/${process.env.ASSET}`;
+          const expectedVersion = process.env.EXPECTED_VERSION;
+          const stableVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+          if (isPrivate || name !== expectedName || version !== expectedVersion ||
+              !stableVersion.test(version)) {
+            console.error(`Expected a public ${expectedName}@${expectedVersion} with a stable version. Found ${name}@${version}.`);
+            process.exit(1);
+          }
+          NODE
+          npm ci --ignore-scripts
+          npm run typecheck
+          npm test
+          mkdir -p "$RUNNER_TEMP/npm-package"
+          npm pack --pack-destination "$RUNNER_TEMP/npm-package"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: tarball
+        with:
+          name: npm-tarball-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/npm-package/*.tgz
+          if-no-files-found: error
+
+  publish:
+    needs: pack
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org/'
+          package-manager-cache: false
+      - run: npm install --global --ignore-scripts npm@11.21.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.pack.outputs.artifact-id }}
+          path: npm-package
+      - name: Publish the packed tarball
+        run: |
+          shopt -s nullglob
+          tarballs=(./npm-package/*.tgz)
+          if (( ${#tarballs[@]} != 1 )); then
+            echo "Expected exactly one npm tarball" >&2
+            exit 1
+          fi
+          npm publish "${tarballs[0]}" --registry=https://registry.npmjs.org/ --access public --ignore-scripts

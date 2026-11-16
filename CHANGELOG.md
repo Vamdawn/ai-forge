@@ -19,6 +19,7 @@ This file is the global release index: every asset release appends one summary l
 
 ## Repository milestones
 
+- On 2026-11-17, npm publishing moved to a manually triggered GitHub Actions workflow using OIDC. Release tags are pushed after the npm tarball matches the workflow artifact.
 - On 2026-11-16, the reusable rule templates moved into `prompts/` and adopted the prompt frontmatter and index conventions.
 - 2026-11-13: `plugins/dsh-astrolabe` became `plugins/dsh-sidebar-plus`, published as `@vamdawn/dsh-sidebar-plus`, so the plugin name states that it reworks the session sidebar; the earlier release lines keep their `dsh-astrolabe@X.Y.Z` tags and point at the renamed asset's changelog.
 - 2026-10-17: Commits are gated by a versioned pre-commit hook, reached through `core.hooksPath`, that runs each staged asset's typecheck and tests plus the documentation checks; `verify-docs.py` now also holds a pair to the same heading levels, list entries per section, and code blocks, comparing commands rather than the comments a translation may rewrite.

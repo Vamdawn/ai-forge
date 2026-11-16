@@ -19,6 +19,7 @@
 
 ## Repository milestones
 
+- 2026-11-17 将 npm 发布迁到手动触发的 GitHub Actions workflow，通过 OIDC 认证。npm 下载的包与流水线产物核对一致后才推送发版标签。
 - 2026-11-16 将可复用的规则模板并入 `prompts/`，统一使用提示词文件头和索引约定。
 - 2026-11-13：`plugins/dsh-astrolabe` 更名为 `plugins/dsh-sidebar-plus`，以 `@vamdawn/dsh-sidebar-plus` 发布，让插件名直接说明它重构的是会话侧边栏；更早的发布记录保留 `dsh-astrolabe@X.Y.Z` 的 tag 文本，链接指向更名后的资产 CHANGELOG。
 - 2026-10-17: 提交由版本化的 pre-commit 钩子把关（经 `core.hooksPath` 接入）：对暂存区涉及的资产跑 typecheck 与测试，再跑文档校验；`verify-docs.py` 现在还会要求双语对具有相同的标题层级、各分节列表条目数与代码块——比对的是命令，翻译可以改写的注释除外。
