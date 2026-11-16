@@ -1,6 +1,6 @@
 {
   "name": "@vamdawn/dsh-sidebar-plus",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Sidebar Plus for DeepSeek Harness adds Status grouping and configurable grouping shortcuts to Workspaces.",
   "repository": {
     "type": "git",

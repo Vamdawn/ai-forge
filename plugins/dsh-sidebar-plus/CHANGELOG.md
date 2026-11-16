@@ -6,6 +6,8 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-17
+
 ### Changed
 
 - Status session rows now follow Workspaces for compact timestamps, waiting labels, pin indicators, and row actions. The shared menu restores host actions such as pinning and renaming, and the hover card shows live session details with a copyable title.
