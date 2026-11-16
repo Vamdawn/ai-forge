@@ -1,6 +1,6 @@
 ---
 title: Interaction Design Review — Multi-Agent Parallel Audit
-type: prompt-template
+description: Audit a project's interaction design from multiple perspectives and recommend usability improvements.
 language: en
 ---
 

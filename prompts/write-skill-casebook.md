@@ -1,6 +1,6 @@
 ---
 title: Skill Casebook 错误复盘
-type: prompt-template
+description: 把 Skill 执行失误整理成复盘，记录错误现象、根因、修复建议和验证方式。
 language: zh
 ---
 

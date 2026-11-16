@@ -1,6 +1,6 @@
 ---
 title: Skill Casebook 验收分析
-type: prompt-template
+description: 分析 Skill 使用反馈，归纳共性问题与成因，并提出可落地的优化建议。
 language: zh
 ---
 

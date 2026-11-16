@@ -1,3 +1,12 @@
+---
+title: Claude Code Workflow Rules Inspired by Boris Cherny
+description: Provide a Claude Code rules template for planning, delegation, verification, and learning from corrections.
+language: en
+# Reference for the workflow. The original publication of this template is unverified.
+source: https://x.com/bcherny/status/2017742741636321619
+author: Boris Cherny (@bcherny)
+---
+
 ## Workflow Orchestration
 
 ### 1. Plan Node Default

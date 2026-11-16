@@ -4,15 +4,14 @@ English | [简体中文](README.zh-CN.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A personal monorepo of reusable agent capability assets: skills, prompts, rules, CLI tools, host-application plugins, and MCP products. Every asset evolves on its own — version, changelog, and release are per asset, and the repository carries no global version.
+A personal monorepo of reusable agent capability assets including skills, prompt templates, CLI tools, host-application plugins, and MCP products. Versioned assets have their own changelogs and releases. The repository carries no global version.
 
 ## Repository layout
 
 | Directory | Contents | Entry point |
 |-----------|----------|-------------|
 | `skills/` | Skills an agent loads on demand | `SKILL.md` |
-| `prompts/` | Prompt templates you trigger by hand | the `.md` file |
-| `rules/` | Rules loaded in every session, or whole-file rule templates | the `.md` file |
+| `prompts/` | Manually invoked prompts and reusable rule templates | the `.md` file |
 | `tools/` | Standalone CLI tools | the asset's `README.md` |
 | `plugins/` | Plugins loaded by a host application | the asset's `README.md` |
 | `mcp/` | MCP products and their related components | the asset's `README.md` |
@@ -22,6 +21,8 @@ A personal monorepo of reusable agent capability assets: skills, prompts, rules,
 ## Usage
 
 Pick an asset from the index below and open its entry point. Use a skill together with the resources in its directory; follow each tool, plugin, or MCP product's README for its status and usage.
+
+To use a rule template, copy its body into the consuming project's instruction file.
 
 ## Asset index
 
@@ -46,6 +47,8 @@ Pick an asset from the index below and open its entry point. Use a skill togethe
 ### Prompts
 
 - [accept-skill-casebook](prompts/accept-skill-casebook.md) — analyze skill usage feedback and propose improvements.
+- [claude-md-from-boris](prompts/claude-md-from-boris.md) — workflow rules for planning, verification, and retrospectives.
+- [deepseek-harness-inspired-agents-md](prompts/deepseek-harness-inspired-agents-md.md) — a project `AGENTS.md` template inspired by DeepSeek Harness.
 - [handoff-session](prompts/handoff-session.md) — produce a handoff summary for the next session.
 - [html-pr-review-artifact](prompts/html-pr-review-artifact.md) — generate an HTML report with the diff and review annotations.
 - [interaction-design-review](prompts/interaction-design-review.md) — review an interaction design through parallel multi-role passes.
@@ -54,11 +57,6 @@ Pick an asset from the index below and open its entry point. Use a skill togethe
 - [prompt-optimizer](prompts/prompt-optimizer.md) — improve a prompt through iterative review.
 - [svpino-interview-to-spec](prompts/svpino-interview-to-spec.md) — pin down requirements through a turn-by-turn interview, then write a spec.
 - [write-skill-casebook](prompts/write-skill-casebook.md) — record a skill failure, its root cause, and a fix proposal.
-
-### Rules
-
-- [CLAUDE-From-Boris](rules/CLAUDE-From-Boris.md) — workflow rules for planning, verification, and retrospectives.
-- [deepseek-harness-inspired-agents-md](rules/deepseek-harness-inspired-agents-md.md) — a project `AGENTS.md` template inspired by DeepSeek Harness.
 
 ### Tools
 
@@ -76,7 +74,7 @@ Pick an asset from the index below and open its entry point. Use a skill togethe
 
 ## Versioning and releases
 
-- Skills, tools, plugins, and MCP products are versioned independently and tagged `<asset-name>@X.Y.Z`; prompts and rules change through Git history.
+- Skills, tools, plugins, and MCP products are versioned independently and tagged `<asset-name>@X.Y.Z`. Prompt templates track changes through Git history.
 - [CHANGELOG.md](CHANGELOG.md) indexes every release; details live in the asset's own changelog.
 - The repository has no global version. The convention is in [versioning-and-release.md](docs/versioning-and-release.md).
 

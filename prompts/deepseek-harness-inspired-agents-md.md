@@ -1,3 +1,11 @@
+---
+title: DeepSeek Harness 风格的 AGENTS.md 模板
+description: 为项目编写 AGENTS.md，明确仓库布局、常用命令和项目约定。
+language: zh
+source: https://github.com/deepseek-ai/deepseek-harness/blob/master/AGENTS.md
+author: DeepSeek Harness
+---
+
 # AGENTS.md
 
 {{项目名}} 是 {{一句话定位}}，技术栈 {{语言 / 框架 / 运行时}}。

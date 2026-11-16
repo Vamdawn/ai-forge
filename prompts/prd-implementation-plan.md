@@ -1,6 +1,6 @@
 ---
 title: PRD 实现方案 — 多智能体并行分析
-type: prompt-template
+description: 把 PRD 转成可逐步执行的 TDD 实施方案，列出任务和验证步骤。
 language: zh
 ---
 

@@ -8,8 +8,7 @@ Read when: adding, deleting, renaming, or moving an asset; changing a documentat
    | Location | What belongs there | Test |
    |----------|--------------------|------|
    | `skills/<name>/` | Reusable capability triggered on demand | Does it need resources, a description trigger, or a version? |
-   | `prompts/*.md` | One-off prompt the user triggers by hand | Single file, no resources, not versioned |
-   | `rules/*.md` | Rule loaded every session, or a whole-file template | Does it apply to every session of a consuming project? |
+   | `prompts/*.md` | Manually invoked prompt or reusable rule template | Single file, no resources, not versioned |
    | `tools/<name>/` | Standalone CLI tool | Does it ship an executable of its own? |
    | `plugins/<name>/` | Plugin a host application loads | Is it loaded by a host at runtime? |
    | `mcp/<name>/` | MCP-first product, including its server, product documentation, and independently needed client application | Is MCP the product's integration contract? |
@@ -17,7 +16,7 @@ Read when: adding, deleting, renaming, or moving an asset; changing a documentat
    | `scripts/` | Check or tool that only maintains this repository | Does it serve repository maintenance rather than a consumer? |
    | `.claude/`, `.agents/` | Runtime adapters and tool configuration | Is it tool runtime state? |
 2. Keep every asset self-contained: reference material, templates, scripts, and tests live inside the asset, and no shared top-level resource directory exists.
-3. Take `SKILL.md` as a skill's entry point and add `references/`, `scripts/`, or `evals/` as that skill needs them. A skill's own `agents/` directory is its runtime metadata, separate from this repository's harness.
+3. Put a skill's operating instructions in its `SKILL.md` and add `references/`, `scripts/`, or `evals/` as needed. A skill's own `agents/` directory is its runtime metadata, separate from this repository's harness.
 4. Organize subdirectories by the asset's real needs and keep working layouts (`templates/`, `references/templates/`) as they are.
 5. Update every referrer in the same change when moving or renaming something; when an implementation path depends on the location, include that code change in the task.
 6. Give harness rules one topic per file, named after the topic, and open the file with a `Read when:` line so it states its own trigger. A `README.md` or `CHANGELOG.md` inside `docs/` is a document rather than a rule, and follows the documentation standard.

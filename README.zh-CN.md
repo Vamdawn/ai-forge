@@ -4,15 +4,14 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-个人 Agent 能力资产 monorepo：提供可复用的 skills、prompts、rules、CLI 工具、宿主应用插件与 MCP 产品。每个资产独立演进——版本、变更记录与发布都以单个资产为单位，仓库没有全局版本号。
+个人 Agent 能力资产 monorepo，提供可复用的 skills、提示词模板、CLI 工具、宿主应用插件与 MCP 产品。版本化资产各自维护变更记录并独立发布，仓库没有全局版本号。
 
 ## 仓库结构
 
 | 目录 | 内容 | 使用入口 |
 |------|------|----------|
 | `skills/` | 按需加载的 Agent 能力 | `SKILL.md` |
-| `prompts/` | 手动触发的一次性提示词模板 | 对应 `.md` 文件 |
-| `rules/` | 每次会话常驻加载的规则片段或整文件模板 | 对应 `.md` 文件 |
+| `prompts/` | 手动触发的提示词和可复用的规则模板 | 对应 `.md` 文件 |
 | `tools/` | 独立 CLI 工具 | 所属资产的 `README.md` |
 | `plugins/` | 宿主应用加载的插件 | 所属资产的 `README.md` |
 | `mcp/` | MCP 产品及其相关组件 | 所属资产的 `README.md` |
@@ -22,6 +21,8 @@
 ## 使用方式
 
 从下方索引选择所需资产，打开对应入口。skill 连同所属目录的资源一起使用；工具、插件与 MCP 产品按各自 README 了解状态和用法。
+
+使用规则模板时，将模板正文复制到目标项目的指令文件。
 
 ## 资产索引
 
@@ -46,6 +47,8 @@
 ### Prompts
 
 - [accept-skill-casebook](prompts/accept-skill-casebook.md)：分析 skill 使用反馈并提出优化建议。
+- [claude-md-from-boris](prompts/claude-md-from-boris.md)：规划、验证与复盘等工作流规则。
+- [deepseek-harness-inspired-agents-md](prompts/deepseek-harness-inspired-agents-md.md)：受 DeepSeek Harness 启发的项目 `AGENTS.md` 模板。
 - [handoff-session](prompts/handoff-session.md)：生成供下一次会话使用的交接摘要。
 - [html-pr-review-artifact](prompts/html-pr-review-artifact.md)：生成包含 diff 与审查注释的 HTML 报告。
 - [interaction-design-review](prompts/interaction-design-review.md)：通过多角色并行审查交互设计。
@@ -54,11 +57,6 @@
 - [prompt-optimizer](prompts/prompt-optimizer.md)：通过迭代审查优化提示词。
 - [svpino-interview-to-spec](prompts/svpino-interview-to-spec.md)：通过逐轮访谈明确需求并形成规格。
 - [write-skill-casebook](prompts/write-skill-casebook.md)：记录 skill 失败案例、根因与修复建议。
-
-### Rules
-
-- [CLAUDE-From-Boris](rules/CLAUDE-From-Boris.md)：规划、验证与复盘等工作流规则。
-- [deepseek-harness-inspired-agents-md](rules/deepseek-harness-inspired-agents-md.md)：受 DeepSeek Harness 启发的项目 `AGENTS.md` 模板。
 
 ### Tools
 
@@ -76,7 +74,7 @@
 
 ## 版本与发布
 
-- skills、tools、plugins 与 MCP 产品各自独立版本化，tag 格式为 `<asset-name>@X.Y.Z`；prompts 与 rules 以 Git 历史记录变更。
+- skills、tools、plugins 与 MCP 产品各自独立版本化，tag 格式为 `<asset-name>@X.Y.Z`。提示词模板通过 Git 历史追踪变更。
 - [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) 索引每次发布，变更细节见资产自己的 CHANGELOG。
 - 仓库没有全局版本号，约定见[版本与发布规则](docs/versioning-and-release.md)。
 

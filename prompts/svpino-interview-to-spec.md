@@ -1,9 +1,9 @@
 ---
 title: SVPino Interview-to-Spec Prompt
+description: Interview the user one question at a time to clarify requirements, then write an implementation spec.
+language: en
 source: https://x.com/svpino/status/2045852437005869292
 author: Santiago (@svpino)
-type: prompt-template
-language: en
 ---
 
 # SVPino Interview-to-Spec Prompt

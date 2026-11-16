@@ -125,7 +125,7 @@ class PairStructureTest(DocCheckTest):
 
 class LinkTest(DocCheckTest):
     def test_broken_link_in_a_rule_file_is_reported(self) -> None:
-        self.edit("docs/markdown-assets.md", "(asset-layout.md)", "(asset-layout-gone.md)")
+        self.edit("docs/prompt-template-standard.md", "(asset-layout.md)", "(asset-layout-gone.md)")
         self.assertReports("link target does not exist")
 
     def test_broken_link_in_mcp_product_docs_is_reported(self) -> None:
@@ -164,14 +164,37 @@ class IndexAndBudgetTest(DocCheckTest):
         self.assertReports("exceeds the 110-line budget")
 
 
+class PromptNameTest(DocCheckTest):
+    def test_noncanonical_prompt_filenames_are_reported(self) -> None:
+        filenames = ("Mixed-case.md", "with_underscore.md", "double--hyphen.md", "wrong-extension.MD")
+        for filename in filenames:
+            self.create(f"prompts/{filename}", "---\ntitle: Probe\ndescription: Check naming.\nlanguage: en\n---\n")
+        self.assertReports(*(f"prompts/{filename}: use lowercase English words" for filename in filenames))
+
+
+class PromptFrontmatterTest(DocCheckTest):
+    def test_missing_description_and_unsupported_field_are_reported(self) -> None:
+        self.create("prompts/metadata-probe.md", "---\ntitle: Probe\ntype: prompt-template\nlanguage: en\n---\n")
+        self.assertReports("missing prompt field `description`", "unsupported prompt field `type`")
+
+    def test_prompt_language_and_incomplete_attribution_are_reported(self) -> None:
+        self.create("prompts/metadata-probe.md",
+                    "---\ntitle: Probe\ndescription: Check metadata.\nlanguage: fr\nauthor: Alice\n---\n")
+        self.assertReports("prompt language must be `zh` or `en`", "prompt fields `source` and `author` must appear together")
+
+    def test_missing_closing_delimiter_is_reported(self) -> None:
+        self.create("prompts/metadata-probe.md", "---\ntitle: Probe\ndescription: Check metadata.\nlanguage: en\n")
+        self.assertReports("prompt frontmatter must end with `---`")
+
+
 class RuleFileTest(DocCheckTest):
     def test_missing_trigger_line_is_reported(self) -> None:
-        self.edit("docs/markdown-assets.md", "Read when:", "Applies to:")
+        self.edit("docs/prompt-template-standard.md", "Read when:", "Applies to:")
         self.assertReports("must state the trigger")
 
     def test_rule_budget_is_enforced(self) -> None:
-        self.edit("docs/markdown-assets.md", "# Markdown Assets\n",
-                  "# Markdown Assets\n" + "\n".join(f"filler {index}" for index in range(60)) + "\n")
+        self.edit("docs/prompt-template-standard.md", "# Prompt Template Standard\n",
+                  "# Prompt Template Standard\n" + "\n".join(f"filler {index}" for index in range(60)) + "\n")
         self.assertReports("exceeds the 60-line rule budget")
 
     def test_unindexed_rule_file_is_reported(self) -> None:

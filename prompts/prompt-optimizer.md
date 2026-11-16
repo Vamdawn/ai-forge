@@ -1,6 +1,6 @@
 ---
 title: 提示词优化器
-type: prompt-template
+description: 通过迭代审查用户提供的提示词，产出可直接使用的改写版本。
 language: zh
 ---
 

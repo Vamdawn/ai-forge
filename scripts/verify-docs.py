@@ -2,9 +2,8 @@
 """Basic checks for ai-forge documentation.
 
 Covers what a script decides cheaply: file pairing, the language switcher, the
-fixed suffix, relative links, index coverage, and the length limits each document
-class documents. Whether the two sides of a pair say the same thing, and the
-internal structure of a document, stay a reading task.
+fixed suffix, relative links, index coverage, document length limits, and prompt
+filenames and frontmatter fields. Judging the meaning of the content stays a reading task.
 Run from anywhere: python3 scripts/verify-docs.py
 """
 
@@ -34,6 +33,9 @@ PAIRED_NAMES = {f"{stem}.md" for stem in STEMS} | {f"{stem}{ZH_SUFFIX}" for stem
 RULE_GLOBS = ["docs/*.md"]
 # Documents whose relative links are checked, beyond the paired documents.
 LINK_CHECKED_GLOBS = ["AGENTS.md", "docs/*.md", "mcp/*/docs/*.md"]
+REQUIRED_PROMPT_FIELDS = ("title", "description", "language")
+PROMPT_ATTRIBUTION_FIELDS = ("source", "author")
+PROMPT_FIELDS = REQUIRED_PROMPT_FIELDS + PROMPT_ATTRIBUTION_FIELDS
 
 SKIP_DIRS = {".git", "node_modules", "dist", "tmp", ".claude", ".agents", ".venv", "__pycache__"}
 # Non-canonical spellings of the paired document names.
@@ -47,6 +49,7 @@ HEADING_RE = re.compile(r"^(#+)\s")
 LIST_RE = re.compile(r"^- ")
 # Code spans hold examples (`[English](README.md)`), not links to follow.
 CODE_SPAN_RE = re.compile(r"``.+?``|`[^`]*`")
+PROMPT_NAME_RE = re.compile(r"[a-z]+(?:-[a-z]+)*\.md")
 
 errors: list[str] = []
 
@@ -177,9 +180,12 @@ def first_content_line(lines: list[str]) -> str:
 
 
 def check_names(root: Path) -> None:
+    prompts = root / "prompts"
     for path in walk(root):
         if path.suffix == ".md" and path.name.lower() in BROKEN_NAMES:
             fail(f"{path.relative_to(root)}: use the fixed suffix `{ZH_SUFFIX}`")
+        if path.parent == prompts and not PROMPT_NAME_RE.fullmatch(path.name):
+            fail(f"{path.relative_to(root)}: use lowercase English words joined by single hyphens and the `.md` extension")
 
 
 def check_pairs(root: Path) -> None:
@@ -235,7 +241,7 @@ def check_index(root: Path) -> None:
     assets: list[str] = []
     for skill in sorted((root / "skills").glob("*/SKILL.md")):
         assets.append(f"skills/{skill.parent.name}/SKILL.md")
-    for pattern in ("prompts/*.md", "rules/*.md", "tools/*/README.md", "plugins/*/README.md", "mcp/*/README.md"):
+    for pattern in ("prompts/*.md", "tools/*/README.md", "plugins/*/README.md", "mcp/*/README.md"):
         assets.extend(sorted(str(path.relative_to(root)) for path in root.glob(pattern)))
     for index in ("README.md", f"README{ZH_SUFFIX}"):
         path = root / index
@@ -249,6 +255,51 @@ def check_index(root: Path) -> None:
                 candidates.add(asset[: -len("README.md")] + f"README{ZH_SUFFIX}")
             if not candidates & targets:
                 fail(f"{index}: asset is not indexed: {asset}")
+
+
+def check_prompt_frontmatter(root: Path, path: Path) -> None:
+    """Check the prompt's flat frontmatter without interpreting its prose."""
+    rel = path.relative_to(root)
+    lines = read(path)
+    if lines[0] != "---":
+        fail(f"{rel}: prompt frontmatter must start with `---`")
+        return
+    try:
+        end = lines.index("---", 1)
+    except ValueError:
+        fail(f"{rel}: prompt frontmatter must end with `---`")
+        return
+
+    fields: dict[str, str] = {}
+    for number, line in enumerate(lines[1:end], start=2):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        key, separator, value = line.partition(":")
+        if not separator:
+            fail(f"{rel}:{number}: use `key: value` for each prompt field")
+            continue
+        if key not in PROMPT_FIELDS:
+            fail(f"{rel}:{number}: unsupported prompt field `{key}`")
+            continue
+        if key in fields:
+            fail(f"{rel}:{number}: duplicate prompt field `{key}`")
+            continue
+        if not value[:1].isspace():
+            fail(f"{rel}:{number}: put a space after `{key}:`")
+        value = value.strip()
+        if value.lower() in ("", '""', "''", "null", "~") or value.startswith("#"):
+            fail(f"{rel}:{number}: prompt field `{key}` must have a value")
+        fields[key] = value
+
+    for key in REQUIRED_PROMPT_FIELDS:
+        if key not in fields:
+            fail(f"{rel}: missing prompt field `{key}`")
+    if "language" in fields and not re.fullmatch(r"""(["']?)(zh|en)\1(?:\s+#.*)?""", fields["language"]):
+        fail(f"{rel}: prompt language must be `zh` or `en`")
+    if len(fields.keys() & PROMPT_ATTRIBUTION_FIELDS) == 1:
+        fail(f"{rel}: prompt fields `source` and `author` must appear together")
+    if tuple(fields) != tuple(key for key in PROMPT_FIELDS if key in fields):
+        fail(f"{rel}: order prompt fields as {', '.join(PROMPT_FIELDS)}")
 
 
 def check_rule_index(root: Path) -> None:
@@ -303,6 +354,8 @@ def main() -> int:
             check_links(root, path, read(path), is_chinese=False)
 
     check_index(root)
+    for path in sorted(root.glob("prompts/*.md")):
+        check_prompt_frontmatter(root, path)
     check_rule_index(root)
 
     for message in errors:

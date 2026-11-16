@@ -1,6 +1,6 @@
 ---
 title: Product Roadmap Analysis — Multi-Agent Parallel Discovery
-type: prompt-template
+description: Analyze the product's current state and opportunities, then propose a prioritized roadmap.
 language: en
 ---
 

@@ -18,12 +18,13 @@
 
 ## Repository milestones
 
+- 2026-11-16 将可复用的规则模板并入 `prompts/`，统一使用提示词文件头和索引约定。
 - 2026-11-13：`plugins/dsh-astrolabe` 更名为 `plugins/dsh-sidebar-plus`，以 `@vamdawn/dsh-sidebar-plus` 发布，让插件名直接说明它重构的是会话侧边栏；更早的发布记录保留 `dsh-astrolabe@X.Y.Z` 的 tag 文本，链接指向更名后的资产 CHANGELOG。
 - 2026-10-17: 提交由版本化的 pre-commit 钩子把关（经 `core.hooksPath` 接入）：对暂存区涉及的资产跑 typecheck 与测试，再跑文档校验；`verify-docs.py` 现在还会要求双语对具有相同的标题层级、各分节列表条目数与代码块——比对的是命令，翻译可以改写的注释除外。
 - 2026-10-16: 发版规则新增 Publishing 一节：npm 的双因素 web 认证需要交互式终端，因此 `scripts/npm-publish-pty.py` 在伪终端下运行 `npm publish` 并把认证链接写到人能打开的文件里；该节还记录了 registry 的传播延迟、发布产物核对，以及 `0.x` caret 所需的 profile 重装步骤。
 - 2026-10-16: 每份 README 与 CHANGELOG 都补齐中文对照，文档体系统一遵循 [documentation-standard.md](docs/documentation-standard.md)；插件 README 精简为用户向内容；`AGENTS.md` 与规则按 DeepSeek Harness 模板改写为英文，`agents/` 层拆解为 `docs/`（规则）与 `scripts/`（校验）；`scripts/verify-docs.py` 做基础校验，`scripts/verify-docs.spec.py` 覆盖这些校验。
 - 2026-10-13: 统一 skills、prompts、rules、tools、plugins 五类资产的目录口径，将归属与文档职责集中到 `agents/rules/asset-layout.md`；补齐插件版本约定，资产索引增加用途与直接入口，Harness 说明区分现有目录与按需扩展。
-- 2026-10-12: 统一 `prompts/` 的 frontmatter（必填 `title`、`type`、`language`，第三方来源另有 `source`、`author`），并新增 `agents/rules/prompt-assets.md` 固化该约定（现为 `docs/markdown-assets.md`）。
+- 2026-10-12: 统一 `prompts/` 的 frontmatter（必填 `title`、`type`、`language`，第三方来源另有 `source`、`author`），并新增 `agents/rules/prompt-assets.md` 固化该约定。现行规则见 [prompt-template-standard.md](docs/prompt-template-standard.md)。
 - 2026-10-12: 新增 `rules/deepseek-harness-inspired-agents-md.md`（受 deepseek-ai/deepseek-harness 的 AGENTS.md 启发的项目规则模板），并明确 `rules/` 的判定标准：常驻加载的规则片段或整文件模板；与 `prompts/`（手动触发的一次性提示词）、`skills/`（按需触发或带资源）区分。
 - 2026-10-12: 移除 `docs/`（设计与计划文档），并清理 README 与 `agents/` 中的相关引用；版本与发布约定以 `agents/rules/versioning-and-release.md` 为准。
 - 2026-10-09: 收敛执行文件归属：将 statusline 归入 `tools/claude-statusline/`，仅维护本仓库的执行文件统一归 `agents/tools/`；设计与计划分别归入 `docs/specs/`、`docs/plans/`，补充产品与文档链接索引。

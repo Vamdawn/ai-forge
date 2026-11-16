@@ -1,13 +1,12 @@
 # AGENTS.md
 
-ai-forge is a personal monorepo of agent capability assets — skills, prompts, rules, CLI tools, host-application plugins, and MCP products. Assets are Markdown-first; tools, plugins, and MCP products use Node.js 24 + TypeScript. Each asset is independent: version, changelog, and release are per asset, and there is no repository-wide version.
+ai-forge is a personal monorepo of agent capability assets — skills, prompt templates, CLI tools, host-application plugins, and MCP products. Assets are Markdown-first; tools, plugins, and MCP products use Node.js 24 + TypeScript. Each asset is independent: version, changelog, and release are per asset, and there is no repository-wide version.
 
 ## Repository layout
 
 ```text
 skills/<name>/     On-demand skills; entry point SKILL.md; versioned
-prompts/*.md       Manually triggered one-off prompts; single files; not versioned
-rules/*.md         Rules loaded every session, or whole-file rule templates; not versioned
+prompts/*.md       Manual prompts and reusable rule templates; single files; not versioned
 tools/<name>/      Standalone CLI tools distributed to users; entry point README.md; versioned
 plugins/<name>/    Plugins loaded by a host application; entry point README.md; versioned
 mcp/<name>/        MCP products; entry point README.md; versioned
@@ -37,7 +36,7 @@ git tag -l '<name>@*'                 # release history of one asset
 - **Machine-checkable first.** A constraint a script can enforce becomes a check, not prose; run `python3 scripts/verify-docs.py` before committing documentation changes.
 - **Git conventions.** Read [git-conventions.md](docs/git-conventions.md) before starting repository changes, managing branches, committing, pushing, or preparing a release.
 - **Asset layout.** Read [asset-layout.md](docs/asset-layout.md) before adding, deleting, renaming, or moving an asset, changing a documentation entry point, or editing a rule file.
-- **Markdown assets.** Read [markdown-assets.md](docs/markdown-assets.md) before editing frontmatter-bearing Markdown or a file under `prompts/`; frontmatter and body are separate regions, and scope words such as "keep only" mean the narrowest reading.
+- **Prompt templates.** Read [prompt-template-standard.md](docs/prompt-template-standard.md) before changing a template under `prompts/`.
 - **README and CHANGELOG.** Read [documentation-standard.md](docs/documentation-standard.md) before writing or restructuring either (sections, length budgets, the bilingual pair).
 - **Versioned assets and releases.** Read [versioning-and-release.md](docs/versioning-and-release.md) before changing `skills/<name>/`, `tools/<name>/`, `plugins/<name>/`, or `mcp/<name>/`, or preparing a release (semver meaning, CHANGELOG entries, tags).
 - **Keep this list current.** Adding or removing a file in `docs/` requires a bullet here, and this file stays under 200 lines; `python3 scripts/verify-docs.py` verifies both.
