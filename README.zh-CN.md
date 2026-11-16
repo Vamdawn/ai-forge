@@ -55,6 +55,7 @@
 - [prd-implementation-plan](prompts/prd-implementation-plan.md)：把 PRD 转为包含测试步骤的可执行计划。
 - [product-roadmap-analysis](prompts/product-roadmap-analysis.md)：分析产品现状与机会并提出路线图建议。
 - [prompt-optimizer](prompts/prompt-optimizer.md)：通过迭代审查优化提示词。
+- [prune-unit-tests](prompts/prune-unit-tests.md)：清理低价值的单元测试，保留对关键回归的检测能力。
 - [svpino-interview-to-spec](prompts/svpino-interview-to-spec.md)：通过逐轮访谈明确需求并形成规格。
 - [write-skill-casebook](prompts/write-skill-casebook.md)：记录 skill 失败案例、根因与修复建议。
 

@@ -55,6 +55,7 @@ To use a rule template, copy its body into the consuming project's instruction f
 - [prd-implementation-plan](prompts/prd-implementation-plan.md) — turn a PRD into an executable plan with test steps.
 - [product-roadmap-analysis](prompts/product-roadmap-analysis.md) — analyze the product's current state and opportunities, then propose a roadmap.
 - [prompt-optimizer](prompts/prompt-optimizer.md) — improve a prompt through iterative review.
+- [prune-unit-tests](prompts/prune-unit-tests.md) — remove low-value unit tests while preserving protection against regressions.
 - [svpino-interview-to-spec](prompts/svpino-interview-to-spec.md) — pin down requirements through a turn-by-turn interview, then write a spec.
 - [write-skill-casebook](prompts/write-skill-casebook.md) — record a skill failure, its root cause, and a fix proposal.
 

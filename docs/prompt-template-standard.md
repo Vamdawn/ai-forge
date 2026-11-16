@@ -6,6 +6,7 @@ Read when: adding, editing, moving, or removing a template under `prompts/`.
 
 - Store each manually invoked prompt or reusable rule template in one `.md` file under `prompts/`. A prompt that needs resources, automatic triggering, or versioning belongs under `skills/` ([asset-layout.md](asset-layout.md)).
 - Name each template file with lowercase English words (`a`–`z`) separated by single hyphens. Keep the `.md` extension, as in `prd-implementation-plan.md`.
+- When collecting a third-party prompt, keep the original body verbatim and add only the YAML frontmatter and index entries in `README.md` and `README.zh-CN.md`. Rewrite the body only when the user explicitly requests a rewrite.
 - Put the instructions to run in the body. For a request scoped to the template body, edit that text and preserve the frontmatter, attribution, and index entry.
 - To use a rule template in another project, copy its body into that project's instruction file.
 
