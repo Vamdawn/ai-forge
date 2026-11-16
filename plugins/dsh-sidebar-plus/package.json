@@ -1,7 +1,7 @@
 {
   "name": "@vamdawn/dsh-sidebar-plus",
   "version": "0.6.0",
-  "description": "Sidebar Plus \u2014 tabbed session sidebar for DeepSeek Harness: a Workspaces tab and a status-grouped Sessions tab",
+  "description": "Sidebar Plus for DeepSeek Harness adds Status grouping and configurable grouping shortcuts to Workspaces.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Vamdawn/ai-forge.git",
@@ -66,6 +66,7 @@
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-workspace": "0.2.0-rc.2",

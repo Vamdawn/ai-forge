@@ -1,8 +1,9 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { LocaleNamespaceMap, SlotMap, StoredEntry } from '@deepseek-ai/dsh-client-ui-slots';
 import type { WorkspaceBrowserInjected } from '@deepseek-ai/dsh-client-ui-workspace/client';
-import { createElement, useState } from 'react';
+import { createElement } from 'react';
 import type { ComponentType, ReactNode } from 'react';
+import type { NativeViewStore } from './grouping.js';
 
 export const NATIVE_SLOT = 'sidebar-plus.nativeWorkspaces';
 
@@ -12,7 +13,12 @@ export const NATIVE_SLOT = 'sidebar-plus.nativeWorkspaces';
  * so both registrations share the host's existing instance. Each child gets
  * a private alias to preserve authorization without redeclaring a host slot.
  */
-export function createNativeBrowser(ctx: Context, ready: () => boolean, onReady: (ready: boolean) => void): Mirror {
+export function createNativeBrowser(
+  ctx: Context,
+  ready: () => boolean,
+  onReady: (ready: boolean) => void,
+  onView?: (store: NativeViewStore | null) => void,
+): Mirror {
   let source: StoredEntry | undefined;
   let remove: (() => void) | undefined;
   let mirrors: Mirror[] = [];
@@ -31,6 +37,7 @@ export function createNativeBrowser(ctx: Context, ready: () => boolean, onReady:
     remove?.();
     remove = undefined;
     source = undefined;
+    onView?.(null);
     publish(false);
   };
   return {
@@ -52,24 +59,19 @@ export function createNativeBrowser(ctx: Context, ready: () => boolean, onReady:
       type ShortcutHook = <T>(select: (state: ShortcutState) => T) => T;
       type NativeProps = Record<string, unknown> & { renderSlot: Render; useWorkspaceShortcuts?: ShortcutHook };
       const Native = next.component as ComponentType<NativeProps>;
-      const Host = ({ renderSlot, useWorkspaceShortcuts, searchOnMount, ...props }: NativeProps): ReactNode => {
-        const shortcuts = useWorkspaceShortcuts?.(state => state);
-        // The host treats every nonzero counter as a request on mount. Skip
-        // requests already delivered to an earlier view, except a rail request
-        // that expanded this view and is still waiting for its search field.
-        const [baseline] = useState(() => (shortcuts?.searchRequest ?? 0) - (searchOnMount ? 1 : 0));
-        return createElement(Native, {
+      const Host = ({ renderSlot, useWorkspaceShortcuts, ...props }: NativeProps): ReactNode =>
+        createElement(Native, {
           ...props,
-          useWorkspaceShortcuts: shortcuts && (select => select({
-            ...shortcuts, searchRequest: shortcuts.searchRequest - baseline,
-          })),
+          // The shared toolbar handles these requests before they reach the
+          // native browser. Other commands still reach the host component.
+          useWorkspaceShortcuts: useWorkspaceShortcuts && (select => useWorkspaceShortcuts(state =>
+            select({ ...state, searchRequest: 0, addRequested: false }))),
           renderSlot: (key, owner, opts) => {
             const alias = aliases.get(key);
             if (alias === undefined) throw new Error(`Native Workspaces requested an undeclared child: ${key}`);
             return renderSlot(alias, owner, opts);
           },
         });
-      };
       // The source is a runtime ledger entry; keep type erasure at this foreign
       // entry boundary. register() still validates every declaration and store.
       const register = ctx.slots.register.bind(ctx.slots) as unknown as (options: object, component: unknown) => () => void;
@@ -90,9 +92,18 @@ export function createNativeBrowser(ctx: Context, ready: () => boolean, onReady:
           if (key !== NATIVE_SLOT || !info.abdicated || entry.component !== Host) return;
           // A child-slot update should not retry the same incompatible browser.
           // Its replacement or the next sidebar declaration can try again.
+          onView?.(null);
           publish(false);
         }));
         sync();
+        // The shipped view handle returns its already-created singleton, also
+        // used by the host navigation service and native renderer.
+        if (onView && next.store && typeof next.store !== 'function') {
+          const store = next.store.create() as unknown as NativeViewStore;
+          const actions = store.actions;
+          if (typeof actions.setGroupBy === 'function' && typeof actions.setOrderBy === 'function'
+            && typeof actions.setArchivedFilter === 'function') onView(store);
+        }
         publish(true);
       } catch (error) {
         clear();

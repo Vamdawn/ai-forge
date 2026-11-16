@@ -1,6 +1,10 @@
 /** Keys the Sidebar Plus client namespace serves. */
 export type LocaleKey =
   | 'tab.workspaces' | 'tab.status'
+  | 'groupBy.label' | 'groupBy.tree' | 'groupBy.flat' | 'groupBy.shortcuts'
+  | 'viewOptions.label' | 'orderBy.label' | 'orderBy.manual' | 'orderBy.updated'
+  | 'archive.label' | 'archive.default' | 'archive.show' | 'archive.only'
+  | 'settings.sidebarPlus' | 'settings.first' | 'settings.second' | 'settings.none'
   | 'group.waiting' | 'group.working' | 'group.done' | 'group.idle' | 'group.pinned'
   | 'ungrouped' | 'empty' | 'emptyHint' | 'loading'
   | 'pending.approval' | 'pending.planReview' | 'pending.question'
@@ -19,6 +23,22 @@ export const DICTIONARIES = {
   zh: {
     'tab.workspaces': '工作区',
     'tab.status': '状态',
+    'groupBy.label': '分组方式',
+    'groupBy.tree': '工作区树',
+    'groupBy.flat': '单列表',
+    'groupBy.shortcuts': '快捷分组',
+    'viewOptions.label': '视图选项',
+    'orderBy.label': '排序方式',
+    'orderBy.manual': '手动排序',
+    'orderBy.updated': '最近更新',
+    'archive.label': '筛选会话',
+    'archive.default': '隐藏已归档',
+    'archive.show': '全部对话（显示已归档）',
+    'archive.only': '仅显示已归档',
+    'settings.sidebarPlus': 'Sidebar Plus',
+    'settings.first': '第一项',
+    'settings.second': '第二项',
+    'settings.none': '不显示',
     'group.waiting': '待输入',
     'group.working': '进行中',
     'group.done': '已完成',
@@ -68,6 +88,22 @@ export const DICTIONARIES = {
   en: {
     'tab.workspaces': 'Workspaces',
     'tab.status': 'Status',
+    'groupBy.label': 'Group by',
+    'groupBy.tree': 'Workspace Tree',
+    'groupBy.flat': 'In one list',
+    'groupBy.shortcuts': 'Grouping shortcuts',
+    'viewOptions.label': 'View options',
+    'orderBy.label': 'Order by',
+    'orderBy.manual': 'Manual',
+    'orderBy.updated': 'Last updated',
+    'archive.label': 'Filter sessions',
+    'archive.default': 'Hide archived',
+    'archive.show': 'All conversations (show archived)',
+    'archive.only': 'Archived only',
+    'settings.sidebarPlus': 'Sidebar Plus',
+    'settings.first': 'First shortcut',
+    'settings.second': 'Second shortcut',
+    'settings.none': 'Hide',
     'group.waiting': 'Waiting',
     'group.working': 'Working',
     'group.done': 'Done',

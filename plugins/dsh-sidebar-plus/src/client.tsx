@@ -22,6 +22,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client';
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client';
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client';
 import type { WorkspaceBrowserInjected } from '@deepseek-ai/dsh-client-ui-workspace/client';
 import type {} from '@deepseek-ai/dsh-client-shortcuts/client';
 import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots';
@@ -35,6 +36,10 @@ import { AnimatedList } from './motion.js';
 import { PINNED_ACCOUNT, UNGROUPED_ACCOUNT, relativeTime, topRows, mainSessionId, workspaceGroups, statusGroups, layoutKeys, searchHits } from './model.js';
 import type { ActivityChild, ContentHits, Group, Row, RowState, SearchHit, TabId } from './model.js';
 import type { ViewStoreHandle } from './store.js';
+import { DEFAULT_SHORTCUTS, GROUP_LABELS, setGroupingShortcut } from './grouping.js';
+import type { Grouping, GroupingPreferences, NativeView, NativeViewStore } from './grouping.js';
+import { GROUP_ICONS, ShortcutSettings, ViewOptions } from './view-options.js';
+import type { ShortcutSettingsInjected } from './view-options.js';
 
 export const name = 'dsh-sidebar-plus-client';
 export const inject = ['slots', 'locale', 'uiWorkspace', 'workspaces', 'sessions', 'shortcuts', 'jobs'];
@@ -59,6 +64,9 @@ const EMPTY_CONTENT_HITS: ContentHits = { items: [], hasMore: false };
 const CLOCK_MS = 30_000;
 
 interface Injected {
+  selectGrouping(group: Grouping): void;
+  setNativeOrder(order: NativeView['orderBy']): void;
+  setNativeArchiveFilter: NativeViewStore['actions']['setArchivedFilter'];
   watchJobRows: IJobs['watchRows'];
   openSession: (sessionId: SessionId) => void;
   /** Start a fresh Session inside one Workspace, the shell's own New Session path. */
@@ -81,6 +89,9 @@ interface Injected {
     directoryFlow: { getSnapshot(): boolean; subscribe(listener: () => void): () => void };
     /** Native browser is available after its registration and child aliases are ready. */
     nativeBrowser: { getSnapshot(): boolean; subscribe(listener: () => void): () => void };
+    nativeView: { getSnapshot(): NativeView | null; subscribe(listener: () => void): () => void };
+    groupingPreferences: ShortcutSettingsInjected['hooks']['groupingPreferences'];
+    addRequest: { getSnapshot(): number; subscribe(listener: () => void): () => void };
     shortcuts: WorkspaceBrowserInjected['hooks']['shortcuts'];
     /** Monotonic counter forwarded from the host's search command. */
     searchRequest: { getSnapshot(): number; subscribe(listener: () => void): () => void };
@@ -732,21 +743,20 @@ function SearchHitRow(props: {
 }
 
 /**
- * The region's header: the two grouping modes in the label slot, then the
- * inline search and the add action. It is one 36px row shaped like the shipped
- * Workspace section header this entry replaces — same icon buttons, same
- * expanding search that takes the trailing action's room — because it stands in
- * that header's place.
+ * Shared toolbar for every native grouping and the Status list.
  * @param props - the active mode, its attention flag, and the search and add
  * state the body owns.
  * @returns the header row.
  */
 function Header(props: {
-  readonly tabsOnly?: boolean;
-  readonly tab: TabId;
+  readonly grouping: Grouping;
+  readonly shortcuts: readonly Grouping[];
+  readonly nativeView: NativeView | null;
+  readonly setNativeOrder: Injected['setNativeOrder'];
+  readonly setNativeArchiveFilter: Injected['setNativeArchiveFilter'];
   readonly attention: boolean;
   readonly t: Props['t'];
-  readonly onSelect: (tab: TabId) => void;
+  readonly onSelect: (group: Grouping) => void;
   readonly query: string;
   readonly onQuery: (value: string) => void;
   readonly searchOpen: boolean;
@@ -761,40 +771,37 @@ function Header(props: {
   readonly rootRef: (node: HTMLDivElement | null) => void;
 }): ReactElement {
   const {
-    tab, attention, t, onSelect, query, onQuery, searchOpen, onSearchOpen, searchRef, canAdd, onAdd,
-    searchKeys, rootRef, onSearchFocus, tabsOnly,
+    grouping, shortcuts, nativeView, setNativeOrder, setNativeArchiveFilter,
+    attention, t, onSelect, query, onQuery, searchOpen, onSearchOpen, searchRef, canAdd, onAdd,
+    searchKeys, rootRef, onSearchFocus,
   } = props;
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
-  const ids: readonly TabId[] = ['workspaces', 'status'];
-  const move = (delta: number): void => {
-    const index = ids.indexOf(tab);
-    const next = ids[(index + delta + ids.length) % ids.length] ?? tab;
-    onSelect(next);
-    refs.current[ids.indexOf(next)]?.focus();
+  const selectAt = (index: number): void => {
+    const group = shortcuts[index];
+    if (!group) return;
+    onSelect(group);
+    refs.current[index]?.focus();
   };
-  return h('div', { className: 'dwt-head', ref: rootRef },
-    h('div', {
+  return h('div', { className: 'dwt-head', 'data-search': searchOpen, ref: rootRef },
+    shortcuts.length === 0 ? h('span', { className: 'dwt-current-group' }, t(GROUP_LABELS[grouping])) : h('div', {
       className: 'dwt-tabs',
       role: 'tablist',
-      'aria-label': t('tab.workspaces'),
+      'aria-label': t('groupBy.shortcuts'),
       onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => {
-        if (event.key === 'ArrowRight') {
+        const index = refs.current.indexOf(event.target as HTMLButtonElement);
+        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
           event.preventDefault();
-          move(1);
-        } else if (event.key === 'ArrowLeft') {
-          event.preventDefault();
-          move(-1);
+          const delta = event.key === 'ArrowRight' ? 1 : -1;
+          selectAt((Math.max(0, index) + delta + shortcuts.length) % shortcuts.length);
         } else if (event.key === 'Home') {
           event.preventDefault();
-          onSelect(ids[0] as TabId);
-          refs.current[0]?.focus();
+          selectAt(0);
         } else if (event.key === 'End') {
           event.preventDefault();
-          onSelect(ids[ids.length - 1] as TabId);
-          refs.current[ids.length - 1]?.focus();
+          selectAt(shortcuts.length - 1);
         }
       },
-    }, ids.map((id, index) => h('button', {
+    }, shortcuts.map((id, index) => h('button', {
       key: id,
       ref: (node: HTMLButtonElement | null): void => {
         refs.current[index] = node;
@@ -802,16 +809,18 @@ function Header(props: {
       className: 'dwt-tab',
       type: 'button',
       role: 'tab',
-      tabIndex: tab === id ? 0 : -1,
-      'data-active': tab === id,
-      'aria-selected': tab === id,
+      tabIndex: grouping === id || (index === 0 && !shortcuts.includes(grouping)) ? 0 : -1,
+      'aria-label': t(GROUP_LABELS[id]),
+      title: t(GROUP_LABELS[id]),
+      'data-active': grouping === id,
+      'aria-selected': grouping === id,
       onClick: () => {
         onSelect(id);
       },
     },
-    t(id === 'workspaces' ? 'tab.workspaces' : 'tab.status'),
+    h('span', { className: 'dwt-tab-label' }, t(GROUP_LABELS[id])),
     id === 'status' && attention ? h('span', { className: 'dwt-badge' }) : null))),
-    tabsOnly ? null : h('div', { className: searchOpen ? 'dwt-searchslot dwt-searchslot-open' : 'dwt-searchslot' },
+    h('div', { className: searchOpen ? 'dwt-searchslot dwt-searchslot-open' : 'dwt-searchslot' },
       // The trigger stays mounted while the field is open: it shrinks into the
       // capsule's leading glyph, the way the shipped header keeps its own. It
       // must not be replaced — the click that opened the search is still
@@ -871,7 +880,10 @@ function Header(props: {
           }, h(IconCloseFillRegular, { size: 12 })),
         ]
         : null),
-    tabsOnly ? null : h('div', { className: searchOpen ? 'dwt-headactions dwt-headactions-hidden' : 'dwt-headactions' },
+    h('div', { className: searchOpen ? 'dwt-headactions dwt-headactions-hidden' : 'dwt-headactions' },
+      h(ViewOptions, {
+        t, grouping, nativeView, onGrouping: onSelect, setOrder: setNativeOrder, setArchived: setNativeArchiveFilter,
+      }),
       canAdd
         ? h(Tooltip, {
           label: t('addWorkspace'),
@@ -892,14 +904,18 @@ function WorkspaceTabs(props: Props): ReactElement {
     wide, expandSidebar, useSectionScroller, t, openSession, startSession, unarchiveSession, renderSlot,
     insertWorkspaceBefore,
     createWorkspace, searchSessions, useDirectoryFlow, useSearchRequest, useShortcuts, useNativeBrowser,
+    useNativeView, useGroupingPreferences, selectGrouping, setNativeOrder, setNativeArchiveFilter, useAddRequest,
     renameWorkspace, deleteWorkspace,
     useSessions, useSessionStatus, useWorkspaces, useStore, actions, useJobs, watchJobRows,
   } = props;
-  const [tab, setTab] = useState<TabId>('workspaces');
   const nativeAvailable = useNativeBrowser(value => value);
-  const nativeWorkspaces = tab === 'workspaces' && nativeAvailable;
-  const nativeView = wide && nativeWorkspaces;
-  const [nativeSearchOnMount, setNativeSearchOnMount] = useState(false);
+  const nativeView = useNativeView(value => value);
+  const sectionScroller = useSectionScroller?.();
+  const preferences = useGroupingPreferences(value => value);
+  const grouping = preferences.statusSelected ? 'status' : nativeView?.groupBy ?? 'workspace';
+  const tab: TabId = grouping === 'status' ? 'status' : 'workspaces';
+  const shortcuts = preferences.shortcuts.filter((group): group is Grouping =>
+    group !== null && (group === 'status' || group === 'workspace' || nativeView !== null));
   const [now, setNow] = useState(() => Date.now());
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -911,9 +927,10 @@ function WorkspaceTabs(props: Props): ReactElement {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const searchRootRef = useRef<HTMLDivElement | null>(null);
   const searchRequest = useSearchRequest(value => value);
+  const addRequest = useAddRequest(value => value);
   const searchKeys = useShortcuts(entries => entries.find(entry => entry.id === 'session.search')?.keys ?? []);
   useEffect(() => {
-    if (searchRequest === 0 || nativeView) {
+    if (searchRequest === 0) {
       return;
     }
     // The rail has no header to expand a field into, so a request from the
@@ -921,15 +938,13 @@ function WorkspaceTabs(props: Props): ReactElement {
     // dependency of this effect: the shell rebuilds that callback every render,
     // and it is idempotent while the sidebar is already wide.
     expandSidebar();
-    if (nativeWorkspaces) {
-      setNativeSearchOnMount(true);
-    } else {
-      setSearchOpen(true);
-    }
+    setSearchOpen(true);
   }, [searchRequest]);
   useEffect(() => {
-    if (nativeView) setNativeSearchOnMount(false);
-  }, [nativeView]);
+    if (addRequest === 0) return;
+    expandSidebar();
+    setFlowOpen(true);
+  }, [addRequest]);
   /**
    * The field only exists once the slot has expanded, so focus follows the open
    * state instead of the request that asked for it — focusing from the request
@@ -1194,37 +1209,32 @@ function WorkspaceTabs(props: Props): ReactElement {
 
   if (!wide) {
     return h('div', { className: 'dwt-rail' },
-      h('button', {
+      shortcuts.length === 0 ? h('button', {
+        className: 'dwt-rail-button', type: 'button', title: t('viewOptions.label'), onClick: expandSidebar,
+      }, h(GROUP_ICONS[grouping], { size: 18 })) : shortcuts.map(group => h('button', {
+        key: group,
         className: 'dwt-rail-button',
         type: 'button',
-        title: t('tab.workspaces'),
-        'data-active': tab === 'workspaces',
+        title: t(GROUP_LABELS[group]),
+        'data-active': grouping === group,
+        'data-attention': group === 'status' && attention,
         onClick: () => {
-          setTab('workspaces');
+          selectGrouping(group);
           expandSidebar();
         },
-      }, '▤'),
-      h('button', {
-        className: 'dwt-rail-button',
-        type: 'button',
-        title: t('tab.status'),
-        'data-active': tab === 'status',
-        'data-attention': attention,
-        onClick: () => {
-          setTab('status');
-          expandSidebar();
-        },
-      }, '◷'));
+      }, h(GROUP_ICONS[group], { size: 18 }))));
   }
 
   const needle = query.trim().toLowerCase();
+  const showNative = tab === 'workspaces' && nativeAvailable && needle === '';
   /**
    * Metadata matches first (immediate, by recency), then the Host content page
    * (de-duplicated, keeping that page's snippet). The merged list is capped, and
    * either source having more than the cap is what the footer notice reports.
    */
   const search = needle === '' ? { hits: [] as SearchHit[], hasMore: false }
-    : searchHits(list, statuses, archived, workspaceTitles, needle, contentHits, t('ungrouped'), SEARCH_LIMIT);
+    : searchHits(list, statuses, archived, workspaceTitles, needle, contentHits, t('ungrouped'), SEARCH_LIMIT,
+      tab === 'workspaces' && nativeView !== null ? nativeView.archivedFilter ?? 'default' : 'show');
 
   /** Two skeleton rows on an empty list, one when local matches already show. */
   const skeleton = (): ReactElement => h('div', {
@@ -1294,13 +1304,16 @@ function WorkspaceTabs(props: Props): ReactElement {
   /** The Workspace of the hovered Session, whose facts the card prints. */
   const hoveredWorkspace = hover === null ? undefined : workspaceBySession.get(hover.row.id);
 
-  return h('div', { className: 'dwt-root', 'data-native': nativeView },
+  return h('div', { className: 'dwt-root' },
     h(Header, {
-      tabsOnly: nativeView,
-      tab,
+      grouping,
+      shortcuts,
+      nativeView,
+      setNativeOrder,
+      setNativeArchiveFilter,
       attention,
       t,
-      onSelect: setTab,
+      onSelect: selectGrouping,
       query,
       onQuery: setQuery,
       searchOpen,
@@ -1320,11 +1333,7 @@ function WorkspaceTabs(props: Props): ReactElement {
         searchRootRef.current = node;
       },
     }),
-    nativeView ? h('div', { className: 'dwt-native-host' }, renderSlot(NATIVE_SLOT, {
-      wide, expandSidebar, searchOnMount: nativeSearchOnMount,
-      ...useSectionScroller === undefined ? {} : { useSectionScroller },
-    })) : null,
-    nativeView || flowError === null ? null : h('div', { className: 'dwt-alert', role: 'alert' },
+    flowError === null ? null : h('div', { className: 'dwt-alert', role: 'alert' },
       t('addFailed'), ': ', flowError,
       h(Button, {
         size: 'sm',
@@ -1333,14 +1342,18 @@ function WorkspaceTabs(props: Props): ReactElement {
           setFlowError(null);
         },
       }, t('dismiss'))),
-    nativeView ? null : h(AnimatedList, {
+    showNative ? h('div', { className: 'dwt-native-host' }, renderSlot(NATIVE_SLOT, {
+      wide, expandSidebar,
+      ...useSectionScroller === undefined ? {} : { useSectionScroller },
+    })) : h(AnimatedList, {
       context: `${tab}:${wide}:${needle !== ''}:${JSON.stringify(view.groupExpansion)}`,
       layout: layout.nested,
       dragging: dragging !== null || draggingGroup !== null,
+      bindScrollerRef: sectionScroller?.bindScrollerRef,
     }, body),
     // The picking interaction fills our own hole; the trigger above only shows
     // while it has an occupant, so an empty hole leaves no dead add affordance.
-    nativeView ? null : renderSlot(FLOW_SLOT, {
+    renderSlot(FLOW_SLOT, {
       open: flowOpen,
       busy: flowBusy,
       onPicked: (path: string) => {
@@ -1367,7 +1380,7 @@ function WorkspaceTabs(props: Props): ReactElement {
     }),
     // The card is fixed-positioned from the hovered row's box, so the sidebar's
     // scroll container cannot clip it.
-    nativeView || hover === null ? null : h('div', {
+    showNative || hover === null ? null : h('div', {
       className: 'dwt-card',
       role: 'tooltip',
       style: { top: `${hover.top}px`, left: `${hover.left}px` },
@@ -1392,7 +1405,7 @@ function WorkspaceTabs(props: Props): ReactElement {
 
 /**
  * The lower-priority entry wins the shell slot, hosting the official browser
- * behind Workspaces and our own rows behind Status. Each owns private child
+ * for native groupings and our own rows for Status. Each owns private child
  * seats: the native adapter remaps the official browser's declarations, and
  * the Status mirrors retain the shipped and third-party Session actions.
  */
@@ -1414,10 +1427,36 @@ export function apply(ctx: Context): void {
   /** Published occupancy of our directory-flow hole; the add trigger reads it. */
   const directoryFlowStore = createSnapshotStore(false);
   const nativeBrowserStore = createSnapshotStore(false);
+  const nativeView = createSnapshotStore<NativeView | null>(null);
+  const groupingPreferences = createSnapshotStore<GroupingPreferences>({
+    statusSelected: false, shortcuts: DEFAULT_SHORTCUTS,
+  }, { persist: { name: 'dsh-sidebar-plus/grouping' } });
+  const setShortcut: ShortcutSettingsInjected['setShortcut'] = (position, group) => {
+    const current = groupingPreferences.getSnapshot();
+    groupingPreferences.set({ ...current, shortcuts: setGroupingShortcut(current.shortcuts, position, group) });
+  };
+  let hostView: NativeViewStore | null = null;
+  let stopHostView: (() => void) | undefined;
+  const bindHostView = (store: NativeViewStore | null): void => {
+    stopHostView?.();
+    hostView = store;
+    const sync = (): void => nativeView.set(store?.getSnapshot() ?? null);
+    stopHostView = store?.subscribe(sync);
+    sync();
+  };
+  const selectGrouping = (group: Grouping): void => {
+    const statusSelected = group === 'status';
+    if (group !== 'status') hostView?.actions.setGroupBy(group);
+    const current = groupingPreferences.getSnapshot();
+    if (current.statusSelected !== statusSelected) {
+      groupingPreferences.set({ ...current, statusSelected });
+    }
+  };
   /** Bumped by the host search command; the component opens and focuses the box. */
   const searchRequests = createSnapshotStore(0);
+  const addRequests = createSnapshotStore(0);
   const mirrors = [
-    createNativeBrowser(ctx, () => hostReady, ready => nativeBrowserStore.set(ready)),
+    createNativeBrowser(ctx, () => hostReady, ready => nativeBrowserStore.set(ready), bindHostView),
     createMirror(ctx, 'sidebar.workspaces.session.menu.item', MENU_SLOT, () => hostReady),
     // The row keeps two controls — the menu trigger and Archive — so the
     // shipped pin button is dropped here; pinning stays reachable as the menu's
@@ -1471,20 +1510,34 @@ export function apply(ctx: Context): void {
       unsubscribe = undefined;
       source = next;
       if (!next?.inject) return;
-      const { hooks } = next.inject() as unknown as WorkspaceBrowserInjected;
-      const requests = hooks.workspaceShortcuts;
+      const browser = next.inject() as unknown as WorkspaceBrowserInjected;
+      const requests = browser.hooks.workspaceShortcuts;
       let seen = requests.getSnapshot().searchRequest;
       unsubscribe = requests.subscribe(() => {
-        const current = requests.getSnapshot().searchRequest;
-        if (current === seen) return;
-        seen = current;
-        searchRequests.set(searchRequests.getSnapshot() + 1);
+        const request = requests.getSnapshot();
+        if (request.searchRequest !== seen) {
+          seen = request.searchRequest;
+          searchRequests.set(searchRequests.getSnapshot() + 1);
+        }
+        if (request.addRequested && browser.closeAddWorkspace) {
+          browser.closeAddWorkspace();
+          addRequests.set(addRequests.getSnapshot() + 1);
+        }
       });
     };
     sync();
     const stop = ctx.slots.subscribe('sidebar.workspaces', sync);
     return () => { stop(); unsubscribe?.(); };
   });
+
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'dsh-sidebar-plus',
+    order: 11,
+    label: () => ctx.locale.bind(NS)('settings.sidebarPlus'),
+    locale: NS,
+    inject: (): ShortcutSettingsInjected => ({ hooks: { groupingPreferences }, setShortcut }),
+  }, ShortcutSettings));
 
   ctx.slots.inject('sidebar.workspaces', () => {
     const dispose = ctx.slots.register({
@@ -1510,6 +1563,11 @@ export function apply(ctx: Context): void {
         [FLOW_SLOT]: { kind: 'single', scope: 'root' },
       },
       inject: (): Injected => ({
+        selectGrouping,
+        // The host reconciles unseen manual rows in recency order until the
+        // first drag saves the account's placement.
+        setNativeOrder: order => hostView?.actions.setOrderBy(order, {}),
+        setNativeArchiveFilter: filter => hostView?.actions.setArchivedFilter(filter),
         watchJobRows: sessionId => ctx.jobs.watchRows(sessionId),
         openSession: sessionId => ctx.uiWorkspace.openSession(sessionId),
         startSession: workspaceId => ctx.uiWorkspace.startSession(workspaceId),
@@ -1525,7 +1583,11 @@ export function apply(ctx: Context): void {
             ? { items: result.value.items, hasMore: result.value.hasMore }
             : { items: [], hasMore: false };
         },
-        hooks: { jobs: ctx.jobs.state, directoryFlow: directoryFlowStore, nativeBrowser: nativeBrowserStore, searchRequest: searchRequests, shortcuts: ctx.shortcuts.catalog },
+        hooks: {
+          jobs: ctx.jobs.state, directoryFlow: directoryFlowStore, nativeBrowser: nativeBrowserStore,
+          nativeView, groupingPreferences, addRequest: addRequests, searchRequest: searchRequests,
+          shortcuts: ctx.shortcuts.catalog,
+        },
       }),
     }, WorkspaceTabs);
     hostReady = true;

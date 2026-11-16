@@ -1,4 +1,4 @@
-import { Component, createElement, createRef } from 'react';
+import { Component, createElement } from 'react';
 import type { ReactNode } from 'react';
 
 interface Position {
@@ -118,11 +118,16 @@ interface MotionProps {
   context: string;
   layout: string;
   dragging: boolean;
+  bindScrollerRef?: ((element: HTMLElement | null) => void) | undefined;
 }
 
 /** Snapshot before React mutates the DOM, including moves between Section parents. */
 export class AnimatedList extends Component<MotionProps> {
-  private root = createRef<HTMLDivElement>();
+  private root: HTMLDivElement | null = null;
+  private bindRoot = (element: HTMLDivElement | null): void => {
+    this.root = element;
+    this.props.bindScrollerRef?.(element);
+  };
   private motion = new ListMotion();
   private preference: MediaQueryList | undefined;
   private onPreference = (): void => { this.motion.cancel(); };
@@ -133,17 +138,17 @@ export class AnimatedList extends Component<MotionProps> {
   }
 
   getSnapshotBeforeUpdate(previous: MotionProps): Snapshot | null {
-    if (!this.root.current || previous.context !== this.props.context
+    if (!this.root || previous.context !== this.props.context
       || this.props.dragging || this.preference?.matches) {
       this.motion.cancel();
       return null;
     }
-    return previous.layout === this.props.layout ? null : this.motion.capture(this.root.current);
+    return previous.layout === this.props.layout ? null : this.motion.capture(this.root);
   }
 
   componentDidUpdate(previous: MotionProps, _state: unknown, snapshot: Snapshot | null): void {
-    if (snapshot && this.root.current) {
-      this.motion.play(this.root.current, snapshot, this.preference?.matches ?? false, previous.dragging);
+    if (snapshot && this.root) {
+      this.motion.play(this.root, snapshot, this.preference?.matches ?? false, previous.dragging);
     }
   }
 
@@ -154,7 +159,7 @@ export class AnimatedList extends Component<MotionProps> {
 
   render(): ReactNode {
     return createElement('div', {
-      ref: this.root, className: 'dwt-body', role: 'tabpanel',
+      ref: this.bindRoot, className: 'dwt-body', role: 'tabpanel',
       onScroll: () => this.motion.scroll(),
       onDragStartCapture: () => this.motion.cancel(),
     }, this.props.children);

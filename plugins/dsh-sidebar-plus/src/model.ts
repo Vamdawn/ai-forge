@@ -462,13 +462,15 @@ export function searchHits(
   contentHits: ContentHits,
   ungroupedTitle: string,
   limit: number,
+  archiveFilter: 'default' | 'show' | 'only' = 'show',
 ): { hits: SearchHit[]; hasMore: boolean } {
   const found: SearchHit[] = [];
   const seen = new Set<SessionId>();
   const snippets = new Map(contentHits.items.map(hit => [hit.sessionId, hit.snippet]));
   const push = (id: SessionId, snippet?: string): void => {
     const summary = list.byId[id];
-    if (summary === undefined) {
+    const isArchived = archived.has(id);
+    if (summary === undefined || (archiveFilter !== 'show' && isArchived !== (archiveFilter === 'only'))) {
       return;
     }
     const { state } = rowStateOf(statuses, id, summary.running);
@@ -478,7 +480,7 @@ export function searchHits(
       workspace: workspaceTitles.get(id) ?? ungroupedTitle,
       state,
       ...snippet === undefined ? {} : { snippet },
-      archived: archived.has(id),
+      archived: isArchived,
     });
   };
   for (const id of list.ids) {

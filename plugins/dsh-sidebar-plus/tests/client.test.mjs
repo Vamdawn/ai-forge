@@ -42,7 +42,10 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
     throw new Error(`Unexpected import: ${id}`);
   });
   const slots = new SlotCore();
-  slots.register({ name: 'root', children: { 'sidebar.workspaces': { kind: 'single', scope: 'root' } } }, () => null);
+  slots.register({ name: 'root', children: {
+    'sidebar.workspaces': { kind: 'single', scope: 'root' },
+    'settings.section': { kind: 'list', scope: 'root' },
+  } }, () => null);
   setupSlots(slots, store);
   const ctx = {
     slots: Object.assign(slots, { inject: (_, callback) => { cleanups.push(callback()); } }),
@@ -53,13 +56,20 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
   };
   client.apply(ctx);
   const entry = slots.entriesOfSlot('sidebar.workspaces')[0];
-  const searchRequests = entry.inject().hooks.searchRequest;
+  const injected = entry.inject();
+  const useSource = source => React.useSyncExternalStore(source.subscribe, source.getSnapshot);
   const props = {
     wide: true, expandSidebar() {}, t: key => key, openSession() {}, startSession() {},
     unarchiveSession: async () => {}, insertWorkspaceBefore: async () => {},
     createWorkspace: async () => ({ workspaceId: 'created' }), searchSessions: async () => ({ items: [], hasMore: false }),
     renameWorkspace: async () => {}, deleteWorkspace: async () => {}, renderSlot: () => null,
-    useDirectoryFlow: () => false, useNativeBrowser: () => false, useSearchRequest: () => React.useSyncExternalStore(searchRequests.subscribe, searchRequests.getSnapshot),
+    useDirectoryFlow: () => false, useNativeBrowser: () => false,
+    useSearchRequest: () => useSource(injected.hooks.searchRequest),
+    useAddRequest: () => useSource(injected.hooks.addRequest),
+    useGroupingPreferences: () => useSource(injected.hooks.groupingPreferences),
+    useNativeView: () => null,
+    selectGrouping: injected.selectGrouping, setNativeOrder: injected.setNativeOrder,
+    setNativeArchiveFilter: injected.setNativeArchiveFilter,
     useShortcuts: () => [],
     useJobs: () => ({ rows: {}, observed: {} }), watchJobRows: () => () => {},
     useSessions: () => ({ ids: ['a', 'b'], byId: { a: summary('a'), b: summary('b', 2) }, phase: 'ready' }),
@@ -76,25 +86,25 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
 
 const findClass = (renderer, className) => renderer.root.findAll(node => node.props.className === className && typeof node.type === 'string');
 
-test('Workspaces renders the native browser alone, while tabs still switch to the enhanced Status view', async t => {
+test('native and Status lists share the same toolbar and directory flow', async t => {
   const calls = [];
   const { renderer } = await mount(t, {
     useNativeBrowser: () => true,
-    useSearchRequest: () => 1,
     renderSlot: (key, owner) => { calls.push([key, owner]); return null; },
   });
   assert.ok(calls.some(([key, owner]) => key === 'sidebar-plus.nativeWorkspaces' && owner.wide === true));
   assert.equal(findClass(renderer, 'dwt-native-host').length, 1);
   assert.equal(findClass(renderer, 'dwt-group').length, 0);
-  assert.equal(findClass(renderer, 'dwt-search').length, 0, 'the native browser consumes its own search command');
-  assert.equal(findClass(renderer, 'dwt-iconbutton').length, 0, 'only the native toolbar supplies search and add');
-  assert.equal(calls.filter(([key]) => key === 'sidebar-plus.directoryFlow').length, 0, 'no second directory picker mounts');
+  const header = findClass(renderer, 'dwt-head')[0];
+  assert.equal(findClass(renderer, 'dwt-iconbutton').length, 2, 'the common toolbar supplies search and view options');
+  assert.ok(calls.some(([key]) => key === 'sidebar-plus.directoryFlow'));
 
   await openStatusTab(renderer);
+  assert.equal(findClass(renderer, 'dwt-head')[0], header);
   assert.equal(findClass(renderer, 'dwt-native-host').length, 0);
   assert.equal(findClass(renderer, 'dwt-status-title').length, 1);
   assert.equal(findClass(renderer, 'dwt-row').length, 2);
-  await act(async () => findClass(renderer, 'dwt-tabs')[0].props.onKeyDown({ key: 'ArrowLeft', preventDefault() {} }));
+  await act(async () => findClass(renderer, 'dwt-tabs')[0].props.onKeyDown({ key: 'Home', preventDefault() {} }));
   assert.equal(findClass(renderer, 'dwt-native-host').length, 1);
   assert.equal(findClass(renderer, 'dwt-group').length, 0);
 });
@@ -437,7 +447,7 @@ const completedStatus = count => {
 
 /** Switch the browser to the Status tab. */
 const openStatusTab = async renderer => act(async () => renderer.root
-  .findAll(node => node.props.className === 'dwt-tab' && node.children.includes('tab.status'))[0].props.onClick());
+  .findAll(node => node.props.className === 'dwt-tab' && node.props['aria-label'] === 'tab.status')[0].props.onClick());
 
 const foldLabels = renderer => findClass(renderer, 'dwt-more').map(node => node.children.join(''));
 const foldPress = async renderer => act(async () => findClass(renderer, 'dwt-more')[0].props.onClick());
@@ -618,4 +628,14 @@ test('Status headings and the leading Session icon column share a horizontal ins
 test('Status heading text cannot be selected', () => {
   const css = /var CSS = `([\s\S]*?)`;/.exec(source)[1];
   assert.match(/\.dwt-status-title \{([^}]*)\}/.exec(css)[1], /\buser-select: none;/);
+});
+
+test('the first Status heading uses only the common toolbar gap', () => {
+  const css = /var CSS = `([\s\S]*?)`;/.exec(source)[1];
+  const toolbar = /\.dwt-head \{([^}]*)\}/.exec(css)[1];
+  assert.doesNotMatch(toolbar, /\bborder-bottom:/);
+  assert.match(toolbar, /\bmargin-bottom: 6px;/);
+  assert.match(css, /\.dwt-body:has\(> \.dwt-group\[data-status='true'\]\) \{ padding-top: 0; \}/);
+  assert.match(css, /\.dwt-group\[data-status='true'\]:first-child \{ margin-top: 0; \}/);
+  assert.match(/\.dwt-status-title \{([^}]*)\}/.exec(css)[1], /\bheight: 32px;/);
 });

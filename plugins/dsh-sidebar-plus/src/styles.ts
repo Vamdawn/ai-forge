@@ -1,43 +1,29 @@
 export const CSS = `
 .dwt-root { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
-/* Reuse the native browser's complete region, including its toolbar and list.
-   Only replace its header label with our tabs; no hashed host classes are used.
-   The host's accessible search input tells us when it owns the shared header. */
-.dwt-root[data-native='true'] { position: relative; container-type: inline-size; }
+/* All groupings use this toolbar. The native component still owns its list. */
 .dwt-native-host { display: flex; flex: 1; min-height: 0; min-width: 0; }
 .dwt-native-host > [data-slot='sidebar-plus.nativeWorkspaces'] > div { flex: 1; min-width: 0; }
-.dwt-native-host > [data-slot='sidebar-plus.nativeWorkspaces'] > div > div:first-child > span:first-child { visibility: hidden; }
-.dwt-root[data-native='true'] > .dwt-head { position: absolute; z-index: 1; top: 2px; left: 4px; max-width: calc(100% - 104px); height: 36px; margin: 0; padding: 0; border: 0; }
-@container (min-width: 250px) {
-  .dwt-root[data-native='true']:has(.dwt-native-host input[tabindex='0']) > .dwt-head { visibility: hidden; pointer-events: none; }
-}
-/* The shell can shrink below the combined width of the tabs and three controls. */
-@container (width < 250px) {
-  .dwt-root[data-native='true'] > .dwt-native-host { margin-top: 36px; }
-  .dwt-root[data-native='true'] > .dwt-head { max-width: none; right: 4px; }
-}
-/* The region's one header row, shaped like the shipped Workspace section header
-   this entry replaces: a 36px band, the label slot on the left, and 28px icon
-   buttons on the right that the expanding search pushes out of the way. */
-.dwt-head { flex: none; display: flex; align-items: center; gap: 4px; height: 36px; margin-bottom: 4px; padding-left: 4px; box-sizing: border-box; border-bottom: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-tertiary); }
-/* The two grouping modes read as view tabs, not as a segmented control: content
-   width, 13px tertiary labels, and the selected one riding the business blue
-   with a 2px bar over the rule below (brand-primary resolves to neutral ink in
-   this token sheet, so the shipped view tabs deliberately do not use it). */
-.dwt-tabs { flex: none; display: flex; gap: 24px; align-self: stretch; }
-.dwt-tab { position: relative; display: inline-flex; align-items: center; appearance: none; border: 0; background: none; color: inherit; font: inherit; font-size: 13px; line-height: 16px; font-weight: 500; padding: 0; cursor: pointer; }
-.dwt-tab::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; border-radius: 2px; background: transparent; }
+.dwt-native-host > [data-slot='sidebar-plus.nativeWorkspaces'] > div > [data-sidebar-workspace-header],
+.dwt-native-host > [data-slot='sidebar-plus.nativeWorkspaces'] > div:not(:has(> [data-sidebar-workspace-header])) > div:first-child { display: none; }
+.dwt-head { flex: none; display: flex; align-items: center; gap: 4px; height: 36px; margin-bottom: 6px; padding-left: 4px; box-sizing: border-box; color: var(--dsw-alias-label-tertiary); }
+.dwt-current-group { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+/* Grouping shortcuts use the host's label and selected-state colors. */
+.dwt-tabs { min-width: 0; display: flex; gap: clamp(8px, 7%, 24px); align-self: stretch; }
+.dwt-tab { min-width: 0; position: relative; display: inline-flex; align-items: center; appearance: none; border: 0; background: none; color: inherit; font: inherit; font-size: 13px; line-height: 16px; font-weight: 500; padding: 0; cursor: pointer; }
+.dwt-tab-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dwt-tab::after { content: ''; position: absolute; right: 0; bottom: 0; left: 0; height: 2px; border-radius: 2px; background: transparent; }
 .dwt-tab:hover { color: var(--dsw-alias-label-primary); }
 .dwt-tab[data-active='true'] { color: var(--dsw-alias-state-business-primary); }
 .dwt-tab[data-active='true']::after { background: var(--dsw-alias-state-business-primary); }
 .dwt-tab:focus-visible { outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: -2px; }
 .dwt-badge { position: absolute; top: 6px; right: -8px; width: 6px; height: 6px; border-radius: 50%; background: var(--dsw-alias-state-warn-primary); }
+.dwt-head[data-search='true'] > :is(.dwt-tabs, .dwt-current-group) { display: none; }
 /* The search control takes the label's room while it is closed, then grows into
    the shipped header's search pill: a smaller magnifier, the field, and its own
    clear button inside one 30px bordered capsule, which is what keeps the field
    off the tabs' edge. */
-.dwt-searchslot { flex: 1; max-width: 28px; min-width: 0; display: flex; align-items: center; margin-left: auto; transition: max-width 180ms var(--ds-ease-in-out); }
-.dwt-searchslot-open { max-width: 100%; height: 30px; padding: 0 4px; box-sizing: border-box; border: 0.5px solid var(--dsw-alias-border-l4); border-radius: var(--dsw-radius-md); color: var(--dsw-alias-label-caption); }
+.dwt-searchslot { flex: 1; flex-shrink: 0; flex-basis: 28px; max-width: 28px; min-width: 0; display: flex; align-items: center; margin-left: auto; transition: max-width 180ms var(--ds-ease-in-out); }
+.dwt-searchslot-open { flex-shrink: 1; flex-basis: auto; max-width: 100%; height: 30px; padding: 0 4px; box-sizing: border-box; border: 0.5px solid var(--dsw-alias-border-l4); border-radius: var(--dsw-radius-md); color: var(--dsw-alias-label-caption); }
 /* The trigger's cell fills the capsule while the field is open, and stops
    behaving like a button: the field beside it is the interaction. */
 .dwt-searchslot-open .dwt-iconbutton { height: 30px; border-radius: 0; }
@@ -52,9 +38,14 @@ export const CSS = `
 .dwt-search::placeholder { color: var(--dsw-alias-label-tertiary); }
 /* While the search is open its own clear button travels inside the capsule, so
    the add affordance collapses and frees the room the field grows into. */
-.dwt-headactions { flex: none; display: flex; align-items: center; gap: 4px; max-width: 28px; opacity: 1; overflow: hidden; transition: max-width 180ms var(--ds-ease-in-out), opacity 120ms var(--ds-ease-in-out); }
+.dwt-headactions { flex: none; display: flex; align-items: center; gap: 4px; max-width: 64px; opacity: 1; overflow: hidden; transition: max-width 180ms var(--ds-ease-in-out), opacity 120ms var(--ds-ease-in-out); }
 .dwt-headactions-hidden { max-width: 0; opacity: 0; visibility: hidden; pointer-events: none; }
+.dwt-shortcut-settings { margin: 0; padding: 0; border: 0; color: var(--dsw-alias-label-primary); font: var(--dsw-font-s-14); }
+.dwt-shortcut-settings legend { margin-bottom: 12px; font: var(--dsw-font-s-strong-14); }
+.dwt-shortcut-settings label { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 420px; margin-bottom: 8px; }
+.dwt-shortcut-settings select { min-width: 150px; padding: 6px 8px; border: 1px solid var(--dsw-alias-border-l4); border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-1); color: inherit; font: inherit; }
 .dwt-body { position: relative; overflow-anchor: none; flex: 1; min-height: 0; overflow-y: auto; padding: 4px 6px 12px; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.dwt-body:has(> .dwt-group[data-status='true']) { padding-top: 0; }
 /* The scrollbar is a pointer affordance: drawn on hover, and the reserved
    gutter keeps rows from shifting when the thumb appears. */
 .dwt-body:hover { scrollbar-color: var(--dsh-scrollbar-thumb, var(--dsw-alias-border-l2)) transparent; }
@@ -65,8 +56,8 @@ export const CSS = `
 .dwt-group { margin-top: 4px; }
 /* Status headings start at the leading Session icon column. */
 .dwt-group[data-status='true'] { margin-top: 20px; }
-.dwt-group[data-status='true']:first-child { margin-top: 8px; }
-.dwt-status-title { box-sizing: border-box; display: flex; align-items: center; min-width: 0; height: 30px; margin: 0; padding: 0 8px; color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; user-select: none; }
+.dwt-group[data-status='true']:first-child { margin-top: 0; }
+.dwt-status-title { box-sizing: border-box; display: flex; align-items: center; min-width: 0; height: 32px; margin: 0; padding: 0 8px; color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; user-select: none; }
 .dwt-group[data-status='true'] > .dwt-group-head:hover { background: none; }
 .dwt-group-head { display: flex; align-items: center; gap: 2px; border-radius: 6px; }
 /* The hover fill spans the whole header row — leading mark, label, and the

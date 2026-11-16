@@ -57,11 +57,23 @@ async function mountSidebar(t, { useSectionScroller } = {}) {
     '@deepseek-ai/cordis': { Service: class { constructor(ctx, name) { this.ctx = ctx; ctx[name] = this; } } },
     '@deepseek-ai/dsh-client-store': {
       createSnapshotStore,
-      defineStore: spec => ({ spec, create: () => ({ ...createSnapshotStore(spec.init()), actions: spec.actions }) }),
+      defineStore: spec => ({
+        spec,
+        create: () => {
+          const store = createSnapshotStore(spec.init());
+          const actions = Object.fromEntries(Object.entries(spec.actions).map(([name, action]) => [name, (...args) => {
+            const draft = structuredClone(store.getSnapshot());
+            action(draft, ...args);
+            store.set(draft);
+          }]));
+          return { ...store, actions };
+        },
+      }),
     },
     '@deepseek-ai/dsh-client-ui-slots': slotsModule,
     '@deepseek-ai/dsh-client-ui-primitives': new Proxy({}, { get: (_, key) => {
       if (key === 'Tooltip') return ({ children }) => children;
+      if (key === 'Menu') return ({ anchor }) => anchor;
       return () => null;
     } }),
   };
@@ -92,11 +104,16 @@ async function mountSidebar(t, { useSectionScroller } = {}) {
   if (useSectionScroller) {
     section.inject = { hooks: { sectionScroller: (_, context) => context.useSectionScroller } };
   }
-  ctx.slots.register({ name: 'root', children: { 'sidebar.workspaces': section } },
+  ctx.slots.register({ name: 'root', children: {
+    'sidebar.workspaces': section,
+    'settings.section': { kind: 'list', scope: 'root' },
+  } },
     ({ renderSlot }) => {
       const wide = React.useSyncExternalStore(sidebar.subscribe, sidebar.getSnapshot);
-      return renderSlot('sidebar.workspaces', { wide, expandSidebar: () => sidebar.set(true) },
-        useSectionScroller ? { hookContext: { useSectionScroller } } : undefined);
+      return React.createElement(React.Fragment, null,
+        renderSlot('sidebar.workspaces', { wide, expandSidebar: () => sidebar.set(true) },
+          useSectionScroller ? { hookContext: { useSectionScroller } } : undefined),
+        renderSlot('settings.section', {}));
     });
   load(require.resolve('@deepseek-ai/dsh-client-ui-workspace/client')).apply(ctx);
   load(new URL('../dist/client.js', import.meta.url)).apply(ctx);
@@ -106,6 +123,40 @@ async function mountSidebar(t, { useSectionScroller } = {}) {
   return { renderer, collapse: () => sidebar.set(false), search: () => commands.get('session.search').resolve().run() };
 }
 
+test('the view-options menu and grouping shortcuts control the same sidebar', async t => {
+  const { renderer } = await mountSidebar(t);
+  const button = label => renderer.root.findAllByType('button').find(node => node.props['aria-label'] === label || node.children.includes(label));
+  const mode = () => button('tab.status').props['aria-selected'];
+  const menu = () => renderer.root.find(node => node.props.open === true && node.props.items?.some(item => item.id === 'status'));
+  await act(async () => button('viewOptions.label').props.onClick());
+  assert.deepEqual(Array.from(menu().props.items.slice(1, 5), item => item.id), ['workspace', 'workspace-tree', 'flat', 'status']);
+  await act(async () => menu().props.onSelect('status'));
+  assert.equal(mode(), true);
+  await act(async () => button('viewOptions.label').props.onClick());
+  await act(async () => menu().props.onSelect('workspace-tree'));
+  assert.equal(mode(), false);
+  assert.equal(button('tab.workspaces').props['aria-selected'], false);
+  await act(async () => button('viewOptions.label').props.onClick());
+  assert.ok(menu().props.selectedIds.includes('workspace-tree'));
+});
+
+test('settings can replace, reorder, or hide the two grouping shortcuts', async t => {
+  const { renderer } = await mountSidebar(t);
+  const selects = renderer.root.findAllByType('select');
+  const shortcuts = () => renderer.root.findAllByType('button').filter(node => node.props.role === 'tab')
+    .map(node => node.props['aria-label']);
+  const pick = (position, value) => act(async () => selects[position].props.onChange({ target: { value } }));
+  assert.deepEqual(shortcuts(), ['tab.workspaces', 'tab.status']);
+  await pick(0, 'status');
+  assert.deepEqual(shortcuts(), ['tab.status', 'tab.workspaces']);
+  await pick(1, 'flat');
+  assert.deepEqual(shortcuts(), ['tab.status', 'groupBy.flat']);
+  await pick(0, '');
+  await pick(1, '');
+  assert.deepEqual(shortcuts(), []);
+  assert.ok(renderer.root.findAllByType('button').some(node => node.props['aria-label'] === 'viewOptions.label'));
+});
+
 test('native Workspaces receives the sidebar shell scroll hook when the host provides it', async t => {
   const useSectionScroller = () => ({ bindScrollerRef() {} });
   const { renderer } = await mountSidebar(t, { useSectionScroller });
@@ -113,38 +164,39 @@ test('native Workspaces receives the sidebar shell scroll hook when the host pro
   assert.equal(browser.props.useSectionScroller, useSectionScroller);
 });
 
-test('switching sidebar tabs does not replay a handled native search shortcut', async t => {
+test('the shared search shortcut works across grouping changes without replaying', async t => {
   const { renderer, search } = await mountSidebar(t);
-  const searchInput = () => renderer.root.findAllByType('input').find(node => node.props.placeholder === 'search.placeholder');
-  const tab = name => renderer.root.findAllByType('button').find(node => node.props.role === 'tab' && node.children.includes(name));
+  const searchInput = () => renderer.root.findAllByType('input').find(node => node.props.className === 'dwt-search');
+  const tab = name => renderer.root.findAllByType('button').find(node => node.props.role === 'tab' && node.props['aria-label'] === name);
 
-  assert.equal(searchInput().props.tabIndex, -1);
+  assert.equal(searchInput(), undefined);
   await act(async () => search());
-  assert.equal(searchInput().props.tabIndex, 0);
+  assert.ok(searchInput());
   await act(async () => searchInput().props.onKeyDown({ key: 'Escape' }));
   await act(async () => tab('tab.status').props.onClick());
   await act(async () => search());
-  assert.equal(renderer.root.findAllByType('input').filter(node => node.props.className === 'dwt-search').length, 1);
+  assert.ok(searchInput());
+  await act(async () => searchInput().props.onKeyDown({ key: 'Escape' }));
   await act(async () => tab('tab.workspaces').props.onClick());
 
-  assert.equal(searchInput().props.tabIndex, -1, 'the old shortcut must not reopen native search');
+  assert.equal(searchInput(), undefined, 'the old shortcut must not reopen search');
   await act(async () => search());
-  assert.equal(searchInput().props.tabIndex, 0, 'a fresh shortcut still opens native search');
+  assert.ok(searchInput(), 'a fresh shortcut still opens search');
 });
 
-test('a search shortcut from the collapsed Workspaces rail opens native search once', async t => {
+test('a search shortcut from the collapsed sidebar opens the shared field once', async t => {
   const { renderer, collapse, search } = await mountSidebar(t);
-  const searchInput = () => renderer.root.findAllByType('input').find(node => node.props.placeholder === 'search.placeholder');
+  const searchInput = () => renderer.root.findAllByType('input').find(node => node.props.className === 'dwt-search');
 
   await act(async () => collapse());
   assert.equal(searchInput(), undefined);
   await act(async () => search());
-  assert.equal(searchInput().props.tabIndex, 0);
+  assert.ok(searchInput());
   await act(async () => searchInput().props.onKeyDown({ key: 'Escape' }));
   await act(async () => collapse());
   const workspacesButton = renderer.root.findAllByType('button').find(node => node.props.title === 'tab.workspaces');
   await act(async () => workspacesButton.props.onClick());
-  assert.equal(searchInput().props.tabIndex, -1);
+  assert.equal(searchInput(), undefined);
 });
 
 function setup() {

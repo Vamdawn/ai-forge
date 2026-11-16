@@ -46,7 +46,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'sidebar-plus.nativeWorkspaces': {
       kind: 'single';
       scope: 'root';
-      owner: { wide: boolean; expandSidebar: () => void; searchOnMount: boolean; useSectionScroller?: UseSectionScroller };
+      owner: { wide: boolean; expandSidebar: () => void; useSectionScroller?: UseSectionScroller };
     };
     /** This plugin's own Session "..." menu: the shipped rows and third-party rows, re-hosted. */
     'sidebar-plus.session.menu.item': {

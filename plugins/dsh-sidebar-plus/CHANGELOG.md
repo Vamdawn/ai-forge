@@ -6,6 +6,14 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+### Added
+
+- Choose Status alongside the three native groupings in View options. All four share a toolbar, and Sidebar Plus settings let you choose and reorder up to two grouping shortcuts.
+
+### Fixed
+
+- Remove the toolbar divider and align the first Status heading with the first Workspaces row using the same gap.
+
 ## [0.6.0] - 2026-11-16
 
 ### Changed
