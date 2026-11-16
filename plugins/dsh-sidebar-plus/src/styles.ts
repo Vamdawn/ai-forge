@@ -98,15 +98,14 @@ export const CSS = `
 .dwt-row:hover, .dwt-row[data-menu='open'] { background: var(--dsw-alias-interactive-bg-hover); }
 .dwt-row[data-current='true'] { background: var(--dsw-alias-interactive-bg-hover); }
 .dwt-row-clip { margin: 0 6px 0 4px; flex: 1; min-width: 0; overflow: hidden; }
-.dwt-row-title { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transform: translateX(var(--dwt-shift, 0px)); }
-/* The crawl has to lift the title's own clipping, otherwise that clip travels
-   with the box and the text paints outside the row; the wrapper above then does
-   all the clipping. The animation stays a transform — animating the text layout
-   instead (text-indent) relayouts and reshapes the line on every frame, which is
-   what makes the crawl stutter. The transition rides the hover rule only, so
-   leaving the row snaps back instead of sliding out of a box that no longer
-   holds the tail. */
-.dwt-row:hover .dwt-row-title { width: max-content; overflow: visible; text-overflow: clip; transition: transform .35s ease; }
+.dwt-row-title { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The fallback Workspaces list still clips its translated title at the wrapper. */
+.dwt-row:not([data-status-row]) .dwt-row-title { transform: translateX(var(--dwt-shift, 0px)); }
+.dwt-row:not([data-status-row]):hover .dwt-row-title { width: max-content; overflow: visible; text-overflow: clip; transition: transform .35s ease; }
+.dwt-row[data-status-row]:is(:hover, [data-menu='open']) .dwt-row-title { text-overflow: clip; }
+.dwt-row-title[data-title-scrolled] { mask-image: linear-gradient(90deg, transparent, #000 12px); }
+.dwt-row-title[data-title-clipped] { mask-image: linear-gradient(270deg, transparent, #000 12px); }
+.dwt-row-title[data-title-scrolled][data-title-clipped] { mask-image: linear-gradient(90deg, transparent, #000 12px calc(100% - 12px), transparent); }
 /* Each child owns its branch so position animations move line and label
    together. The final vertical segment stops at its elbow, including for a
    single child; these decorative lines never intercept input. */
@@ -122,25 +121,32 @@ export const CSS = `
 .dwt-row-mark { flex: none; width: 16px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
 .dwt-child-time { flex: none; font-size: 11px; color: var(--dsw-alias-label-secondary); }
 .dwt-trailing { flex: none; font-size: 10px; line-height: 16px; color: var(--dsw-alias-label-tertiary); }
-/* The row keeps two controls. Both live in one strip that is out of flow at
-   rest, so the relative time holds the trailing cell on its own; hovering swaps
-   the cell in place — the strip takes exactly the slot the time was holding, so
-   the row's right edge never moves. The strip is held to the 16px leading cell:
-   its own controls may not be taller than that cell, or a hovered row grows by
-   the difference and every row below it slides — the title's line box is 16px
-   for a Latin title and 18px for a CJK one, so the taller strip only moved the
-   Latin rows, which read as the list twitching as the pointer travelled. */
+.dwt-row-resting { flex: none; display: inline-flex; align-items: center; gap: 6px; }
+.dwt-row-pin { width: 16px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-caption); }
+/* Switch the resting information for a compact action strip without changing row height. */
 .dwt-rowbar { flex: none; display: none; align-items: center; gap: 10px; height: 16px; }
-.dwt-row:hover .dwt-rowbar, .dwt-row:focus-within .dwt-rowbar, .dwt-row[data-menu='open'] .dwt-rowbar { display: inline-flex; }
-.dwt-row:hover .dwt-trailing, .dwt-row:focus-within .dwt-trailing, .dwt-row[data-menu='open'] .dwt-trailing { display: none; }
+.dwt-row[data-status-row] { user-select: none; }
+.dwt-row[data-status-row] .dwt-rowbar { gap: 13px; }
+.dwt-row:not([data-status-row]):is(:hover, :focus-within) .dwt-rowbar, .dwt-row[data-menu='open'] .dwt-rowbar { display: inline-flex; }
+.dwt-row:not([data-status-row]):is(:hover, :focus-within) .dwt-row-resting, .dwt-row[data-menu='open'] .dwt-row-resting { display: none; }
+@media (hover: hover) {
+  .dwt-row[data-status-row]:hover .dwt-rowbar, html[data-input-modality='keyboard'] .dwt-row[data-status-row]:focus-within .dwt-rowbar { display: inline-flex; }
+  .dwt-row[data-status-row]:hover .dwt-row-resting, html[data-input-modality='keyboard'] .dwt-row[data-status-row]:focus-within .dwt-row-resting { display: none; }
+}
+@media (hover: none) {
+  .dwt-row[data-status-row] .dwt-rowbar { display: inline-flex; }
+  .dwt-row[data-status-row] .dwt-trailing[data-time='true'] { display: none; }
+}
 .dwt-trigger { flex: none; display: inline-flex; align-items: center; justify-content: center; appearance: none; border: 0; background: none; color: var(--dsw-alias-label-tertiary); font: inherit; width: 16px; height: 16px; padding: 0; border-radius: var(--dsw-radius-xs); cursor: pointer; }
-/* The shipped row's own action button: a bare 16px glyph whose hover is a
-   colour step, so the two controls in this strip are one pair. The text "⋯" it
-   replaced was a 23px box with 7.5px of air on each side of a 9.5px glyph, so
-   the pair read as a wide framed button plus a small icon — its left edge began
-   10px left of the timestamp it was supposed to stand in for. */
+.dwt-row[data-status-row] .dwt-trigger { width: 24px; height: 24px; margin: -4px; }
+.dwt-row[data-status-row] .dwt-trigger svg { width: 14px; height: 14px; }
 .dwt-trigger:hover { color: var(--dsw-alias-label-primary); }
 .dwt-trailing[data-tone='warn'] { color: var(--dsw-alias-state-warn-primary); }
+.dwt-session-preview { display: flex; flex-direction: column; gap: 8px; }
+.dwt-session-preview-title { color: var(--dsw-alias-hovercard-label-primary, var(--dsw-alias-label-primary)); overflow-wrap: break-word; font-size: 14px; line-height: 20px; }
+.dwt-session-preview-path, .dwt-session-preview-time { color: var(--dsw-alias-hovercard-label-secondary, var(--dsw-alias-label-secondary)); font-size: 12px; line-height: 16px; }
+.dwt-session-preview-path { word-break: break-all; }
+.dwt-session-preview-status { display: flex; align-items: center; gap: 8px; color: var(--dsw-alias-hovercard-label-tertiary, var(--dsw-alias-label-tertiary)); font-size: 12px; line-height: 20px; }
 /* The section's one fold control, drawn like the shipped workspace browser's own
    overflow button rather than with the host's Button: the shipped control is not
    one of that component's variants, so its whole appearance lives here — a bare

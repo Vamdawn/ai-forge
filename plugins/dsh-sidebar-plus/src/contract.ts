@@ -1,3 +1,4 @@
+import type { HTMLAttributes } from 'react';
 import type { HostObservable, SlotHookFactory } from '@deepseek-ai/dsh-client-ui-slots';
 import type { ShortcutCatalogEntry } from '@deepseek-ai/dsh-client-shortcuts/client';
 import type {
@@ -20,6 +21,18 @@ import type {
  */
 export const MENU_SLOT = 'sidebar-plus.session.menu.item';
 export const ROW_ACTION_SLOT = 'sidebar-plus.session.row.action';
+export const ROW_TRAILING_SLOT = 'sidebar-plus.session.row.trailing';
+export const ROW_HOVER_SLOT = 'sidebar-plus.session.row.hover';
+
+export interface SessionMenuTarget {
+  readonly kind: 'session';
+  readonly value: SessionRowOwnerProps;
+}
+
+type RowTriggerHandlers = Pick<HTMLAttributes<HTMLDivElement>, 'onContextMenu' | 'onKeyDown'>;
+export interface SessionContextMenu {
+  getTriggerProps(target: SessionMenuTarget, handlers: RowTriggerHandlers): RowTriggerHandlers;
+}
 /**
  * Our own copy of the directory-picking hole. The composed picker package fills
  * the shipped one, which only the entry we shadow may render, so "Add
@@ -41,7 +54,19 @@ export const menuOpenStateFactory: SlotHookFactory<typeof MENU_SLOT, UseMenuOpen
   (_standard, hookContext) => () => hookContext;
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
+  // The context-menu factory is supplied by newer hosts at runtime.
+  interface SlotFactoryMap {
+    'contextMenu.button': {
+      scope: 'root';
+      props: { target: SessionMenuTarget; label: string; className: string };
+    };
+  }
   interface SlotMap {
+    'sidebar.session.row.trailing': {
+      kind: 'list';
+      scope: 'root';
+      owner: Pick<SessionRowOwnerProps, 'sessionId'>;
+    };
     /** Official browser, with its own store and remapped child seats. */
     'sidebar-plus.nativeWorkspaces': {
       kind: 'single';
@@ -66,6 +91,16 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       kind: 'list';
       scope: 'root';
       owner: SessionRowOwnerProps;
+    };
+    'sidebar-plus.session.row.trailing': {
+      kind: 'list';
+      scope: 'root';
+      owner: Pick<SessionRowOwnerProps, 'sessionId'>;
+    };
+    'sidebar-plus.session.row.hover': {
+      kind: 'list';
+      scope: 'root';
+      owner: Pick<SessionRowOwnerProps, 'sessionId'>;
     };
     /** This plugin's own directory-picking hole, filled by the mirrored picker occupant. */
     'sidebar-plus.directoryFlow': {

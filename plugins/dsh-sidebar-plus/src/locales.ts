@@ -8,14 +8,17 @@ export type LocaleKey =
   | 'group.waiting' | 'group.working' | 'group.done' | 'group.idle' | 'group.pinned'
   | 'ungrouped' | 'empty' | 'emptyHint' | 'loading'
   | 'pending.approval' | 'pending.planReview' | 'pending.question'
+  | 'pending.compact.approval' | 'pending.compact.plan-review' | 'pending.compact.question'
   | 'showMore' | 'showLess' | 'unread' | 'row.menu' | 'row.newSession'
-  | 'status.running' | 'status.idle'
+  | 'row.pinned' | 'row.sessionMenu' | 'row.untitled'
+  | 'status.running' | 'status.idle' | 'status.completed' | 'status.subagents.one' | 'status.subagents.other'
   | 'search.open' | 'search.placeholder' | 'search.empty' | 'search.archived'
   | 'search.results' | 'search.pending' | 'search.hasMore' | 'search.unarchive'
   | 'addWorkspace' | 'addFailed' | 'dismiss'
   | 'ws.rename' | 'ws.delete' | 'ws.deleteConfirm' | 'common.cancel'
   | 'ws.menu' | 'ws.newSession' | 'ws.sessions' | 'ws.path' | 'ws.pathCopied'
-  | 'card.created' | 'date.ymd'
+  | 'card.created' | 'card.copy' | 'card.copied' | 'date.ymd'
+  | 'time.ago' | `time.compact.${'now' | 'minutes' | 'hours' | 'days' | 'months' | 'years'}`
   | 'time.now' | 'time.minute' | 'time.hour' | 'time.day';
 
 /** Copy for the officially shipped Chinese and English locales. */
@@ -48,16 +51,25 @@ export const DICTIONARIES = {
     empty: '还没有会话',
     emptyHint: '用上方的新建会话开始工作。',
     loading: '正在载入会话…',
-    'pending.approval': '等待批准',
+    'pending.approval': '等待审批',
     'pending.planReview': '计划待审',
     'pending.question': '等待回答',
+    'pending.compact.approval': '待审批',
+    'pending.compact.plan-review': '计划待审',
+    'pending.compact.question': '待回答',
     showMore: '再显示 {n} 个会话',
     showLess: '收起',
     unread: '未查看',
     'row.menu': '会话操作',
+    'row.sessionMenu': '会话“{name}”的操作',
+    'row.pinned': '已置顶',
+    'row.untitled': '未命名',
     'row.newSession': '新建会话',
     'status.running': '进行中',
     'status.idle': '空闲',
+    'status.completed': '已完成',
+    'status.subagents.one': '{n} 个子智能体运行中',
+    'status.subagents.other': '{n} 个子智能体运行中',
     'search.open': '搜索会话',
     'search.placeholder': '搜索标题、目录或对话内容',
     'search.empty': '没有匹配的会话',
@@ -79,11 +91,20 @@ export const DICTIONARIES = {
     'ws.pathCopied': '已复制路径',
     'common.cancel': '取消',
     'card.created': '创建于 {time}',
+    'card.copy': '复制',
+    'card.copied': '已复制',
     'date.ymd': '{y}年{m}月{d}日',
     'time.now': '刚刚',
     'time.minute': '{n} 分钟前',
     'time.hour': '{n} 小时前',
     'time.day': '{n} 天前',
+    'time.ago': '{time}前',
+    'time.compact.now': '刚刚',
+    'time.compact.minutes': '{n}分钟',
+    'time.compact.hours': '{n}小时',
+    'time.compact.days': '{n}天',
+    'time.compact.months': '{n}个月',
+    'time.compact.years': '{n}年',
   },
   en: {
     'tab.workspaces': 'Workspaces',
@@ -116,13 +137,22 @@ export const DICTIONARIES = {
     'pending.approval': 'Waiting for approval',
     'pending.planReview': 'Plan awaiting review',
     'pending.question': 'Waiting for answer',
+    'pending.compact.approval': 'Approval',
+    'pending.compact.plan-review': 'Plan review',
+    'pending.compact.question': 'Answer',
     showMore: 'Show {n} more sessions',
     showLess: 'Show less',
     unread: 'Unseen',
     'row.menu': 'Session actions',
+    'row.sessionMenu': 'Session actions for {name}',
+    'row.pinned': 'Pinned',
+    'row.untitled': 'Untitled',
     'row.newSession': 'New Session',
-    'status.running': 'Working',
+    'status.running': 'Running',
     'status.idle': 'Idle',
+    'status.completed': 'Completed',
+    'status.subagents.one': '{n} subagent running',
+    'status.subagents.other': '{n} subagents running',
     'search.open': 'Search sessions',
     'search.placeholder': 'Search titles, Workspaces, or conversation content',
     'search.empty': 'No matching sessions',
@@ -144,11 +174,20 @@ export const DICTIONARIES = {
     'ws.pathCopied': 'Path copied',
     'common.cancel': 'Cancel',
     'card.created': 'Created {time}',
+    'card.copy': 'Copy',
+    'card.copied': 'Copied',
     'date.ymd': '{y}-{m}-{d}',
     'time.now': 'just now',
     'time.minute': '{n}m ago',
     'time.hour': '{n}h ago',
     'time.day': '{n}d ago',
+    'time.ago': '{time} ago',
+    'time.compact.now': 'now',
+    'time.compact.minutes': '{n}min',
+    'time.compact.hours': '{n}h',
+    'time.compact.days': '{n}d',
+    'time.compact.months': '{n}mo',
+    'time.compact.years': '{n}y',
   },
 } satisfies Record<'zh' | 'en', Record<LocaleKey, string>>;
 

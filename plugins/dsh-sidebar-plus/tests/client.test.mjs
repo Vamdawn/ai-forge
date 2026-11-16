@@ -10,6 +10,9 @@ const source = await readFile(new URL('../dist/client.js', import.meta.url), 'ut
 const primitives = new Proxy({}, { get: (_, name) => {
   if (name === 'Menu') return ({ anchor, open, children }) => React.createElement('div', null, anchor, open ? children : null);
   if (name === 'Tooltip') return ({ children }) => children;
+  if (name === 'HoverCard') return ({ anchor, content, ...props }) =>
+    React.createElement('div', { 'data-hover-card': true, ...props }, anchor, content);
+  if (name === 'relativeTime') return () => ({ unit: 'minutes', n: 5 });
   if (name === 'Modal') return ({ open, title, description, children, footer, onClose }) => open
     ? React.createElement('div', { role: 'dialog', 'aria-label': title, onClose }, description, children, footer) : null;
   if (name === 'StateDot') return ({ state }) => React.createElement('span', { className: 'dwt-state-dot', 'data-state': state });
@@ -18,11 +21,11 @@ const primitives = new Proxy({}, { get: (_, name) => {
   if (typeof name === 'string' && name.startsWith('Icon')) return props => React.createElement('span', { ...props, 'data-icon': name });
   return ({ children, ...props }) => React.createElement(name === 'Button' || name === 'MenuItemButton' ? 'button' : 'span', props, children);
 } });
-const summary = (id, updatedAt = 1) => ({ displayTitle: id, updatedAt, running: false, blank: false, retainedBy: {} });
+const summary = (id, updatedAt = 1) => ({ title: id, displayTitle: id, updatedAt, running: false, blank: false, retainedBy: {} });
 const workspace = (id, sessionIds) => ({ workspaceId: id, title: id, path: `/${id}`, sessionIds });
 const keyEvent = (target = {}) => ({ key: 'Enter', target, currentTarget: {}, preventDefault() {}, nativeEvent: { isComposing: false } });
 
-async function mount(t, overrides = {}, setupSlots = () => {}) {
+async function mount(t, overrides = {}, setupSlots = () => {}, browser = {}) {
   let plugin;
   const cleanups = [];
   const store = initial => {
@@ -31,7 +34,7 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
     return { getSnapshot: () => value, set: next => { value = next; for (const listener of listeners) listener(); }, subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener); } };
   };
   runInNewContext(source, {
-    window: { __ModuleLoader__: { load: value => { plugin = value; } }, setTimeout, clearTimeout },
+    window: { __ModuleLoader__: { load: value => { plugin = value; } }, setTimeout, clearTimeout, ...browser.window },
     document: { createElement: () => ({ remove() {} }), head: { append() {} }, addEventListener() {}, removeEventListener() {} },
     Error, AbortController, setTimeout, clearTimeout, setInterval, clearInterval,
   });
@@ -68,6 +71,7 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
     useAddRequest: () => useSource(injected.hooks.addRequest),
     useGroupingPreferences: () => useSource(injected.hooks.groupingPreferences),
     useNativeView: () => null,
+    useNativeSessionRow: () => useSource(injected.hooks.nativeSessionRow),
     selectGrouping: injected.selectGrouping, setNativeOrder: injected.setNativeOrder,
     setNativeArchiveFilter: injected.setNativeArchiveFilter,
     useShortcuts: () => [],
@@ -79,12 +83,78 @@ async function mount(t, overrides = {}, setupSlots = () => {}) {
     actions: { setSessionOrder() {}, setOrderBy() {}, setGroupExpanded() {} }, ...overrides,
   };
   let renderer;
-  await act(async () => { renderer = create(React.createElement(entry.component, props)); });
+  await act(async () => { renderer = create(React.createElement(entry.component, props), { createNodeMock: browser.createNodeMock }); });
   t.after(() => { act(() => renderer.unmount()); cleanups.reverse().forEach(dispose => dispose?.()); });
   return { renderer, props, update: async () => { await act(async () => renderer.update(React.createElement(entry.component, props))); } };
 }
 
 const findClass = (renderer, className) => renderer.root.findAll(node => node.props.className === className && typeof node.type === 'string');
+
+test('Status reveals long titles at 30 pixels per second with fades on the clipped sides', async t => {
+  const title = { clientWidth: 110, scrollWidth: 200, scrollLeft: 0, dataset: {} };
+  const frames = new Map();
+  let sequence = 0;
+  const tick = now => {
+    const [id, callback] = frames.entries().next().value;
+    frames.delete(id);
+    callback(now);
+  };
+  const { renderer } = await mount(t, {}, undefined, {
+    window: {
+      matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+      requestAnimationFrame: callback => { frames.set(++sequence, callback); return sequence; },
+      cancelAnimationFrame: id => frames.delete(id),
+    },
+    createNodeMock: element => element.props.className === 'dwt-row-title' ? title : null,
+  });
+  await openStatusTab(renderer);
+  const row = findClass(renderer, 'dwt-row')[0];
+  row.props.onPointerEnter({ pointerType: 'mouse' });
+  tick(100);
+  assert.equal(title.scrollLeft, 0);
+  assert.deepEqual(title.dataset, { titleClipped: '' });
+  tick(1100);
+  assert.equal(title.scrollLeft, 30);
+  assert.deepEqual(title.dataset, { titleScrolled: '', titleClipped: '' });
+  tick(3100);
+  assert.equal(title.scrollLeft, 90);
+  assert.deepEqual(title.dataset, { titleScrolled: '' });
+  assert.equal(frames.size, 0);
+
+  row.props.onPointerLeave();
+  assert.equal(title.scrollLeft, 0);
+  assert.deepEqual(title.dataset, {});
+  row.props.onPointerEnter({ pointerType: 'mouse' });
+  assert.equal(frames.size, 1);
+  row.props.onPointerLeave();
+  assert.equal(frames.size, 0);
+});
+
+test('Status reveals the end immediately with reduced motion and skips tiny overflows', async t => {
+  const title = { clientWidth: 110, scrollWidth: 200, scrollLeft: 0, dataset: {} };
+  const { renderer } = await mount(t, {}, undefined, {
+    window: {
+      matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }),
+      requestAnimationFrame: () => assert.fail('reduced motion must not schedule scrolling frames'),
+    },
+    createNodeMock: element => element.props.className === 'dwt-row-title' ? title : null,
+  });
+  await openStatusTab(renderer);
+  const row = findClass(renderer, 'dwt-row')[0];
+  row.props.onPointerEnter({ pointerType: 'touch' });
+  assert.equal(title.scrollLeft, 0);
+  row.props.onPointerEnter({ pointerType: 'mouse' });
+  assert.equal(title.scrollLeft, 90);
+  assert.deepEqual(title.dataset, { titleScrolled: '' });
+  row.props.onPointerLeave();
+  assert.equal(title.scrollLeft, 0);
+  assert.deepEqual(title.dataset, {});
+
+  title.scrollWidth = title.clientWidth + 8;
+  row.props.onPointerEnter({ pointerType: 'mouse' });
+  assert.equal(title.scrollLeft, 0);
+  assert.deepEqual(title.dataset, {});
+});
 
 test('native and Status lists share the same toolbar and directory flow', async t => {
   const calls = [];
@@ -272,6 +342,73 @@ test('the hover card prints the Workspace the Session is accounted to', async t 
     ['ai-forge · status.idle · time.day']);
   assert.deepEqual(findClass(renderer, 'dwt-card-path').map(node => node.children.join('')), ['/repo/ai-forge']);
   assert.deepEqual(findClass(renderer, 'dwt-card-created').map(node => node.children.join('')), ['card.created']);
+});
+
+test('a pinned Status row uses compact time and previews its completed session with the native card', async t => {
+  const { renderer } = await mount(t, {
+    useSessions: () => ({ ids: ['a', 'b'], byId: { a: { ...summary('a'), cwd: '/repo/session' },
+      b: { ...summary('b'), title: undefined, displayTitle: 'Workspace fallback' } }, phase: 'ready' }),
+    useSessionStatus: () => new Map([['a', { completionUnread: true }]]),
+    useWorkspaces: () => ({ items: [workspace('one', ['a'])], pinnedSessionIds: ['a'], archivedSessionIds: [] }),
+    t: (key, values) => key === 'time.compact.minutes' ? `${values.n}分钟`
+      : key === 'time.ago' ? `${values.time}前` : key,
+  });
+  await openStatusTab(renderer);
+  const row = findClass(renderer, 'dwt-row')[0];
+  assert.equal(row.findByProps({ 'aria-label': 'row.pinned' }).props.role, 'img');
+  assert.equal(row.findByProps({ className: 'dwt-trailing' }).children.join(''), '5分钟');
+  const cards = renderer.root.findAllByProps({ 'data-hover-card': true });
+  const [card, untitled] = cards;
+  assert.equal(card.props.openDelayMs, 800);
+  assert.equal(card.props.copyText, 'a');
+  const text = nodes => nodes.map(node => typeof node === 'string' ? node : text(node.children)).join(' ');
+  assert.match(text(card.children), /\/repo\/session/);
+  assert.match(text(card.children), /5分钟前/);
+  assert.match(text(card.children), /status\.completed/);
+  assert.equal(untitled.props.copyText, undefined);
+  assert.match(text(untitled.children), /row\.untitled/);
+});
+
+test('Status opens the host session menu and rename dialog from the row', async t => {
+  const menus = [];
+  const renames = [];
+  const opened = [];
+  let active;
+  const showMenu = target => {
+    menus.push([target.kind, target.value.sessionId]);
+    active.set(target);
+  };
+  const { renderer } = await mount(t, {
+    openSession: id => opened.push(id),
+    useContextMenu: () => ({
+      getTriggerProps: (target, handlers) => ({ ...handlers, onContextMenu: () => showMenu(target) }),
+    }),
+    renderFactorySlot: (name, { target, label }) => {
+      assert.equal(name, 'contextMenu.button');
+      return React.createElement('button', { 'aria-label': label, onClick: () => showMenu(target) });
+    },
+    useSessionAccess: id => id === 'a',
+  }, (slots, store) => {
+    active = store(null);
+    slots.register({ name: 'sidebar.workspaces', children: {
+      'sidebar.workspaces.directoryFlow': { kind: 'single', scope: 'root' },
+    }, inject: () => ({
+      requestSessionRename: (...args) => renames.push(args),
+      hooks: { workspaceShortcuts: store({ searchRequest: 0 }), contextMenuTarget: active },
+    }) }, () => null);
+  });
+  await openStatusTab(renderer);
+  const row = id => findClass(renderer, 'dwt-row').find(node => node.props['data-motion-id'] === id);
+  await act(async () => row('a').findByProps({ 'aria-label': 'row.sessionMenu' }).props.onClick());
+  assert.equal(row('a').props['data-menu'], 'open');
+  assert.ok(renderer.root.findAllByProps({ 'data-hover-card': true }).some(node => node.props.copyText === 'a' && node.props.disabled));
+  await act(async () => row('b').props.onContextMenu());
+  assert.deepEqual(menus, [['session', 'a'], ['session', 'b']]);
+  await act(async () => row('a').findByProps({ className: 'dwt-row-title' }).props.onDoubleClick({ stopPropagation() {} }));
+  assert.deepEqual(renames, [['a', 'a']]);
+  assert.equal(row('b').findByProps({ className: 'dwt-row-title' }).props.onDoubleClick, undefined);
+  assert.equal(row('a').props.draggable, undefined);
+  assert.deepEqual(opened, []);
 });
 
 test('the blank New Session row carries no mark', async t => {

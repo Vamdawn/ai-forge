@@ -59,6 +59,11 @@ export interface ActivityChild {
 export interface Row {
   readonly id: SessionId;
   readonly title: string;
+  /** Durable title, empty until assigned. */
+  readonly sessionTitle: string;
+  readonly cwd?: string;
+  readonly selfRunning: boolean;
+  readonly runningSubagents: number;
   readonly state: RowState;
   readonly pending?: PendingKind;
   readonly updatedAt: number;
@@ -225,7 +230,8 @@ export function topRows(
     const selfRunning = status?.running ?? summary.running;
     const unread = status?.completionUnread === true;
     const children = subagentChildren(list, statuses, id, jobs);
-    const childRunning = children.some(child => child.state === 'ongoing');
+    const runningSubagents = children.filter(child => child.state === 'ongoing').length;
+    const childRunning = runningSubagents > 0;
     const childPending = children.find(child => child.pending !== undefined)?.pending;
     const own = rowStateOf(statuses, id, summary.running, childRunning || hasBackgroundWork(jobs, id));
     const pending = own.pending ?? childPending;
@@ -233,6 +239,10 @@ export function topRows(
     rows.push({
       id,
       title: summary.displayTitle,
+      sessionTitle: summary.title?.trim() ?? '',
+      ...summary.cwd ? { cwd: summary.cwd } : {},
+      selfRunning,
+      runningSubagents,
       state,
       ...pending === undefined ? {} : { pending },
       updatedAt: summary.updatedAt,

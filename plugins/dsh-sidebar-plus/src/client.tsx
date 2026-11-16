@@ -1,22 +1,23 @@
 import { createElement as h, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent as ReactChangeEvent, DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent, ReactElement } from 'react';
+import type { ChangeEvent as ReactChangeEvent, DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactElement, RefObject } from 'react';
 import type { PropsStore } from '@deepseek-ai/dsh-client-store';
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store';
 // The host's own controls: hand-rolled buttons drifted from the native look
 // (radius, height, hover fill), and this package owns those decisions.
 import {
-  Button, IconChevronRightOutlineRegular, IconCloseFillRegular,
+  Button, HoverCard, IconChevronRightOutlineRegular, IconCloseFillRegular,
   IconEditOutlineRegular, IconEllipsisOutlineRegular, IconFlatListOutlineRegular,
   IconFolderCloseRegular, IconFolderOpenRegular,
   IconNewChatOutlineRegular, IconPinFillRegular, IconPinOutlineRegular,
   IconProjectAddOutlineRegular, IconSearchOutlineRegular, IconTrashOutlineRegular,
   IconUnarchiveOutlineRegular, IconWarningOutlineRegular, Menu, MenuItemButton, Modal, StateDot, Tooltip,
+  relativeTime as nativeRelativeTime,
 } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { Context } from '@deepseek-ai/cordis';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client';
 import type { IJobs } from '@deepseek-ai/dsh-api-job-controller/client';
-import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
+import type { HostObservable, InjectFace, PropsLocale, PropsRenderFactories, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
 // These imports provide service type augmentations; the Desktop loader owns the runtime services.
 import type {} from '@deepseek-ai/dsh-client-locale/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
@@ -27,8 +28,8 @@ import type { WorkspaceBrowserInjected } from '@deepseek-ai/dsh-client-ui-worksp
 import type {} from '@deepseek-ai/dsh-client-shortcuts/client';
 import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots';
 import { DICTIONARIES } from './locales.js';
-import { FLOW_SLOT, MENU_SLOT, ROW_ACTION_SLOT, menuOpenStateFactory } from './contract.js';
-import type { UseSectionScroller } from './contract.js';
+import { FLOW_SLOT, MENU_SLOT, ROW_ACTION_SLOT, ROW_HOVER_SLOT, ROW_TRAILING_SLOT, menuOpenStateFactory } from './contract.js';
+import type { SessionContextMenu, SessionMenuTarget, UseSectionScroller } from './contract.js';
 import { createMirror, createNativeBrowser, NATIVE_SLOT } from './mirror.js';
 import { createViewStore } from './store.js';
 import { CSS } from './styles.js';
@@ -90,6 +91,7 @@ interface Injected {
     /** Native browser is available after its registration and child aliases are ready. */
     nativeBrowser: { getSnapshot(): boolean; subscribe(listener: () => void): () => void };
     nativeView: { getSnapshot(): NativeView | null; subscribe(listener: () => void): () => void };
+    nativeSessionRow: HostObservable<NativeSessionRow>;
     groupingPreferences: ShortcutSettingsInjected['hooks']['groupingPreferences'];
     addRequest: { getSnapshot(): number; subscribe(listener: () => void): () => void };
     shortcuts: WorkspaceBrowserInjected['hooks']['shortcuts'];
@@ -97,6 +99,22 @@ interface Injected {
     searchRequest: { getSnapshot(): number; subscribe(listener: () => void): () => void };
   };
 }
+
+interface NativeSessionRow {
+  readonly home?: string;
+  readonly menuSessionId?: SessionId;
+  readonly requestRename?: WorkspaceBrowserInjected['requestSessionRename'];
+}
+
+type UseSessionAccess = (id: SessionId, action: 'session/rename') => boolean;
+
+interface StatusRowOptions {
+  readonly host: NativeSessionRow;
+  readonly menu?: SessionContextMenu & PropsRenderFactories;
+}
+
+const allowLegacySessionAccess: UseSessionAccess = () => true;
+const noContextMenu = (): undefined => undefined;
 
 /** One transient hover card, positioned from the hovered row's box. */
 interface HoverInfo {
@@ -127,11 +145,16 @@ interface GroupDnd {
 }
 
 type Props = PropsRuntime<'sidebar.workspaces'>
-  & PropsRenderSlots<typeof MENU_SLOT | typeof ROW_ACTION_SLOT | typeof FLOW_SLOT | typeof NATIVE_SLOT>
+  & PropsRenderSlots<typeof MENU_SLOT | typeof ROW_ACTION_SLOT | typeof ROW_TRAILING_SLOT | typeof ROW_HOVER_SLOT | typeof FLOW_SLOT | typeof NATIVE_SLOT>
   & PropsStore<ViewStoreHandle>
   & PropsLocale<typeof NS>
   & InjectFace<Injected>
-  & { useSectionScroller?: UseSectionScroller };
+  & Partial<PropsRenderFactories>
+  & {
+    useSectionScroller?: UseSectionScroller;
+    useContextMenu?: () => SessionContextMenu;
+    useSessionAccess?: UseSessionAccess;
+  };
 
 /**
  * A Workspace's absolute creation instant, in the shipped hover card's own
@@ -184,6 +207,102 @@ function ActivityList(props: {
   h('span', { className: 'dwt-child-time' }, relativeTime(child.updatedAt, now, t)))));
 }
 
+const PENDING_LABELS = {
+  approval: { short: 'pending.compact.approval', full: 'pending.approval' },
+  'plan-review': { short: 'pending.compact.plan-review', full: 'pending.planReview' },
+  question: { short: 'pending.compact.question', full: 'pending.question' },
+} as const;
+
+function StatusHoverContent({ row, time, home, renderSlot, t }: {
+  row: Row; time: string; home: string | undefined; renderSlot: Props['renderSlot']; t: Props['t'];
+}): ReactElement {
+  const statuses: { state: 'warning' | 'ongoing' | 'done' | 'idle'; label: string }[] = [];
+  if (row.pending !== undefined) {
+    statuses.push({ state: 'warning', label: t(PENDING_LABELS[row.pending].full) });
+  } else if (row.state === 'running' && (row.selfRunning || row.runningSubagents === 0)) {
+    statuses.push({ state: 'ongoing', label: t('status.running') });
+  }
+  if (row.runningSubagents > 0) {
+    statuses.push({
+      state: 'ongoing',
+      label: t(row.runningSubagents === 1 ? 'status.subagents.one' : 'status.subagents.other', { n: row.runningSubagents }),
+    });
+  }
+  if (statuses.length === 0) {
+    statuses.push(row.unread ? { state: 'done', label: t('status.completed') } : { state: 'idle', label: t('status.idle') });
+  }
+  const root = home?.startsWith('/') ? home.replace(/\/+$/, '') : '';
+  const cwd = root === '' || row.cwd === undefined ? row.cwd
+    : row.cwd.replace(/\/+$/, '') === root ? '~'
+    : row.cwd.startsWith(`${root}/`) ? `~${row.cwd.slice(root.length)}` : row.cwd;
+  return h('div', { className: 'dwt-session-preview' },
+    h('div', { className: 'dwt-session-preview-title' }, row.sessionTitle || t('row.untitled')),
+    cwd === undefined ? null : h('div', { className: 'dwt-session-preview-path' }, cwd),
+    h('div', { className: 'dwt-session-preview-time' }, time),
+    renderSlot(ROW_HOVER_SLOT, { sessionId: row.id }),
+    statuses.map(({ state, label }) => h('div', { key: label, className: 'dwt-session-preview-status' },
+      h(StateDot, { state }), h('span', null, label))));
+}
+
+// Workspaces reveals titles at 30px/s and ignores the last few pixels of clipping.
+const MIN_TITLE_OVERFLOW = 8;
+const TITLE_SCROLL_PX_PER_MS = 0.03;
+
+function useTitleMarquee(titleRef: RefObject<HTMLSpanElement>, enabled: boolean, menuOpen: boolean) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const frame = useRef<number>();
+  const revealing = useRef(false);
+
+  const leave = useCallback((): void => {
+    revealing.current = false;
+    if (frame.current !== undefined) {
+      window.cancelAnimationFrame(frame.current);
+      frame.current = undefined;
+    }
+    const title = titleRef.current;
+    if (title === null) return;
+    title.scrollLeft = 0;
+    delete title.dataset.titleScrolled;
+    delete title.dataset.titleClipped;
+  }, [titleRef]);
+
+  const enter = useCallback((): void => {
+    const title = titleRef.current;
+    if (title === null || revealing.current) return;
+    revealing.current = true;
+    const overflow = title.scrollWidth - title.clientWidth;
+    if (overflow <= MIN_TITLE_OVERFLOW) return;
+
+    const scrollTo = (left: number): void => {
+      title.scrollLeft = left;
+      if (left > 0) title.dataset.titleScrolled = '';
+      if (left < overflow) title.dataset.titleClipped = '';
+      else delete title.dataset.titleClipped;
+    };
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      scrollTo(overflow);
+      return;
+    }
+    let startedAt: number | undefined;
+    const scrollFrame = (now: number): void => {
+      startedAt ??= now;
+      const left = Math.min((now - startedAt) * TITLE_SCROLL_PX_PER_MS, overflow);
+      scrollTo(left);
+      frame.current = left < overflow ? window.requestAnimationFrame(scrollFrame) : undefined;
+    };
+    frame.current = window.requestAnimationFrame(scrollFrame);
+  }, [titleRef]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (menuOpen || rowRef.current?.matches(':hover')) enter();
+    else leave();
+  }, [enabled, menuOpen, enter, leave]);
+  useEffect(() => enabled ? leave : undefined, [enabled, leave]);
+
+  return { rowRef, enter, leave };
+}
+
 function SessionRow(props: {
   readonly row: Row;
   readonly t: Props['t'];
@@ -193,15 +312,26 @@ function SessionRow(props: {
   readonly dnd: RowDnd;
   readonly onHover: (hover: HoverInfo | null) => void;
   readonly onInteraction: (key: string, active: boolean) => void;
+  readonly statusRow: StatusRowOptions | undefined;
+  readonly useSessionAccess: UseSessionAccess;
+  readonly pinned: boolean;
 }): ReactElement {
-  const { row, t, now, openSession, renderSlot, dnd, onHover, onInteraction } = props;
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { row, t, now, openSession, renderSlot, dnd, onHover, onInteraction, statusRow, useSessionAccess, pinned } = props;
+  const statusView = statusRow !== undefined;
+  const [legacyMenuOpen, setMenuOpen] = useState(false);
+  const menu = statusRow?.menu;
+  const menuOpen = menu === undefined ? legacyMenuOpen : statusRow?.host.menuSessionId === row.id;
+  const renamable = useSessionAccess(row.id, 'session/rename');
+  const rename = renamable && !row.blank ? statusRow?.host.requestRename : undefined;
+  const owner = { sessionId: row.id, displayTitle: statusView ? row.sessionTitle : row.title };
+  const menuTarget: SessionMenuTarget = { kind: 'session', value: owner };
   useEffect(() => {
     onInteraction(row.id, menuOpen);
     return () => onInteraction(row.id, false);
   }, [row.id, menuOpen, onInteraction]);
   const titleRef = useRef<HTMLSpanElement | null>(null);
   const clipRef = useRef<HTMLSpanElement | null>(null);
+  const marquee = useTitleMarquee(titleRef, statusView, menuOpen);
   /**
    * Scroll a clipped title to its far edge while the row is hovered, so a long
    * generated title can be read without opening anything. The shift is measured
@@ -226,33 +356,52 @@ function SessionRow(props: {
     onHover(null);
     openSession(row.id);
   };
-  const trailing = row.pending !== undefined
-    ? { text: t(row.pending === 'approval' ? 'pending.approval'
-      : row.pending === 'plan-review' ? 'pending.planReview' : 'pending.question'), tone: 'warn' }
-    : { text: relativeTime(row.updatedAt, now, t), tone: 'plain' };
+  const distance = statusView ? nativeRelativeTime(row.updatedAt, now) : undefined;
+  const compactTime = distance === undefined || distance.unit === 'now'
+    ? t('time.compact.now') : t(`time.compact.${distance.unit}`, { n: distance.n });
+  const pendingLabel = row.pending === undefined ? undefined : PENDING_LABELS[row.pending];
+  const trailing = pendingLabel === undefined
+    ? statusView ? compactTime : relativeTime(row.updatedAt, now, t)
+    : t(statusView ? pendingLabel.short : pendingLabel.full);
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
+    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')
+      && !(event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) {
+      event.preventDefault();
+      open();
+    }
+  };
+  const triggerProps = menu !== undefined && !row.blank
+    ? menu.getTriggerProps(menuTarget, { onKeyDown }) : { onKeyDown };
   /**
    * The one leading mark a Session row earns: something waiting on you,
    * something working — its own turn or a delegation it started — or a
    * completion to look at. Every other row keeps the 16px cell empty, so the
    * titles stay on one column without a colour that means two things.
    */
-  return h('div', null,
-    h('div', {
+  const anchor = h('div', {
       className: 'dwt-row',
+      ref: statusView ? marquee.rowRef : undefined,
+      'data-status-row': statusView || undefined,
       'data-motion-id': row.id,
       role: 'button',
       tabIndex: 0,
-      title: row.title,
+      title: statusView ? undefined : row.title,
       'data-current': row.current,
       'data-menu': menuOpen ? 'open' : undefined,
       'data-drop': dnd.hint(row.id),
       'data-dragging': dnd.dragging === row.id,
-      onMouseEnter: (event: ReactMouseEvent<HTMLDivElement>) => {
+      onPointerEnter: statusView ? (event: ReactPointerEvent<HTMLDivElement>) => {
+        if (event.pointerType !== 'touch') marquee.enter();
+      } : undefined,
+      onPointerLeave: statusView ? () => {
+        if (!menuOpen) marquee.leave();
+      } : undefined,
+      onMouseEnter: statusView ? undefined : (event: ReactMouseEvent<HTMLDivElement>) => {
         shiftTitle();
         const box = event.currentTarget.getBoundingClientRect();
         onHover({ row, top: box.top, left: box.right + 8 });
       },
-      onMouseLeave: () => {
+      onMouseLeave: statusView ? undefined : () => {
         resetTitle();
         onHover(null);
       },
@@ -278,29 +427,26 @@ function SessionRow(props: {
         },
       } : {},
       onClick: open,
-      onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => {
-        if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-          event.preventDefault();
-          open();
-        }
-      },
+      ...triggerProps,
     },
     h('span', { className: 'dwt-row-mark' }, row.blank ? null : h(SessionMark, { state: row.state, unread: row.unread })),
-    // The crawl moves the title's own box, so the clipping has to come from this
-    // wrapper: it is the flex item and never moves, which keeps every painted
-    // pixel inside the row.
     h('span', {
       className: 'dwt-row-clip',
-      ref: (node: HTMLSpanElement | null): void => {
-        clipRef.current = node;
-      },
+      ref: statusView ? undefined : clipRef,
     }, h('span', {
       className: 'dwt-row-title',
-      ref: (node: HTMLSpanElement | null): void => {
-        titleRef.current = node;
+      onDoubleClick: rename === undefined ? undefined : (event: ReactMouseEvent<HTMLSpanElement>) => {
+        event.stopPropagation();
+        rename(row.id, row.sessionTitle);
       },
+      ref: titleRef,
     }, row.blank ? t('row.newSession') : row.title)),
-    row.blank ? null : h('span', { className: 'dwt-trailing', 'data-tone': trailing.tone }, trailing.text),
+    row.blank ? null : h('span', { className: 'dwt-row-resting' },
+      h('span', { className: 'dwt-trailing', 'data-tone': !statusView && pendingLabel !== undefined ? 'warn' : undefined,
+        'data-time': pendingLabel === undefined }, trailing),
+      statusView ? renderSlot(ROW_TRAILING_SLOT, { sessionId: row.id }) : null,
+      statusView && pinned ? h('span', { className: 'dwt-row-pin', role: 'img', 'aria-label': t('row.pinned'), title: t('row.pinned') },
+        h(IconPinFillRegular, { size: 14 })) : null),
     // The strip's clicks stay in the strip: neither the trigger nor a row.action
     // entry may reach the row's own click. The strip is hidden at rest, so the
     // relative time holds the trailing cell on its own.
@@ -310,7 +456,9 @@ function SessionRow(props: {
         event.stopPropagation();
       },
     },
-    h(Menu, {
+    menu !== undefined ? menu.renderFactorySlot('contextMenu.button', {
+      target: menuTarget, label: t('row.sessionMenu', { name: row.title }), className: 'dwt-trigger',
+    }) : h(Menu, {
       open: menuOpen,
       onClose: () => {
         setMenuOpen(false);
@@ -331,10 +479,23 @@ function SessionRow(props: {
           onHover(null);
         },
       }, h(IconEllipsisOutlineRegular, { size: 14 })),
-    }, renderSlot(MENU_SLOT, { sessionId: row.id, displayTitle: row.title }, {
+    }, renderSlot(MENU_SLOT, owner, {
       hookContext: [menuOpen, setMenuOpen] as const,
     })),
-    renderSlot(ROW_ACTION_SLOT, { sessionId: row.id, displayTitle: row.title }))),
+    renderSlot(ROW_ACTION_SLOT, owner)));
+  return h('div', null,
+    statusView && !row.blank ? h(HoverCard, {
+      anchor,
+      content: h(StatusHoverContent, { row, home: statusRow.host.home, renderSlot,
+        time: distance?.unit === 'now' ? compactTime : t('time.ago', { time: compactTime }), t }),
+      openDelayMs: 800,
+      // Newer hosts share the dwell behavior between adjacent session cards.
+      ...{ grouped: true },
+      disabled: menuOpen,
+      copyText: row.sessionTitle || undefined,
+      copyLabel: t('card.copy'),
+      copiedLabel: t('card.copied'),
+    }) : anchor,
     row.children.length === 0 ? null : h(ActivityList, { children: row.children, openSession, now, t }));
 }
 
@@ -370,6 +531,8 @@ function GroupMark({ group, open }: { readonly group: Group; readonly open: bool
 function Section(props: {
   readonly group: Group;
   readonly statusView: boolean;
+  readonly statusRow: StatusRowOptions | undefined;
+  readonly useSessionAccess: UseSessionAccess;
   readonly holdLayout: boolean;
   readonly t: Props['t'];
   readonly now: number;
@@ -386,7 +549,7 @@ function Section(props: {
   readonly deleteWorkspace: Injected['deleteWorkspace'];
 }): ReactElement {
   const {
-    group, statusView, holdLayout, t, now, open, onToggle, openSession, startSession, renderSlot, rowDnd, groupDnd, onHover,
+    group, statusView, statusRow, useSessionAccess, holdLayout, t, now, open, onToggle, openSession, startSession, renderSlot, rowDnd, groupDnd, onHover,
     renameWorkspace, deleteWorkspace, onInteraction,
   } = props;
   const workspacePath = group.path;
@@ -655,6 +818,9 @@ function Section(props: {
       dnd: rowDnd,
       onHover,
       onInteraction,
+      statusRow,
+      useSessionAccess,
+      pinned: group.key === PINNED_ACCOUNT,
     })) : null,
     open && (group.revealable === true || group.quota === true) && foldTotal > foldStep && (!statusView || foldHidden > 0)
       ? h('button', {
@@ -914,6 +1080,13 @@ function WorkspaceTabs(props: Props): ReactElement {
   const preferences = useGroupingPreferences(value => value);
   const grouping = preferences.statusSelected ? 'status' : nativeView?.groupBy ?? 'workspace';
   const tab: TabId = grouping === 'status' ? 'status' : 'workspaces';
+  const { useContextMenu = noContextMenu, useSessionAccess = allowLegacySessionAccess, useNativeSessionRow, renderFactorySlot } = props;
+  const contextMenu = useContextMenu();
+  const sessionRowHost = useNativeSessionRow(value => value);
+  const statusRow: StatusRowOptions | undefined = tab === 'status' ? {
+    host: sessionRowHost,
+    menu: contextMenu !== undefined && renderFactorySlot !== undefined ? { ...contextMenu, renderFactorySlot } : undefined,
+  } : undefined;
   const shortcuts = preferences.shortcuts.filter((group): group is Grouping =>
     group !== null && (group === 'status' || group === 'workspace' || nativeView !== null));
   const [now, setNow] = useState(() => Date.now());
@@ -1283,6 +1456,8 @@ function WorkspaceTabs(props: Props): ReactElement {
           key: group.key,
           group,
           statusView: tab === 'status',
+          statusRow,
+          useSessionAccess,
           holdLayout: locked,
           t,
           now,
@@ -1428,6 +1603,7 @@ export function apply(ctx: Context): void {
   const directoryFlowStore = createSnapshotStore(false);
   const nativeBrowserStore = createSnapshotStore(false);
   const nativeView = createSnapshotStore<NativeView | null>(null);
+  const nativeSessionRow = createSnapshotStore<NativeSessionRow>({});
   const groupingPreferences = createSnapshotStore<GroupingPreferences>({
     statusSelected: false, shortcuts: DEFAULT_SHORTCUTS,
   }, { persist: { name: 'dsh-sidebar-plus/grouping' } });
@@ -1458,10 +1634,9 @@ export function apply(ctx: Context): void {
   const mirrors = [
     createNativeBrowser(ctx, () => hostReady, ready => nativeBrowserStore.set(ready), bindHostView),
     createMirror(ctx, 'sidebar.workspaces.session.menu.item', MENU_SLOT, () => hostReady),
-    // The row keeps two controls — the menu trigger and Archive — so the
-    // shipped pin button is dropped here; pinning stays reachable as the menu's
-    // own Pin/Unpin row, which the mirror above still hosts.
-    createMirror(ctx, 'sidebar.workspaces.session.row.action', ROW_ACTION_SLOT, () => hostReady, undefined, ['pin']),
+    createMirror(ctx, 'sidebar.workspaces.session.row.action', ROW_ACTION_SLOT, () => hostReady),
+    createMirror(ctx, 'sidebar.session.row.trailing', ROW_TRAILING_SLOT, () => hostReady),
+    createMirror(ctx, 'sidebar.session.row.hover', ROW_HOVER_SLOT, () => hostReady),
     createMirror(ctx, 'sidebar.workspaces.directoryFlow', FLOW_SLOT, () => hostReady, count => {
       directoryFlowStore.set(count > 0);
     }),
@@ -1482,6 +1657,8 @@ export function apply(ctx: Context): void {
       ctx.slots.subscribe('sidebar.workspaces', syncMirrors),
       ctx.slots.subscribe('sidebar.workspaces.session.menu.item', syncMirrors),
       ctx.slots.subscribe('sidebar.workspaces.session.row.action', syncMirrors),
+      ctx.slots.subscribe('sidebar.session.row.trailing', syncMirrors),
+      ctx.slots.subscribe('sidebar.session.row.hover', syncMirrors),
       ctx.slots.subscribe('sidebar.workspaces.directoryFlow', syncMirrors),
     ];
     return () => {
@@ -1501,19 +1678,41 @@ export function apply(ctx: Context): void {
   // Observe the shadowed browser's request source so custom bindings work too.
   ctx.effect(() => {
     let source: StoredEntry | undefined;
-    let unsubscribe: (() => void) | undefined;
+    let subscriptions: (() => void)[] = [];
+    const unsubscribe = (): void => {
+      for (const stop of subscriptions) stop();
+      subscriptions = [];
+    };
     const sync = (): void => {
       const next = ctx.slots.entries('sidebar.workspaces').find(entry =>
         entry.children?.['sidebar.workspaces.directoryFlow'] !== undefined);
       if (next === source) return;
-      unsubscribe?.();
-      unsubscribe = undefined;
+      unsubscribe();
       source = next;
-      if (!next?.inject) return;
-      const browser = next.inject() as unknown as WorkspaceBrowserInjected;
+      if (!next?.inject) {
+        nativeSessionRow.set({});
+        return;
+      }
+      const browser = next.inject() as unknown as WorkspaceBrowserInjected & {
+        hooks: {
+          contextMenuTarget?: HostObservable<{ kind: string; value: { sessionId?: SessionId } } | null>;
+        };
+      };
+      const { hostInfo, contextMenuTarget } = browser.hooks;
+      const syncRowHost = (): void => {
+        const target = contextMenuTarget?.getSnapshot();
+        nativeSessionRow.set({
+          home: hostInfo?.getSnapshot().home,
+          requestRename: browser.requestSessionRename,
+          menuSessionId: target?.kind === 'session' ? target.value.sessionId : undefined,
+        });
+      };
+      syncRowHost();
+      if (hostInfo !== undefined) subscriptions.push(hostInfo.subscribe(syncRowHost));
+      if (contextMenuTarget !== undefined) subscriptions.push(contextMenuTarget.subscribe(syncRowHost));
       const requests = browser.hooks.workspaceShortcuts;
       let seen = requests.getSnapshot().searchRequest;
-      unsubscribe = requests.subscribe(() => {
+      subscriptions.push(requests.subscribe(() => {
         const request = requests.getSnapshot();
         if (request.searchRequest !== seen) {
           seen = request.searchRequest;
@@ -1523,11 +1722,11 @@ export function apply(ctx: Context): void {
           browser.closeAddWorkspace();
           addRequests.set(addRequests.getSnapshot() + 1);
         }
-      });
+      }));
     };
     sync();
     const stop = ctx.slots.subscribe('sidebar.workspaces', sync);
-    return () => { stop(); unsubscribe?.(); };
+    return () => { stop(); unsubscribe(); };
   });
 
   ctx.slots.inject('settings.section', () => ctx.slots.register({
@@ -1560,6 +1759,8 @@ export function apply(ctx: Context): void {
           },
         },
         [ROW_ACTION_SLOT]: { kind: 'list', scope: 'root' },
+        [ROW_TRAILING_SLOT]: { kind: 'list', scope: 'root', inline: true },
+        [ROW_HOVER_SLOT]: { kind: 'list', scope: 'root' },
         [FLOW_SLOT]: { kind: 'single', scope: 'root' },
       },
       inject: (): Injected => ({
@@ -1585,7 +1786,7 @@ export function apply(ctx: Context): void {
         },
         hooks: {
           jobs: ctx.jobs.state, directoryFlow: directoryFlowStore, nativeBrowser: nativeBrowserStore,
-          nativeView, groupingPreferences, addRequest: addRequests, searchRequest: searchRequests,
+          nativeView, nativeSessionRow, groupingPreferences, addRequest: addRequests, searchRequest: searchRequests,
           shortcuts: ctx.shortcuts.catalog,
         },
       }),

@@ -67,9 +67,9 @@ The earlier `@vamdawn/dsh-astrolabe` install is removed the same way. Remove it 
 - Search matches titles and Workspace names immediately, then adds debounced conversation matches with snippets. It follows the host `session.search` binding (⌘K / Ctrl+K by default, including custom keys); the plugin registers no duplicate shortcut. Archived results restore from their row action.
 - In Status, subagent sessions nest under their parent with vertical and elbow connectors, newest activity first. They open on click, use their delegation label, and show their own time.
 - That layer appears while a Session is working, waiting on input, or owes a look, and fills up to five rows; running and waiting delegations are always retained.
-- In Status, hovering a Session adds its Workspace name, directory, and when that Workspace was created.
+- Status rows use the Workspaces time and waiting labels, pin indicator, and hover actions. On hosts with shared session menus, right-click or use the ellipsis for the same menu as Workspaces. Double-click the title to rename when permitted. The hover card shows the Session's working directory, relative time and live status, and lets you copy the title.
 - All four groupings share the same toolbar. Workspaces and Status are the default shortcuts. In **Settings → Sidebar Plus**, pick up to two shortcuts and set their order. The View options menu lists every available grouping.
-- Sessions and Workspace groups can be dragged to reorder, with automatic reordering animated and reduced-motion preferences respected.
+- Drag to reorder Sessions and Workspace groups in Workspaces. Status sorts automatically, and row movement respects reduced-motion preferences.
 - The 56px rail renders when the sidebar is collapsed.
 - Plugin copy ships in Chinese and English.
 
