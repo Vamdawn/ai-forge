@@ -6,6 +6,8 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-16
+
 ### Added
 
 - Choose Status alongside the three native groupings in View options. All four share a toolbar, and Sidebar Plus settings let you choose and reorder up to two grouping shortcuts.

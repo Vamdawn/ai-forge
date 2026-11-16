@@ -14,6 +14,7 @@ This file is the global release index: every asset release appends one summary l
 - `noticeflow@0.1.0` (2026-10-31) — first experimental release of the remote MCP notification service, with OAuth, durable Topic routing, and WeCom and Feishu group robot delivery → [Details](mcp/noticeflow/CHANGELOG.md)
 - `dsh-sidebar-plus@0.5.0` (2026-11-13) — renamed release of `@vamdawn/dsh-astrolabe`, whose name now states that it reworks the session sidebar; the persisted view key and the plugin's own locale and slot namespaces moved with it → [Details](plugins/dsh-sidebar-plus/CHANGELOG.md)
 - `dsh-sidebar-plus@0.6.0` (2026-11-16) — embeds the official Workspaces browser with its saved view settings and adds four Status groups with nested subagent rows → [Details](plugins/dsh-sidebar-plus/CHANGELOG.md)
+- `dsh-sidebar-plus@0.7.0` (2026-11-16) — adds Status to the grouping menu and supports up to two configurable grouping shortcuts in a shared toolbar → [Details](plugins/dsh-sidebar-plus/CHANGELOG.md)
 
 ## Repository milestones
 
