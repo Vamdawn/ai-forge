@@ -21,8 +21,8 @@ Read when: changing `skills/<name>/`, `tools/<name>/`, `plugins/<name>/`, or `mc
 
 1. Start from release-ready `main` as defined in [git-conventions.md](git-conventions.md). Identify the asset name, directory, and distribution channel. Read its latest release tag, changes since that tag, and both `[Unreleased]` sections; select the next version using the rules above, or the initial version for an unreleased asset.
 2. Complete the feature commit with the implementation, tests, affected usage docs, and both CHANGELOGs' `[Unreleased]` entries. Run the applicable asset checks and the documentation check below before committing; proceed only when they pass.
-3. Prepare the release: update declared versions in the asset's package metadata and associated lockfiles where present, move the pending entries under `## [X.Y.Z] - YYYY-MM-DD` in both asset CHANGELOGs while retaining empty `[Unreleased]` sections, and append the root release index entries described in rule 7.
-4. Re-run the applicable checks on the prepared release. For npm packages, inspect `npm pack --dry-run` from the asset directory. Commit the release metadata and CHANGELOG changes in a separate release commit.
+3. For an npm package, run `python3 scripts/prepare-release.py <package-or-asset> <X.Y.Z>` with the exact target version. The script updates `package.json` and `package-lock.json`, files the pending entries under the new version in both CHANGELOGs, retains empty `[Unreleased]` sections, and appends the root release index entries. Each index summary starts from the first pending entry in that language, with generic wording for an empty section. For other distribution channels, update declared versions and lockfiles where present, move the pending entries in both CHANGELOGs, and append the index entries by hand.
+4. The npm preparation script runs the documentation check, `npm ci --ignore-scripts`, type checks, tests, and `npm pack --dry-run`. A failed check rolls back the script's release edits. Review the package file list and the working-tree diff, including both index summaries. For other distribution channels, re-run the applicable checks. Commit the reviewed changes in a separate release commit.
 5. For npm packages, push the release commit to `main` and follow Publishing below. For assets distributed directly from Git, create the annotated tag on the release commit, push the commit and tag, and verify that the remote tag resolves to that commit and exposes the asset files.
 
 ## Publishing
@@ -46,5 +46,6 @@ Read when: changing `skills/<name>/`, `tools/<name>/`, `plugins/<name>/`, or `mc
 - `git tag -l '<name>@*'` — the version history of one asset.
 - `npm ci --ignore-scripts && npm run typecheck && npm test` in the asset directory — the gates before the release commit; `python3 scripts/verify-docs.py` covers documentation.
 - `npm pack --dry-run` — the file list that will ship, where a missing bilingual README or CHANGELOG shows up.
+- `python3 scripts/prepare-release.spec.py` — test version changes, both release indexes, and rollback after failed checks when modifying the preparation script.
 - `actionlint .github/workflows/publish-npm.yml` — validate the workflow when changing it.
 - Review: the `verify` and `tag` job logs should show the matched SHA-512 and remote tag commit.
