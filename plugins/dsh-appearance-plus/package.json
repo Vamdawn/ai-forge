@@ -1,6 +1,6 @@
 {
   "name": "@vamdawn/dsh-appearance-plus",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Customize DeepSeek Harness interface fonts, code fonts, and background image",
   "repository": {
     "type": "git",
