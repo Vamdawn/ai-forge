@@ -83,6 +83,8 @@ jobs:
     environment: npm-publish
     permissions:
       id-token: write
+    outputs:
+      sha512: ${{ steps.publish.outputs.sha512 }}
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -95,6 +97,7 @@ jobs:
           artifact-ids: ${{ needs.pack.outputs.artifact-id }}
           path: npm-package
       - name: Publish the packed tarball
+        id: publish
         run: |
           shopt -s nullglob
           tarballs=(./npm-package/*.tgz)
@@ -102,4 +105,89 @@ jobs:
             echo "Expected exactly one npm tarball" >&2
             exit 1
           fi
+          digest=$(sha512sum "${tarballs[0]}")
           npm publish "${tarballs[0]}" --registry=https://registry.npmjs.org/ --access public --ignore-scripts
+          printf 'sha512=%s\n' "${digest%% *}" >> "$GITHUB_OUTPUT"
+
+  verify:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Verify the npm registry tarball
+        env:
+          ASSET: ${{ inputs.asset }}
+          VERSION: ${{ inputs.version }}
+          EXPECTED_SHA512: ${{ needs.publish.outputs.sha512 }}
+        run: |
+          if [[ ! "$EXPECTED_SHA512" =~ ^[0-9a-f]{128}$ ]]; then
+            echo "Missing or invalid SHA-512 from the publish job" >&2
+            exit 1
+          fi
+
+          download_dir=$(mktemp -d "$RUNNER_TEMP/npm-registry.XXXXXX")
+          package_spec="@vamdawn/$ASSET@$VERSION"
+          for attempt in {1..40}; do
+            if npm pack "$package_spec" --ignore-scripts --prefer-online \
+                --registry=https://registry.npmjs.org/ --pack-destination "$download_dir" \
+                --fetch-retries=0 --fetch-timeout=15000 2>"$download_dir/npm.log"; then
+              digest=$(sha512sum "$download_dir/vamdawn-$ASSET-$VERSION.tgz")
+              if [[ "${digest%% *}" != "$EXPECTED_SHA512" ]]; then
+                printf 'SHA-512 mismatch for %s\nExpected: %s\nActual:   %s\n' \
+                  "$package_spec" "$EXPECTED_SHA512" "${digest%% *}" >&2
+                exit 1
+              fi
+              printf 'Verified %s (SHA-512 %s)\n' "$package_spec" "$EXPECTED_SHA512"
+              exit 0
+            fi
+
+            cat "$download_dir/npm.log" >&2
+            if ! grep -Eq 'npm (error|ERR!) code (ETARGET|E404|E408|E429|E50[0234]|EAI_AGAIN|ECONNRESET|ETIMEDOUT|FETCH_ERROR)$' "$download_dir/npm.log"; then
+              exit 1
+            fi
+            if (( attempt < 40 )); then
+              printf 'Registry download attempt %d/40 will retry in 25 seconds\n' "$attempt"
+              sleep 25
+            fi
+          done
+
+          echo "Timed out downloading $package_spec" >&2
+          exit 1
+
+  tag:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+      - name: Push the annotated release tag
+        env:
+          ASSET: ${{ inputs.asset }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          release_tag="$ASSET@$VERSION"
+          tag_ref="refs/tags/$release_tag"
+          git check-ref-format "$tag_ref"
+
+          remote_ref=$(git ls-remote --refs origin "$tag_ref")
+          if [[ -z "$remote_ref" ]]; then
+            git -c user.name='github-actions[bot]' \
+                -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+                tag -a "$release_tag" "$GITHUB_SHA" -m "$release_tag"
+            git push origin "${tag_ref}:${tag_ref}" ||
+              echo "Tag push failed; checking the remote ref" >&2
+          fi
+
+          remote_commit=$(git ls-remote origin "${tag_ref}^{}" | cut -f1)
+          if [[ "$remote_commit" != "$GITHUB_SHA" ]]; then
+            echo "Expected remote annotated tag $release_tag to point to $GITHUB_SHA; found ${remote_commit:-none}" >&2
+            exit 1
+          fi
+          echo "Verified remote tag $release_tag at $remote_commit"
