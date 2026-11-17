@@ -6,6 +6,12 @@ All notable changes to this asset are documented in this file. The format follow
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-17
+
+### Changed
+
+- Publish this version through npm Trusted Publishing and verify the registry tarball before tagging the release.
+
 ## [0.8.0] - 2026-11-17
 
 ### Changed

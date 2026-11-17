@@ -18,6 +18,7 @@ This file is the global release index: every asset release appends one summary l
 - `dsh-sidebar-plus@0.8.0` (2026-11-17) — aligns Status session row actions, hover cards, and long-title scrolling with Workspaces → [Details](plugins/dsh-sidebar-plus/CHANGELOG.md)
 - `dsh-appearance-plus@0.1.1` (2026-11-17) — renames the English settings page to Appearance Plus and includes Simplified Chinese documentation in the npm package → [Details](plugins/dsh-appearance-plus/CHANGELOG.md)
 - `dsh-rename-session@0.1.1` (2026-11-17) — updates the install and usage guide and includes Simplified Chinese documentation in the npm package → [Details](plugins/dsh-rename-session/CHANGELOG.md)
+- `dsh-sidebar-plus@0.8.1` (2026-11-17) — verifies npm Trusted Publishing and tarball validation for Sidebar Plus → [Details](plugins/dsh-sidebar-plus/CHANGELOG.md)
 
 ## Repository milestones
 

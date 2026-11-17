@@ -18,6 +18,7 @@
 - `dsh-sidebar-plus@0.8.0` (2026-11-17) — 将 Status 会话行的操作、悬停卡片和长标题滚动对齐 Workspaces → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
 - `dsh-appearance-plus@0.1.1` (2026-11-17) — 将英文设置页改名为 Appearance Plus，并在 npm 包中加入简体中文文档 → [详情](plugins/dsh-appearance-plus/CHANGELOG.zh-CN.md)
 - `dsh-rename-session@0.1.1` (2026-11-17) — 更新安装与使用指南，并在 npm 包中加入简体中文文档 → [详情](plugins/dsh-rename-session/CHANGELOG.zh-CN.md)
+- `dsh-sidebar-plus@0.8.1` (2026-11-17) — 验证 Sidebar Plus 的 npm Trusted Publishing 和产物核对流程 → [详情](plugins/dsh-sidebar-plus/CHANGELOG.zh-CN.md)
 
 ## Repository milestones
 

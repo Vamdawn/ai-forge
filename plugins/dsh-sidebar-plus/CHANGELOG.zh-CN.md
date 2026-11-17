@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-17
+
+### Changed
+
+- 通过 npm Trusted Publishing 发布此版本，并在推送发版标签前核对 npm 包。
+
 ## [0.8.0] - 2026-11-17
 
 ### Changed
