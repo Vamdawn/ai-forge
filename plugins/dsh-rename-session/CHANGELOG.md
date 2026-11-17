@@ -4,6 +4,8 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-17
+
 ### Added
 
 - Publish a Simplified Chinese README (`README.zh-CN.md`) next to the English one, and ship it in the package.

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-17
+
 ### Added
 
 - 在英文版旁发布简体中文 README（`README.zh-CN.md`），并随 npm 包发布。
