@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 [![npm version](https://img.shields.io/npm/v/@vamdawn/dsh-appearance-plus.svg)](https://www.npmjs.com/package/@vamdawn/dsh-appearance-plus)
 
-Customize the DeepSeek Harness interface font, code font, and window background image. The plugin adds an **Appearance+** page to the official settings panel and layers its changes over the active theme, so the built-in Light, Dark, and System palettes keep working.
+Customize the DeepSeek Harness interface font, code font, and window background image. The plugin adds an **Appearance Plus** page to the official settings panel and layers its changes over the active theme, so the built-in Light, Dark, and System palettes keep working.
 
 Validated with DSH `0.2.0-rc.2`. It supports the Web UI on loopback pages and the Desktop application that uses it; the TUI has no settings panel. Copy ships in the official Chinese (`zh`) and English (`en`) locales.
 
@@ -48,7 +48,7 @@ dsh plugin --profile <profile> remove @vamdawn/dsh-appearance-plus
 
 ## Usage
 
-Open **Settings** at the bottom of the sidebar, then select **Appearance+** in the left navigation. Changes apply immediately without reloading.
+Open **Settings** at the bottom of the sidebar, then select **Appearance Plus** in the left navigation. Changes apply immediately without reloading.
 
 - **Interface font** and **Code font**: the field shows the selected family. Click it to list every family, type to filter by name, and select with the pointer or with the arrow keys and Enter. **Default** at the top of the list returns to the host default. The chosen family goes first, followed by the host's shipped font stack as fallbacks.
 - **Extra font folder**: one additional folder whose fonts appear in search, marked as *extra folder*. Supported files are `.ttf`, `.otf`, `.ttc`, `.woff`, and `.woff2`, and subfolders are included. **Rescan** picks up newly installed fonts.

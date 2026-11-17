@@ -54,7 +54,7 @@ export const DICTIONARIES = {
     'error.save-failed': '设置未保存，请重试。',
   },
   en: {
-    nav: 'Appearance+',
+    nav: 'Appearance Plus',
     uiFont: 'Interface font',
     codeFont: 'Code font',
     fontDefault: 'Default',

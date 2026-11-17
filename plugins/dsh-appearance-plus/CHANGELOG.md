@@ -11,6 +11,7 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 
 ### Changed
 
+- Rename the English settings page to **Appearance Plus**.
 - Rewrite the README around install, usage, configuration, limitations, and development; the dated validation record is no longer part of it.
 
 ## [0.1.0] - 2026-10-15

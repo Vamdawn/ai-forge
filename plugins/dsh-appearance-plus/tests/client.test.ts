@@ -169,7 +169,7 @@ test('settings apply fonts and background, keep the last good values, and fully 
   assert.deepEqual(Object.keys(dictionaries.en).sort(), Object.keys(dictionaries.zh).sort());
   assert.ok(page);
   assert.deepEqual([page.name, page.id, page.order, page.label()],
-    ['settings.section', 'dsh-appearance-plus', 10, 'Appearance+']);
+    ['settings.section', 'dsh-appearance-plus', 10, 'Appearance Plus']);
   const injected = page.inject();
   const issues = () => structuredClone(injected.hooks.applyIssues.getSnapshot());
   const active = () => layers.at(-1) ?? {};

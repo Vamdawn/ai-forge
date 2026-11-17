@@ -4,7 +4,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@vamdawn/dsh-appearance-plus.svg)](https://www.npmjs.com/package/@vamdawn/dsh-appearance-plus)
 
-定制 DeepSeek Harness 的界面字体、代码字体与窗口背景图片。插件在官方设置面板中新增 **外观+** 页面，并把改动叠加在当前主题之上，因此内置的 Light、Dark 和 System 配色仍可正常使用。
+定制 DeepSeek Harness 的界面字体、代码字体与窗口背景图片。插件在官方设置面板中新增 **外观+** 页面（英文界面显示为 **Appearance Plus**），并把改动叠加在当前主题之上，因此内置的 Light、Dark 和 System 配色仍可正常使用。
 
 已在 DSH `0.2.0-rc.2` 上验证。它支持回环地址页面上的 Web UI，以及使用该 Web UI 的 Desktop 应用；TUI 没有设置面板。界面文案以官方中文（`zh`）和英文（`en`）两种语言提供。
 
